@@ -183,6 +183,32 @@
 
   <h2 class="titulo-centralizado">Identificação do Atendimento</h2>
 
+ <!-- ==================================================== -->
+<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- ==================================================== -->
+
+<div class="grid-2">
+  <div>
+    <label>Buscar por R.E., CPF ou Nome</label>
+    <input id="campoBusca" placeholder="Digite R.E., CPF ou Nome" oninput="mascaraBusca(this)">
+  </div>
+
+  <div>
+    <label>&nbsp;</label>
+    <button class="btn-primary" onclick="buscarCadastroTela()">
+      Buscar
+    </button>
+  </div>
+</div>
+
+<div id="resultadoBusca"></div>
+
+
+ <!-- ==================================================== -->
+<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- ==================================================== -->
+
+
   <div class="grid-2">
     <div>
       <label>Tipo de Atendimento</label>
@@ -574,6 +600,136 @@ function mascaraCEP(campo) {
   valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
 
   campo.value = valor;
+}
+
+
+/* ==================================================== */
+/* BUSCA POR RE, CPF, NOME                               */
+/* ==================================================== */
+
+
+function buscarCadastroTela() {
+  const termo = document.getElementById("campoBusca").value.trim();
+
+  if (!termo) {
+    alert("Digite um R.E., CPF ou Nome para buscar.");
+    return;
+  }
+
+  document.getElementById("resultadoBusca").innerHTML = "Buscando...";
+
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      tratarResultadoBusca(resposta);
+    })
+    .withFailureHandler(function(erro) {
+      document.getElementById("resultadoBusca").innerHTML =
+        "Erro na busca: " + erro.message;
+    })
+    .buscarCadastro(termo);
+}
+
+function tratarResultadoBusca(resposta) {
+  const div = document.getElementById("resultadoBusca");
+  div.innerHTML = "";
+
+  if (!resposta.encontrado) {
+    div.innerHTML = `<p style="color:#9a3412; font-weight:bold;">${resposta.mensagem}</p>`;
+    return;
+  }
+
+  if (!resposta.multiplos) {
+    preencherFormulario(resposta.registro);
+    div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro localizado e preenchido.</p>`;
+    return;
+  }
+
+  div.innerHTML = `<p style="font-weight:bold;">Foram encontrados vários registros. Clique no correto:</p>`;
+
+  resposta.resultados.forEach(function(registro) {
+    const item = document.createElement("div");
+    item.style.padding = "12px";
+    item.style.marginTop = "8px";
+    item.style.border = "1px solid #d8e2ea";
+    item.style.borderRadius = "8px";
+    item.style.cursor = "pointer";
+    item.style.background = "#f8fbfd";
+
+    item.innerHTML = `
+      <strong>${registro.nome || "sem nome"}</strong><br>
+      R.E.: ${registro.re || "-"} |
+      CPF: ${registro.cpf || "-"} |
+      OPM: ${registro.opmAtual || "-"}
+    `;
+
+    item.onclick = function() {
+      preencherFormulario(registro);
+      div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro selecionado e preenchido.</p>`;
+    };
+
+    div.appendChild(item);
+  });
+}
+
+function preencherFormulario(r) {
+  document.getElementById("re").value = r.re || "";
+  document.getElementById("cpf").value = r.cpf || "";
+  document.getElementById("telefone").value = r.telefone || "";
+  document.getElementById("nome").value = r.nome || "";
+  document.getElementById("sexo").value = r.sexo || "";
+  document.getElementById("email").value = r.email || "";
+  document.getElementById("dataNascimento").value = r.dataNascimento || "";
+  document.getElementById("estadoCivil").value = r.estadoCivil || "";
+  document.getElementById("numeroFilhos").value = r.numeroFilhos || "";
+  document.getElementById("opmAtual").value = r.opmAtual || "";
+  document.getElementById("situacaoStatus").value = r.situacaoStatus || "";
+  document.getElementById("dataIngresso").value = r.dataIngresso || "";
+  document.getElementById("dataInatividade").value = r.dataInatividade || "";
+  document.getElementById("cep").value = r.cep || "";
+  document.getElementById("rua").value = r.rua || "";
+  document.getElementById("numero").value = r.numero || "";
+  document.getElementById("bairro").value = r.bairro || "";
+  document.getElementById("cidade").value = r.cidade || "";
+  document.getElementById("estado").value = r.estado || "";
+  document.getElementById("complemento").value = r.complemento || "";
+}
+
+
+function mascaraBusca(campo) {
+  let valor = campo.value.toUpperCase();
+
+  // Se tiver letras diferentes de A, trata como NOME
+  if (/[B-Z]/.test(valor.replace(/A/g, ""))) {
+    campo.value = valor;
+    return;
+  }
+
+  let limpo = valor.replace(/[^0-9A]/g, "");
+
+  // Se tiver A, trata como R.E.
+  if (limpo.includes("A")) {
+    limpo = limpo.substring(0, 7);
+    campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
+    return;
+  }
+
+  // Se tiver até 7 números, pode ser R.E.
+  if (limpo.length <= 7) {
+    if (limpo.length > 6) {
+      campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
+    } else {
+      campo.value = limpo;
+    }
+    return;
+  }
+
+  // Se passou de 7 números, trata como CPF
+  limpo = limpo.substring(0, 11);
+
+  campo.value = limpo
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
 
 </script>
