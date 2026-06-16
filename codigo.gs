@@ -106,47 +106,62 @@ function normalizarTelefone(valor) {
   return String(valor).replace(/\D/g, "");
 }
 function buscarCadastro(termo) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ABA_DADOS);
-
-  if (!sheet) {
-    throw new Error("A aba dados_cadastro não foi encontrada.");
-  }
-
-  const dados = sheet.getDataRange().getValues();
-
-  if (dados.length < 2) {
-    return {
-      encontrado: false,
-      mensagem: "Nenhum cadastro anterior localizado."
-    };
-  }
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
+  const linhas = sheet.getDataRange().getValues();
 
   const termoOriginal = String(termo || "").trim();
-  const termoNormalizado = normalizar(termoOriginal);
-  const termoNumerico = somenteNumeros(termoOriginal);
+  const buscaTexto = normalizar(termoOriginal);
+  const buscaNumeros = somenteNumeros(termoOriginal);
 
   let resultados = [];
 
-  for (let i = dados.length - 1; i >= 1; i--) {
-    const linha = dados[i];
+  const contemLetras = /[A-Z]/i.test(termoOriginal);
+  const pareceNome = contemLetras && !/^\d{1,6}-?[\dA]?$/i.test(termoOriginal);
+  const pareceCPF = buscaNumeros.length >= 8;
+  const pareceRE = !pareceNome && buscaNumeros.length > 0 && buscaNumeros.length <= 7;
 
-    const registro = montarRegistro(linha);
+  for (let i = linhas.length - 1; i >= 1; i--) {
+    const l = linhas[i];
 
+    const registro = {
+      re: l[4] || "",
+      nome: l[5] || "",
+      cpf: l[6] || "",
+      telefone: l[7] || "",
+      email: l[8] || "",
+      dataIngresso: converterData(l[9]),
+      dataNascimento: converterData(l[10]),
+      sexo: l[11] || "",
+      opmAtual: l[12] || "",
+      situacaoStatus: l[13] || "",
+      dataInatividade: converterData(l[14]),
+      estadoCivil: l[15] || "",
+      numeroFilhos: l[16] || "",
+      cep: l[17] || "",
+      rua: l[18] || "",
+      bairro: l[19] || "",
+      cidade: l[20] || "",
+      estado: l[21] || "",
+      numero: l[22] || "",
+      complemento: l[23] || ""
+    };
+
+    const reTexto = normalizar(registro.re);
+    const reNumerico = somenteNumeros(registro.re);
+    const nomeTexto = normalizar(registro.nome);
     const cpfNumerico = somenteNumeros(registro.cpf);
-    const reNormalizado = normalizar(registro.re);
-    const nomeNormalizado = normalizar(registro.nome);
 
-    const encontrouCPF =
-      termoNumerico.length >= 3 && cpfNumerico.includes(termoNumerico);
+    let achou = false;
 
-    const encontrouRE =
-      termoNormalizado.length >= 2 && reNormalizado.includes(termoNormalizado);
+    if (pareceCPF) {
+      achou = cpfNumerico.includes(buscaNumeros);
+    } else if (pareceRE) {
+      achou = reNumerico.includes(buscaNumeros) || reTexto.includes(buscaTexto);
+    } else {
+      achou = nomeTexto.includes(buscaTexto);
+    }
 
-    const encontrouNome =
-      termoNormalizado.length >= 3 && nomeNormalizado.includes(termoNormalizado);
-
-    if (encontrouCPF || encontrouRE || encontrouNome) {
+    if (achou) {
       resultados.push(registro);
     }
   }
@@ -158,7 +173,11 @@ function buscarCadastro(termo) {
     };
   }
 
-  if (resultados.length === 1) {
+  // Se for CPF completo ou RE completo, preenche direto com o registro mais recente
+  const reCompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
+  const cpfCompleto = buscaNumeros.length === 11;
+
+  if ((reCompleto || cpfCompleto) && resultados.length >= 1) {
     return {
       encontrado: true,
       multiplos: false,
@@ -166,6 +185,7 @@ function buscarCadastro(termo) {
     };
   }
 
+  // Em todos os demais casos, mostra lista de opções
   return {
     encontrado: true,
     multiplos: true,
@@ -228,50 +248,78 @@ function buscarCadastro(termo) {
   const buscaTexto = normalizar(termo);
   const buscaNumeros = somenteNumeros(termo);
 
+  let resultados = [];
+  let chavesEncontradas = {};
+
   for (let i = linhas.length - 1; i >= 1; i--) {
     const l = linhas[i];
 
-    const re = String(l[4] || "");
-    const nome = String(l[5] || "");
-    const cpf = String(l[6] || "");
+    const registro = {
+      re: l[4] || "",
+      nome: l[5] || "",
+      cpf: l[6] || "",
+      telefone: l[7] || "",
+      email: l[8] || "",
+      dataIngresso: converterData(l[9]),
+      dataNascimento: converterData(l[10]),
+      sexo: l[11] || "",
+      opmAtual: l[12] || "",
+      situacaoStatus: l[13] || "",
+      dataInatividade: converterData(l[14]),
+      estadoCivil: l[15] || "",
+      numeroFilhos: l[16] || "",
+      cep: l[17] || "",
+      rua: l[18] || "",
+      bairro: l[19] || "",
+      cidade: l[20] || "",
+      estado: l[21] || "",
+      numero: l[22] || "",
+      complemento: l[23] || ""
+    };
 
-    const achouRE = normalizar(re).includes(buscaTexto);
-    const achouNome = normalizar(nome).includes(buscaTexto);
-    const achouCPF = somenteNumeros(cpf).includes(buscaNumeros);
+    const reTexto = normalizar(registro.re);
+    const nomeTexto = normalizar(registro.nome);
+    const cpfNumerico = somenteNumeros(registro.cpf);
 
-    if (achouRE || achouNome || achouCPF) {
-      return {
-        encontrado: true,
-        multiplos: false,
-        registro: {
-          re: l[4] || "",
-          nome: l[5] || "",
-          cpf: l[6] || "",
-          telefone: l[7] || "",
-          email: l[8] || "",
-          dataIngresso: converterData(l[9]),
-          dataNascimento: converterData(l[10]),
-          sexo: l[11] || "",
-          opmAtual: l[12] || "",
-          situacaoStatus: l[13] || "",
-          dataInatividade: converterData(l[14]),
-          estadoCivil: l[15] || "",
-          numeroFilhos: l[16] || "",
-          cep: l[17] || "",
-          rua: l[18] || "",
-          bairro: l[19] || "",
-          cidade: l[20] || "",
-          estado: l[21] || "",
-          numero: l[22] || "",
-          complemento: l[23] || ""
-        }
-      };
+    const pesquisouCPF = buscaNumeros.length >= 11;
+    const pesquisouRE = /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim());
+    const pesquisouNome = buscaTexto.length >= 3 && !pesquisouCPF && !pesquisouRE;
+
+    const achouCPF = pesquisouCPF && cpfNumerico === buscaNumeros;
+    const achouRE = pesquisouRE && reTexto === buscaTexto;
+    const achouNome = pesquisouNome && nomeTexto.includes(buscaTexto);
+
+    if (achouCPF || achouRE || achouNome) {
+      const chaveUnica = cpfNumerico || reTexto || nomeTexto;
+
+      if (!chavesEncontradas[chaveUnica]) {
+        chavesEncontradas[chaveUnica] = true;
+        resultados.push(registro);
+      }
     }
   }
 
+  if (resultados.length === 0) {
+    return {
+      encontrado: false,
+      mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
+    };
+  }
+
+  // CPF ou RE completo: preenche direto
+  if (buscaNumeros.length >= 11 || /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim())) {
+    return {
+      encontrado: true,
+      multiplos: false,
+      registro: resultados[0]
+    };
+  }
+
+  // Nome: sempre mostra lista se houver resultado
   return {
-    encontrado: false,
-    mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
+    encontrado: true,
+    multiplos: true,
+    resultados: resultados.slice(0, 10)
   };
 }
 
