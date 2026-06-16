@@ -217,3 +217,73 @@ function formatarDataParaInput(valor) {
 
   return "";
 }
+
+// BUSCA POR RE, CPF E NOME
+
+
+function buscarCadastro(termo) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
+  const linhas = sheet.getDataRange().getValues();
+
+  const buscaTexto = normalizar(termo);
+  const buscaNumeros = somenteNumeros(termo);
+
+  for (let i = linhas.length - 1; i >= 1; i--) {
+    const l = linhas[i];
+
+    const re = String(l[4] || "");
+    const nome = String(l[5] || "");
+    const cpf = String(l[6] || "");
+
+    const achouRE = normalizar(re).includes(buscaTexto);
+    const achouNome = normalizar(nome).includes(buscaTexto);
+    const achouCPF = somenteNumeros(cpf).includes(buscaNumeros);
+
+    if (achouRE || achouNome || achouCPF) {
+      return {
+        encontrado: true,
+        multiplos: false,
+        registro: {
+          re: l[4] || "",
+          nome: l[5] || "",
+          cpf: l[6] || "",
+          telefone: l[7] || "",
+          email: l[8] || "",
+          dataIngresso: converterData(l[9]),
+          dataNascimento: converterData(l[10]),
+          sexo: l[11] || "",
+          opmAtual: l[12] || "",
+          situacaoStatus: l[13] || "",
+          dataInatividade: converterData(l[14]),
+          estadoCivil: l[15] || "",
+          numeroFilhos: l[16] || "",
+          cep: l[17] || "",
+          rua: l[18] || "",
+          bairro: l[19] || "",
+          cidade: l[20] || "",
+          estado: l[21] || "",
+          numero: l[22] || "",
+          complemento: l[23] || ""
+        }
+      };
+    }
+  }
+
+  return {
+    encontrado: false,
+    mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
+  };
+}
+
+function converterData(valor) {
+  if (!valor) return "";
+
+  if (Object.prototype.toString.call(valor) === "[object Date]") {
+    const ano = valor.getFullYear();
+    const mes = String(valor.getMonth() + 1).padStart(2, "0");
+    const dia = String(valor.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  return "";
+}
