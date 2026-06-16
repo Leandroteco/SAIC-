@@ -190,13 +190,17 @@
 <div class="grid-2">
   <div>
     <label>Buscar por R.E., CPF ou Nome</label>
-    <input id="campoBusca" placeholder="Digite R.E., CPF ou Nome" oninput="mascaraBusca(this)">
+    <input
+  id="campoBusca"
+  placeholder="Digite R.E., CPF ou Nome e aperte ENTER"
+  oninput="mascaraBusca(this); buscarAutomaticamenteSeCompleto()"
+  onkeydown="buscarComEnter(event)">
   </div>
 
   <div>
     <label>&nbsp;</label>
-    <button class="btn-primary" onclick="buscarCadastroTela()">
-      Buscar
+    <button class="btn-secondary" onclick="novoAtendimento()">
+      Novo Atendimento
     </button>
   </div>
 </div>
@@ -640,14 +644,15 @@ function tratarResultadoBusca(resposta) {
 
   if (!resposta.multiplos) {
     preencherFormulario(resposta.registro);
-    div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro localizado e preenchido.</p>`;
+    div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro localizado e preenchido automaticamente.</p>`;
     return;
   }
 
-  div.innerHTML = `<p style="font-weight:bold;">Foram encontrados vários registros. Clique no correto:</p>`;
+  div.innerHTML = `<p style="font-weight:bold;">Foram encontrados vários cadastros. Clique no correto:</p>`;
 
   resposta.resultados.forEach(function(registro) {
     const item = document.createElement("div");
+
     item.style.padding = "12px";
     item.style.marginTop = "8px";
     item.style.border = "1px solid #d8e2ea";
@@ -664,7 +669,7 @@ function tratarResultadoBusca(resposta) {
 
     item.onclick = function() {
       preencherFormulario(registro);
-      div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro selecionado e preenchido.</p>`;
+      div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro selecionado e preenchido automaticamente.</p>`;
     };
 
     div.appendChild(item);
@@ -672,6 +677,29 @@ function tratarResultadoBusca(resposta) {
 }
 
 function preencherFormulario(r) {
+  // Limpa os dados antigos antes de carregar o novo cadastro
+  document.getElementById("re").value = "";
+  document.getElementById("cpf").value = "";
+  document.getElementById("telefone").value = "";
+  document.getElementById("nome").value = "";
+  document.getElementById("sexo").value = "";
+  document.getElementById("email").value = "";
+  document.getElementById("dataNascimento").value = "";
+  document.getElementById("estadoCivil").value = "";
+  document.getElementById("numeroFilhos").value = "";
+  document.getElementById("opmAtual").value = "";
+  document.getElementById("situacaoStatus").value = "";
+  document.getElementById("dataIngresso").value = "";
+  document.getElementById("dataInatividade").value = "";
+  document.getElementById("cep").value = "";
+  document.getElementById("rua").value = "";
+  document.getElementById("numero").value = "";
+  document.getElementById("bairro").value = "";
+  document.getElementById("cidade").value = "";
+  document.getElementById("estado").value = "";
+  document.getElementById("complemento").value = "";
+
+  // Preenche com os dados do cadastro selecionado
   document.getElementById("re").value = r.re || "";
   document.getElementById("cpf").value = r.cpf || "";
   document.getElementById("telefone").value = r.telefone || "";
@@ -698,38 +726,78 @@ function preencherFormulario(r) {
 function mascaraBusca(campo) {
   let valor = campo.value.toUpperCase();
 
-  // Se tiver letras diferentes de A, trata como NOME
-  if (/[B-Z]/.test(valor.replace(/A/g, ""))) {
+  // Se tiver letras que indicam nome, não aplica máscara
+  if (/[B-Z]/.test(valor)) {
+    campo.value = valor;
+    return;
+  }
+
+  // Se começa com A, é nome, não RE
+  if (valor.startsWith("A")) {
     campo.value = valor;
     return;
   }
 
   let limpo = valor.replace(/[^0-9A]/g, "");
 
-  // Se tiver A, trata como R.E.
-  if (limpo.includes("A")) {
-    limpo = limpo.substring(0, 7);
+  // CPF: se passou de 7 números, deixa virar CPF
+  if (/^\d{8,11}$/.test(limpo)) {
+    limpo = limpo.substring(0, 11);
+
+    campo.value = limpo
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    return;
+  }
+
+  // RE com A apenas no final: 6 números + A
+  if (/^\d{6}A$/.test(limpo)) {
+    campo.value = limpo.substring(0, 6) + "-A";
+    return;
+  }
+
+  // RE numérico: 6 números + 1 dígito
+  if (/^\d{7}$/.test(limpo)) {
     campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
     return;
   }
 
-  // Se tiver até 7 números, pode ser R.E.
-  if (limpo.length <= 7) {
-    if (limpo.length > 6) {
-      campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
-    } else {
-      campo.value = limpo;
-    }
-    return;
+  campo.value = valor;
+}
+
+
+function buscarComEnter(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    buscarCadastroTela();
   }
+}
 
-  // Se passou de 7 números, trata como CPF
-  limpo = limpo.substring(0, 11);
+function novoAtendimento() {
+  limparFormulario();
 
-  campo.value = limpo
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  document.getElementById("campoBusca").value = "";
+  document.getElementById("resultadoBusca").innerHTML =
+    `<p style="color:#166534; font-weight:bold;">
+      Novo atendimento iniciado. Preencha os dados manualmente.
+    </p>`;
+}
+
+let ultimaBuscaAutomatica = "";
+
+function buscarAutomaticamenteSeCompleto() {
+  const campo = document.getElementById("campoBusca");
+  const valor = campo.value.trim();
+  const numeros = valor.replace(/\D/g, "");
+
+  const ehCPFCompleto = numeros.length === 11;
+  const ehRECompleto = /^[0-9]{6}-[0-9A]$/i.test(valor);
+
+  if ((ehCPFCompleto || ehRECompleto) && valor !== ultimaBuscaAutomatica) {
+    ultimaBuscaAutomatica = valor;
+    buscarCadastroTela();
+  }
 }
 
 </script>
