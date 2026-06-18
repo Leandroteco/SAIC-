@@ -1,7 +1,12 @@
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.pagina === "relatorios") {
+    return HtmlService.createHtmlOutputFromFile("Relatorios")
+      .setTitle("SAIC - Relatórios Gerenciais");
+  }
+
   return HtmlService.createHtmlOutputFromFile("Index")
     .setTitle("SAIC - Atendimento Integrado dos NAPS");
 }
@@ -349,4 +354,45 @@ function converterData(valor) {
   }
 
   return "";
+}
+function gerarRelatorioGerencial() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
+  const dados = sheet.getDataRange().getValues();
+
+  const totalAtendimentos = dados.length - 1;
+
+  const porNAPS = {};
+  const porTipo = {};
+  const porOPM = {};
+  const porCidade = {};
+  const porResponsavel = {};
+
+  for (let i = 1; i < dados.length; i++) {
+    const linha = dados[i];
+
+    const naps = linha[1] || "nao informado";
+    const tipoAtendimento = linha[2] || "nao informado";
+    const opm = linha[12] || "nao informado";
+    const cidade = linha[20] || "nao informado";
+    const responsavel = linha[25] || "nao informado";
+
+    porNAPS[naps] = (porNAPS[naps] || 0) + 1;
+    porTipo[tipoAtendimento] = (porTipo[tipoAtendimento] || 0) + 1;
+    porOPM[opm] = (porOPM[opm] || 0) + 1;
+    porCidade[cidade] = (porCidade[cidade] || 0) + 1;
+    porResponsavel[responsavel] = (porResponsavel[responsavel] || 0) + 1;
+  }
+
+  return {
+    totalAtendimentos: totalAtendimentos,
+    porNAPS: porNAPS,
+    porTipo: porTipo,
+    porOPM: porOPM,
+    porCidade: porCidade,
+    porResponsavel: porResponsavel
+  };
+}
+
+function obterUrlApp() {
+  return ScriptApp.getService().getUrl();
 }
