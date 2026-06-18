@@ -156,7 +156,7 @@ function buscarCadastro(termo) {
     if (pareceCPF) {
       achou = cpfNumerico.includes(buscaNumeros);
     } else if (pareceRE) {
-      achou = reNumerico.includes(buscaNumeros) || reTexto.includes(buscaTexto);
+     achou = reNumerico.startsWith(buscaNumeros) || reTexto.includes(buscaTexto);
     } else {
       achou = nomeTexto.includes(buscaTexto);
     }
@@ -175,15 +175,21 @@ function buscarCadastro(termo) {
 
   // Se for CPF completo ou RE completo, preenche direto com o registro mais recente
   const reCompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
-  const cpfCompleto = buscaNumeros.length === 11;
+const cpfCompleto = buscaNumeros.length === 11;
 
-  if ((reCompleto || cpfCompleto) && resultados.length >= 1) {
-    return {
-      encontrado: true,
-      multiplos: false,
-      registro: resultados[0]
-    };
-  }
+if ((reCompleto || cpfCompleto) && resultados.length >= 1) {
+  return {
+    encontrado: true,
+    multiplos: false,
+    registro: resultados[0]
+  };
+}
+
+return {
+  encontrado: true,
+  multiplos: true,
+  resultados: resultados.slice(0, 10)
+};
 
   // Em todos os demais casos, mostra lista de opções
   return {
@@ -315,12 +321,21 @@ function buscarCadastro(termo) {
     };
   }
 
-  // Nome: sempre mostra lista se houver resultado
+  // Se encontrou apenas um cadastro pelo nome, preenche direto.
+// Se encontrou mais de um, mostra lista.
+if (resultados.length === 1) {
   return {
     encontrado: true,
-    multiplos: true,
-    resultados: resultados.slice(0, 10)
+    multiplos: false,
+    registro: resultados[0]
   };
+}
+
+return {
+  encontrado: true,
+  multiplos: true,
+  resultados: resultados.slice(0, 10)
+};
 }
 
 function converterData(valor) {
