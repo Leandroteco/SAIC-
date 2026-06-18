@@ -207,7 +207,6 @@
 
 <div id="resultadoBusca"></div>
 
-
  <!-- ==================================================== -->
 <!-- pesquisa de RE, CPF, NOME                         -->
 <!-- ==================================================== -->
@@ -416,10 +415,11 @@
           <input class="v_nome">
         </div>
 
-        <div>
-          <label>CPF</label>
-          <input class="v_cpf" placeholder="000.000.000-00">
-        </div>
+<div>
+      <label>CPF</label>
+      <input id="cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+    </div>
+
 
         <div>
           <label>Tipo de Vínculo</label>
@@ -648,7 +648,7 @@ function tratarResultadoBusca(resposta) {
     return;
   }
 
-  div.innerHTML = `<p style="font-weight:bold;">Foram encontrados vários cadastros. Clique no correto:</p>`;
+  div.innerHTML = `<p style="font-weight:bold;"> cadastros encontrados. Clique no correto:</p>`;
 
   resposta.resultados.forEach(function(registro) {
     const item = document.createElement("div");
@@ -785,18 +785,41 @@ function novoAtendimento() {
 }
 
 let ultimaBuscaAutomatica = "";
+let temporizadorBusca = null;
 
 function buscarAutomaticamenteSeCompleto() {
   const campo = document.getElementById("campoBusca");
   const valor = campo.value.trim();
+
   const numeros = valor.replace(/\D/g, "");
 
-  const ehCPFCompleto = numeros.length === 11;
-  const ehRECompleto = /^[0-9]{6}-[0-9A]$/i.test(valor);
+  const ehCPFCompleto = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(valor);
+  const ehRECompleto = /^\d{6}-[\dA]$/i.test(valor);
 
-  if ((ehCPFCompleto || ehRECompleto) && valor !== ultimaBuscaAutomatica) {
-    ultimaBuscaAutomatica = valor;
-    buscarCadastroTela();
+  // Cancela qualquer busca anterior aguardando
+  if (temporizadorBusca) {
+    clearTimeout(temporizadorBusca);
+  }
+
+  // CPF completo: busca imediatamente
+  if (ehCPFCompleto) {
+    if (valor !== ultimaBuscaAutomatica) {
+      ultimaBuscaAutomatica = valor;
+      buscarCadastroTela();
+    }
+    return;
+  }
+
+  // RE completo: aguarda 1 segundo antes de buscar
+  if (ehRECompleto) {
+    temporizadorBusca = setTimeout(function() {
+      const valorAtual = document.getElementById("campoBusca").value.trim();
+
+      if (valorAtual === valor && valorAtual !== ultimaBuscaAutomatica) {
+        ultimaBuscaAutomatica = valorAtual;
+        buscarCadastroTela();
+      }
+    }, 1000);
   }
 }
 
