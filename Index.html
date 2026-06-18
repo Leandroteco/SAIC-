@@ -220,7 +220,7 @@
 <div id="menuOpcoes" class="menu-opcoes">
   <button onclick="abrirRelatorios()">Relatórios Gerenciais</button>
   <button onclick="abrirDashboard()">Dashboard Estatístico</button>
-  <button onclick="abrirIA()">IA para Consulta</button>
+  <button onclick="abrirIA()">Consulta por IA</button>
 </div>
 
 </header>
@@ -252,6 +252,8 @@
 </div>
 
 <div id="resultadoBusca"></div>
+
+<div id="areaRelatorios"></div>
 
  <!-- ==================================================== -->
 <!-- pesquisa de RE, CPF, NOME                         -->
@@ -903,6 +905,14 @@ function abrirDashboard() {
 
 function abrirIA() {
   alert("IA para Consulta será implementada na próxima etapa.");
+}
+
+function abrirRelatorios() {
+  google.script.run
+    .withSuccessHandler(function(url) {
+      window.open(url + "?pagina=relatorios", "_blank");
+    })
+    .obterUrlApp();
 }
 
 </script>
