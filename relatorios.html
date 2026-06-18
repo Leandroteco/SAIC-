@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f8fb;
+      margin: 0;
+      padding: 30px;
+      color: #334155;
+    }
+
+    h1 {
+      color: #3b82a0;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #d8e2ea;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+
+    .numero {
+      font-size: 32px;
+      font-weight: bold;
+      color: #166534;
+    }
+  </style>
+</head>
+
+<body onload="carregarRelatorio()">
+
+  <h1>Relatórios Gerenciais</h1>
+
+  <div id="conteudo">
+    Carregando relatório...
+  </div>
+
+  <script>
+    function carregarRelatorio() {
+  google.script.run
+    .withSuccessHandler(function(relatorio) {
+      document.getElementById("conteudo").innerHTML = `
+        <div class="card">
+          <div>Total de atendimentos</div>
+          <div class="numero">${relatorio.totalAtendimentos}</div>
+        </div>
+
+        <div class="card">
+          <h2>Atendimentos por NAPS</h2>
+          ${montarTabela(relatorio.porNAPS, "NAPS")}
+        </div>
+
+        <div class="card">
+          <h2>Atendimentos por tipo de atendimento</h2>
+          ${montarTabela(relatorio.porTipo, "Tipo de atendimento")}
+        </div>
+
+        <div class="card">
+          <h2>Atendimentos por OPM</h2>
+          ${montarTabela(relatorio.porOPM, "OPM")}
+        </div>
+
+        <div class="card">
+          <h2>Atendimentos por cidade</h2>
+          ${montarTabela(relatorio.porCidade, "Cidade")}
+        </div>
+
+        <div class="card">
+          <h2>Atendimentos por responsável</h2>
+          ${montarTabela(relatorio.porResponsavel, "Responsável")}
+        </div>
+      `;
+    })
+    .withFailureHandler(function(erro) {
+      document.getElementById("conteudo").innerHTML =
+        "Erro ao carregar relatório: " + erro.message;
+    })
+    .gerarRelatorioGerencial();
+}
+
+function montarTabela(dados, tituloColuna) {
+  let linhas = "";
+
+  Object.keys(dados).forEach(function(chave) {
+    linhas += `
+      <tr>
+        <td>${chave}</td>
+        <td>${dados[chave]}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>${tituloColuna}</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${linhas}
+      </tbody>
+    </table>
+  `;
+}
+  </script>
+
+</body>
+</html>
