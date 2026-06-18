@@ -147,6 +147,45 @@
       color: #4f9d69;
     }
 
+    header {
+      position: relative;
+    }
+
+    .menu-opcoes {
+      display: none;
+      position: absolute;
+      top: 70px;
+      right: 30px;
+      background: white;
+      border: 1px solid #d8e2ea;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+      padding: 8px;
+      z-index: 10;
+      min-width: 240px;
+    }
+
+    .menu-opcoes button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 12px;
+      background: white;
+      color: #334155;
+      text-align: left;
+      border-radius: 8px;
+    }
+
+    .menu-opcoes button:hover {
+      background: #f1f5f9;
+    }
+
+    @media (max-width: 900px) {
+      .grid,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
     @media (max-width: 900px) {
       .grid,
       .grid-2 {
@@ -176,7 +215,14 @@
     <span>Sistema de Atendimento Integrado dos CAPS/NAPS</span>
   </div>
 
-  <div class="menu" title="Opções futuras">☰</div>
+  <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
+
+<div id="menuOpcoes" class="menu-opcoes">
+  <button onclick="abrirRelatorios()">Relatórios Gerenciais</button>
+  <button onclick="abrirDashboard()">Dashboard Estatístico</button>
+  <button onclick="abrirIA()">IA para Consulta</button>
+</div>
+
 </header>
 
 <div class="container">
@@ -306,7 +352,22 @@
   <div class="grid">
     <div>
       <label>OPM Atual/Última</label>
-      <input id="opmAtual" placeholder="Ex: 3BPM/M, CPI-2">
+<input
+  id="opmAtual"
+  list="listaOPM"
+  placeholder="Digite ou selecione a OPM"
+  oninput="converterMaiusculas(this)">
+
+<datalist id="listaOPM">
+  <option value="1BPM/M">
+  <option value="2BPM/M">
+  <option value="3BPM/M">
+  <option value="4BPM/M">
+  <option value="CPI-1">
+  <option value="CPI-2">
+  <option value="CPA/M-1">
+  <option value="CPA/M-2">
+</datalist>
     </div>
 
     <div>
@@ -826,6 +887,24 @@ function buscarAutomaticamenteSeCompleto() {
 function converterMaiusculas(campo) {
   campo.value = campo.value.toUpperCase();
 }
+
+function alternarMenu() {
+  const menu = document.getElementById("menuOpcoes");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function abrirRelatorios() {
+  alert("Relatórios Gerenciais será implementado na próxima etapa.");
+}
+
+function abrirDashboard() {
+  alert("Dashboard Estatístico será implementado na próxima etapa.");
+}
+
+function abrirIA() {
+  alert("IA para Consulta será implementada na próxima etapa.");
+}
+
 </script>
 
 </body>
