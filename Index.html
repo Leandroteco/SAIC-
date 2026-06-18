@@ -250,7 +250,7 @@
   </div>
 
   <label>Nome</label>
-  <input id="nome">
+  <input id="nome" oninput="converterMaiusculas(this)">
 
   <div class="grid">
     <div>
@@ -330,7 +330,7 @@
 
     <div>
       <label>Rua/Avenida</label>
-      <input id="rua">
+      <input id="rua" oninput="converterMaiusculas(this)">
     </div>
   </div>
 
@@ -342,12 +342,12 @@
 
     <div>
       <label>Bairro</label>
-      <input id="bairro">
+      <input id="bairro" oninput="converterMaiusculas(this)">
     </div>
 
     <div>
       <label>Cidade</label>
-      <input id="cidade">
+      <input id="cidade" oninput="converterMaiusculas(this)">
     </div>
   </div>
 
@@ -379,7 +379,7 @@
   <h2>Responsável pelo Atendimento</h2>
 
   <label>Nome do responsável</label>
-  <input id="responsavel">
+  <input id="responsavel" oninput="converterMaiusculas(this)">
 
   <button class="btn-success" onclick="salvar()">
     Salvar Atendimento
@@ -823,6 +823,9 @@ function buscarAutomaticamenteSeCompleto() {
   }
 }
 
+function converterMaiusculas(campo) {
+  campo.value = campo.value.toUpperCase();
+}
 </script>
 
 </body>
