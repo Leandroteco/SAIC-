@@ -396,3 +396,4 @@ function gerarRelatorioGerencial() {
 function obterUrlApp() {
   return ScriptApp.getService().getUrl();
 }
+
