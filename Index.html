@@ -199,9 +199,9 @@
 
   <div>
     <label>&nbsp;</label>
-    <button class="btn-secondary" onclick="novoAtendimento()">
-      Novo Atendimento
-    </button>
+    <button class="btn-secondary" onclick="novoAtendimento()" style="margin-top: 0;">
+     Novo Atendimento
+</button>
   </div>
 </div>
 
@@ -226,7 +226,7 @@
 
     <div>
       <label>Motivo</label>
-      <input id="motivo">
+      <input id="motivo" oninput="converterMaiusculas(this)">
     </div>
   </div>
 
@@ -337,7 +337,7 @@
   <div class="grid">
     <div>
       <label>Número</label>
-      <input id="numero">
+    <input id="numero" inputmode="numeric" oninput="this.value = this.value.replace(/\D/g, '')">
     </div>
 
     <div>
@@ -354,12 +354,12 @@
   <div class="grid-2">
     <div>
       <label>UF</label>
-      <input id="estado" maxlength="2">
+      <input id="estado" maxlength="2" oninput="converterMaiusculas(this)">
     </div>
 
     <div>
       <label>Complemento</label>
-      <input id="complemento">
+      <input id="complemento" oninput="converterMaiusculas(this)">
     </div>
   </div>
 
@@ -374,7 +374,7 @@
   </div>
 
   <h2>Observações</h2>
-  <textarea id="observacoes"></textarea>
+  <textarea id="observacoes" oninput="converterMaiusculas(this)"></textarea>
 
   <h2>Responsável pelo Atendimento</h2>
 
@@ -411,8 +411,8 @@
     div.innerHTML = `
       <div class="grid">
         <div>
-          <label>Nome</label>
-          <input class="v_nome">
+        <label>Nome</label>
+        <input class="v_nome" oninput="converterMaiusculas(this)">
         </div>
 
 <div>
@@ -447,7 +447,7 @@
 
         <div>
           <label>Observações</label>
-          <input class="v_observacoes">
+          <input class="v_observacoes" oninput="converterMaiusculas(this)">
         </div>
       </div>
 
