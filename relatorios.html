@@ -114,6 +114,7 @@ label {
     <label><input type="checkbox" name="relatorio" value="opm"> Por OPM</label>
     <label><input type="checkbox" name="relatorio" value="cidade"> Por cidade</label>
     <label><input type="checkbox" name="relatorio" value="responsavel"> Por responsável</label>
+    <label><input type="checkbox" name="relatorio" value="situacao"> Por situação/status</label>
   </div>
 
   <button onclick="carregarRelatorio()">Gerar relatório</button>
@@ -212,6 +213,14 @@ function montarResultado(relatorio, tiposRelatorio) {
       </div>
     `;
   }
+  if (tiposRelatorio.includes("situacao")) {
+  html += `
+    <div class="card">
+      <h2>Atendimentos por situação/status</h2>
+      ${montarTabela(relatorio.porSituacao, "Situação/Status")}
+    </div>
+  `;
+}
 
   document.getElementById("conteudo").innerHTML = html;
 }
