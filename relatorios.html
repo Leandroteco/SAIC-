@@ -8,109 +8,1212 @@
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #f4f8fb;
       margin: 0;
-      padding: 30px;
+      padding: 0;
       color: #334155;
     }
 
-    h1 {
-      color: #3b82a0;
+    header {
+      background: #6f97ad;
+      color: white;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #d8e2ea;
     }
 
-    .card {
-      background: white;
-      border: 1px solid #d8e2ea;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 600;
+    }
+
+    header span {
+      font-size: 14px;
+      color: #eef4f7;
+    }
+
+    .menu {
+      font-size: 28px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .container {
+      width: 80%;
+      max-width: 850px;
+      margin: 30px auto;
+      background: #ffffff;
+      padding: 35px;
+      border-radius: 18px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.06);
     }
 
-    .numero {
-      font-size: 32px;
-      font-weight: bold;
-      color: #166534;
+    h2 {
+      color: #3b82a0;
+      margin-top: 35px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #edf3f7;
+      font-size: 20px;
     }
+
+    .titulo-centralizado {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      margin-top: 12px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d8e2ea;
+      border-radius: 10px;
+      background: #fcfdff;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-top: 16px;
+    }
+
+    .btn-primary {
+      background: #7fb6cc;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #cbd5e1;
+      color: #334155;
+    }
+
+    .btn-success {
+      background: #6ca88d;
+      color: white;
+      width: 100%;
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 25px;
+    }
+
+    .vinculado {
+      background: #f8fbfd;
+      border: 1px solid #e2ebf0;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 15px;
+    }
+
+    #areaVinculados {
+      display: none;
+      margin-top: 20px;
+    }
+
+    #mensagem {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #4f9d69;
+    }
+
+    header {
+      position: relative;
+    }
+
+    .menu-opcoes {
+      display: none;
+      position: absolute;
+      top: 70px;
+      right: 30px;
+      background: white;
+      border: 1px solid #d8e2ea;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+      padding: 8px;
+      z-index: 10;
+      min-width: 240px;
+    }
+
+    .menu-opcoes button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 12px;
+      background: white;
+      color: #334155;
+      text-align: left;
+      border-radius: 8px;
+    }
+
+    .menu-opcoes button:hover {
+      background: #f1f5f9;
+    }
+
+        @media (max-width: 900px) {
+      .grid,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        width: auto;
+        margin: 10px;
+        padding: 20px;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
+    }
+
+    .copyright {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(71, 85, 105, 0.35);
+  font-weight: 400;
+}
   </style>
 </head>
 
-<body onload="carregarRelatorio()">
+<body>
 
-  <h1>Relatórios Gerenciais</h1>
-
-  <div id="conteudo">
-    Carregando relatório...
+<header>
+  <div>
+    <h1>Atendimento</h1>
+    <span>Sistema de Atendimento Integrado dos CAPS/NAPS</span>
   </div>
 
-  <script>
-    function carregarRelatorio() {
+  <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
+
+<div id="menuOpcoes" class="menu-opcoes">
+  <button onclick="abrirRelatorios()">Relatórios Gerenciais</button>
+  <button onclick="abrirDashboard()">Dashboard Estatístico</button>
+  <button onclick="abrirIA()">Consulta por IA</button>
+</div>
+
+</header>
+
+<div class="container">
+
+  <h2 class="titulo-centralizado">Identificação do Atendimento</h2>
+
+ <!-- ==================================================== -->
+<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- ==================================================== -->
+
+<div class="grid-2">
+  <div>
+    <label>Buscar por R.E., CPF ou Nome</label>
+    <input
+  id="campoBusca"
+  placeholder="Digite R.E., CPF ou Nome e aperte ENTER"
+  oninput="limparAvisosBusca(); mascaraBusca(this); buscarAutomaticamenteSeCompleto()"
+  onkeydown="buscarComEnter(event)">
+  </div>
+
+  <div>
+    <label>&nbsp;</label>
+    <button class="btn-secondary" onclick="novoAtendimento()" style="margin-top: 0;">
+     Novo Atendimento
+</button>
+  </div>
+</div>
+
+<div id="resultadoBusca"></div>
+
+<div id="areaRelatorios"></div>
+
+ <!-- ==================================================== -->
+<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- ==================================================== -->
+
+
+  <div class="grid-2">
+    <div>
+      <label>Tipo de Atendimento</label>
+      <select id="tipoAtendimento" onchange="verificarTipoAtendimento()">
+        <option value="">Selecione</option>
+        <option>atendimento psicologico individual</option>
+        <option>atendimento familiar</option>
+        <option>atendimento em grupo</option>
+        <option>atendimento social</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Motivo</label>
+      <input id="motivo" oninput="converterMaiusculas(this)">
+    </div>
+  </div>
+
+  <h2>Dados Pessoais e Funcionais</h2>
+
+  <div class="grid">
+    <div>
+      <label>R.E.</label>
+      <input id="re" placeholder="000000-0" oninput="mascaraRE(this)">
+    </div>
+
+    <div>
+      <label>CPF</label>
+      <input id="cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+    </div>
+
+    <div>
+      <label>Telefone</label>
+      <input id="telefone" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
+    </div>
+  </div>
+
+  <label>Nome</label>
+  <input id="nome" oninput="converterMaiusculas(this)">
+
+  <div class="grid">
+    <div>
+      <label>Sexo</label>
+      <select id="sexo">
+        <option value="">Selecione</option>
+        <option>masculino</option>
+        <option>feminino</option>
+        <option>nao informado</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Email</label>
+      <input id="email" placeholder="EX: todosnos@gmail.com">
+    </div>
+
+    <div>
+      <label>Data de Nascimento</label>
+      <input id="dataNascimento" type="date">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Estado Civil</label>
+      <select id="estadoCivil">
+        <option value="">Selecione</option>
+        <option>solteiro</option>
+        <option>casado</option>
+        <option>divorciado</option>
+        <option>viuvo</option>
+        <option>uniao estavel</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Número de Filhos</label>
+      <input id="numeroFilhos" type="number" min="0">
+    </div>
+
+    <div>
+      <label>Situação/Status</label>
+      <select id="situacaoStatus">
+        <option value="">Selecione</option>
+        <option>ativo administrativo</option>
+        <option>ativo operacional</option>
+        <option>inativo</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>OPM Atual/Última</label>
+<input
+  id="opmAtual"
+  list="listaOPM"
+  placeholder="Digite ou selecione a OPM"
+  oninput="converterMaiusculas(this)">
+
+<datalist id="listaOPM">
+  <option value="1.BAEP">1.BAEP</option>
+<option value="1.BPAMB">1.BPAMB</option>
+<option value="1.BPCHQ">1.BPCHQ</option>
+<option value="1.BPM/I">1.BPM/I</option>
+<option value="1.BPM/M">1.BPM/M</option>
+<option value="1.BPRV">1.BPRV</option>
+<option value="1.BPTRAN">1.BPTRAN</option>
+<option value="1.EM/PM">1.EM/PM</option>
+<option value="1.GB">1.GB</option>
+<option value="10.BAEP">10.BAEP</option>
+<option value="10.BPM/I">10.BPM/I</option>
+<option value="10.BPM/M">10.BPM/M</option>
+<option value="10.GB">10.GB</option>
+<option value="11.BAEP">11.BAEP</option>
+<option value="11.BPM/I">11.BPM/I</option>
+<option value="11.BPM/M">11.BPM/M</option>
+<option value="11.GB">11.GB</option>
+<option value="12.BAEP">12.BAEP</option>
+<option value="12.BPM/I">12.BPM/I</option>
+<option value="12.BPM/M">12.BPM/M</option>
+<option value="12.GB">12.GB</option>
+<option value="13.BAEP">13.BAEP</option>
+<option value="13.BPM/I">13.BPM/I</option>
+<option value="13.BPM/M">13.BPM/M</option>
+<option value="13.GB">13.GB</option>
+<option value="14.BAEP">14.BAEP</option>
+<option value="14.BPM/I">14.BPM/I</option>
+<option value="14BPM/M">14BPM/M</option>
+<option value="14.GB">14.GB</option>
+<option value="15.BAEP">15.BAEP</option>
+<option value="15.BPM/I">15.BPM/I</option>
+<option value="15.BPM/M">15.BPM/M</option>
+<option value="15.GB">15.GB</option>
+<option value="16.BPM/I">16.BPM/I</option>
+<option value="16.BPM/M">16.BPM/M</option>
+<option value="16.GB">16.GB</option>
+<option value="17.BPM/I">17.BPM/I</option>
+<option value="17.BPM/M">17.BPM/M</option>
+<option value="17.GB">17.GB</option>
+<option value="18.BPM/I">18.BPM/I</option>
+<option value="18.BPM/M">18.BPM/M</option>
+<option value="18.GB">18.GB</option>
+<option value="19.BPM/I">19.BPM/I</option>
+<option value="19.BPM/M">19.BPM/M</option>
+<option value="19.GB">19.GB</option>
+<option value="2.BAEP">2.BAEP</option>
+<option value="2.BPAMB">2.BPAMB</option>
+<option value="2.BPCHQ">2.BPCHQ</option>
+<option value="2.BPM/I">2.BPM/I</option>
+<option value="2.BPM/M">2.BPM/M</option>
+<option value="2.BPRV">2.BPRV</option>
+<option value="2.BPTRAN">2.BPTRAN</option>
+<option value="2.EM/PM">2.EM/PM</option>
+<option value="2.GB">2.GB</option>
+<option value="20.BPM/I">20.BPM/I</option>
+<option value="20.BPM/M">20.BPM/M</option>
+<option value="20.GB">20.GB</option>
+<option value="21.BPM/I">21.BPM/I</option>
+<option value="21.BPM/M">21.BPM/M</option>
+<option value="22.BPM/I">22.BPM/I</option>
+<option value="22.BPM/M">22.BPM/M</option>
+<option value="23.BPM/I">23.BPM/I</option>
+<option value="23.BPM/M">23.BPM/M</option>
+<option value="24.BPM/I">24.BPM/I</option>
+<option value="24.BPM/M">24.BPM/M</option>
+<option value="25.BPM/I">25.BPM/I</option>
+<option value="25.BPM/M">25.BPM/M</option>
+<option value="26.BPM/I">26.BPM/I</option>
+<option value="26.BPM/M">26.BPM/M</option>
+<option value="27.BPM/I">27.BPM/I</option>
+<option value="27.BPM/M">27.BPM/M</option>
+<option value="28.BPM/I">28.BPM/I</option>
+<option value="28.BPM/M">28.BPM/M</option>
+<option value="29.BPM/I">29.BPM/I</option>
+<option value="29.BPM/M">29.BPM/M</option>
+<option value="3.BAEP">3.BAEP</option>
+<option value="3.BPAMB">3.BPAMB</option>
+<option value="3.BPCHQ">3.BPCHQ</option>
+<option value="3.BPM/I">3.BPM/I</option>
+<option value="3.BPM/M">3.BPM/M</option>
+<option value="3.GB">3.GB</option>
+<option value="30.BPM/I">30.BPM/I</option>
+<option value="30.BPM/M">30.BPM/M</option>
+<option value="31.BPM/I">31.BPM/I</option>
+<option value="31.BPM/M">31.BPM/M</option>
+<option value="32.BPM/I">32.BPM/I</option>
+<option value="32.BPM/M">32.BPM/M</option>
+<option value="33.BPM/I">33.BPM/I</option>
+<option value="33.BPM/M">33.BPM/M</option>
+<option value="34.BPM/I">34.BPM/I</option>
+<option value="35.BPM/I">35.BPM/I</option>
+<option value="35.BPM/M">35.BPM/M</option>
+<option value="36.BPM/I">36.BPM/I</option>
+<option value="36.BPM/M">36.BPM/M</option>
+<option value="37.BPM/I">37.BPM/I</option>
+<option value="37.BPM/M">37.BPM/M</option>
+<option value="38.BPM/I">38.BPM/I</option>
+<option value="38.BPM/M">38.BPM/M</option>
+<option value="39.BPM/I">39.BPM/I</option>
+<option value="39.BPM/M">39.BPM/M</option>
+<option value="4.BAEP">4.BAEP</option>
+<option value="4.BPAMB">4.BPAMB</option>
+<option value="4.BPCHQ">4.BPCHQ</option>
+<option value="4.GB">4.GB</option>
+<option value="40.BPM/I">40.BPM/I</option>
+<option value="40.BPM/M">40.BPM/M</option>
+<option value="41.BPM/I">41.BPM/I</option>
+<option value="42.BPM/I">42.BPM/I</option>
+<option value="43.BPM/I">43.BPM/I</option>
+<option value="43.BPM/M">43.BPM/M</option>
+<option value="44.BPM/I">44.BPM/I</option>
+<option value="44.BPM/M">44.BPM/M</option>
+<option value="45.BPM/I">45.BPM/I</option>
+<option value="46.BPM/M">46.BPM/M</option>
+<option value="47.BPM/I">47.BPM/I</option>
+<option value="48.BPM/I">48.BPM/I</option>
+<option value="48.BPM/M">48.BPM/M</option>
+<option value="49.BPM/I">49.BPM/I</option>
+<option value="49.BPM/M">49.BPM/M</option>
+<option value="5.BAEP">5.BAEP</option>
+<option value="5.BPAMB">5.BPAMB</option>
+<option value="5.BPCHQ">5.BPCHQ</option>
+<option value="5.BPM/I">5.BPM/I</option>
+<option value="5.BPM/M">5.BPM/M</option>
+<option value="5.BPRV">5.BPRV</option>
+<option value="5.GB">5.GB</option>
+<option value="50.BPM/M">50.BPM/M</option>
+<option value="51.BPM/I">51.BPM/I</option>
+<option value="52.BPM/I">52.BPM/I</option>
+<option value="53.BPM/I">53.BPM/I</option>
+<option value="54.BPM/I">54.BPM/I</option>
+<option value="55.BPM/I">55.BPM/I</option>
+<option value="6.BAEP">6.BAEP</option>
+<option value="6.BPM/I">6.BPM/I</option>
+<option value="6.BPM/M">6.BPM/M</option>
+<option value="6.BPRV">6.BPRV</option>
+<option value="6.EM/PM">6.EM/PM</option>
+<option value="6.GB">6.GB</option>
+<option value="7.BAEP">7.BAEP</option>
+<option value="7.BPM/I">7.BPM/I</option>
+<option value="7.BPM/M">7.BPM/M</option>
+<option value="7.GB">7.GB</option>
+<option value="8.BAEP">8.BAEP</option>
+<option value="8.BPM/I">8.BPM/I</option>
+<option value="8.BPM/M">8.BPM/M</option>
+<option value="8.GB">8.GB</option>
+<option value="9.BAEP">9.BAEP</option>
+<option value="9.BPM/I">9.BPM/I</option>
+<option value="9.BPM/M">9.BPM/M</option>
+<option value="9.GB">9.GB</option>
+<option value="APMAL">APMAL</option>
+<option value="APMBB">APMBB</option>
+<option value="APMCG">APMCG</option>
+<option value="APMCGE">APMCGE</option>
+<option value="APMCMSP">APMCMSP</option>
+<option value="APMPGE">APMPGE</option>
+<option value="APMPGJ">APMPGJ</option>
+<option value="APMPMSP">APMPMSP</option>
+<option value="APMSAP">APMSAP</option>
+<option value="APMSEFAZ">APMSEFAZ</option>
+<option value="APMSJC">APMSJC</option>
+<option value="APMSSP">APMSSP</option>
+<option value="APMTCE">APMTCE</option>
+<option value="APMTJ">APMTJ</option>
+<option value="APMTJM">APMTJM</option>
+<option value="C COM SOC">C COM SOC</option>
+<option value="C MED">C MED</option>
+<option value="C MIL">C MIL</option>
+<option value="C MUS">C MUS</option>
+<option value="C ODONT">C ODONT</option>
+<option value="CAES">CAES</option>
+<option value="CAJ">CAJ</option>
+<option value="CAPS">CAPS</option>
+<option value="CAVPM">CAVPM</option>
+<option value="CBI-1">CBI-1</option>
+<option value="CBI-2">CBI-2</option>
+<option value="CBI-3">CBI-3</option>
+<option value="CBM">CBM</option>
+<option value="CCB">CCB</option>
+<option value="CAIF">CAIF</option>
+<option value="CIAP">CIAP</option>
+<option value="CIPM">CIPM</option>
+<option value="CMB">CMB</option>
+<option value="CMI">CMI</option>
+<option value="CMM">CMM</option>
+<option value="CMT GERAL">CMT GERAL</option>
+<option value="COORD OP PM">COORD OP PM</option>
+<option value="COPOM">COPOM</option>
+<option value="CORREG PM">CORREG PM</option>
+<option value="CPA/M-1">CPA/M-1</option>
+<option value="CPA/M-10">CPA/M-10</option>
+<option value="CPA/M-11">CPA/M-11</option>
+<option value="CPA/M-12">CPA/M-12</option>
+<option value="CPA/M-2">CPA/M-2</option>
+<option value="CPA/M-3">CPA/M-3</option>
+<option value="CPA/M-4">CPA/M-4</option>
+<option value="CPA/M-5">CPA/M-5</option>
+<option value="CPA/M-6">CPA/M-6</option>
+<option value="CPA/M-7">CPA/M-7</option>
+<option value="CPA/M-8">CPA/M-8</option>
+<option value="CPA/M-9">CPA/M-9</option>
+<option value="CPAMB">CPAMB</option>
+<option value="CPC">CPC</option>
+<option value="CPCHQ">CPCHQ</option>
+<option value="CPD">CPD</option>
+<option value="CPI-1">CPI-1</option>
+<option value="CPI-10">CPI-10</option>
+<option value="CPI-2">CPI-2</option>
+<option value="CPI-3">CPI-3</option>
+<option value="CPI-4">CPI-4</option>
+<option value="CPI-5">CPI-5</option>
+<option value="CPI-6">CPI-6</option>
+<option value="CPI-7">CPI-7</option>
+<option value="CPI-8">CPI-8</option>
+<option value="CPI-9">CPI-9</option>
+<option value="CPM">CPM</option>
+<option value="CPRV">CPRV</option>
+<option value="CPTRAN">CPTRAN</option>
+<option value="CRPM">CRPM</option>
+<option value="CSM/MOPB">CSM/MOPB</option>
+<option value="DEC">DEC</option>
+<option value="DF">DF</option>
+<option value="DL">DL</option>
+<option value="DP">DP</option>
+<option value="DPCDH">DPCDH</option>
+<option value="DS">DS</option>
+<option value="DAS/CG">DAS/CG</option>
+<option value="DTIC">DTIC</option>
+<option value="EEF">EEF</option>
+<option value="EM/E">EM/E</option>
+<option value="EM/PM">EM/PM</option>
+<option value="ESB">ESB</option>
+<option value="ESSD">ESSD</option>
+<option value="ESSGT">ESSGT</option>
+<option value="GAB CMT G">GAB CMT G</option>
+<option value="GBMAR">GBMAR</option>
+<option value="GOV">GOV</option>
+<option value="PMRG">PMRG</option>
+<option value="RPMON">RPMON</option>
+<option value="SSP">SSP</option>
+<option value="SUBCMT PM">SUBCMT PM</option>
+</datalist>
+    </div>
+
+    <div>
+      <label>Data de Ingresso</label>
+      <input id="dataIngresso" type="date">
+    </div>
+
+    <div>
+      <label>Data de Inatividade</label>
+      <input id="dataInatividade" type="date">
+    </div>
+  </div>
+
+  <h2>Endereço</h2>
+
+  <div class="grid-2">
+    <div>
+      <label>CEP</label>
+      <input id="cep" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCep()">
+    </div>
+
+    <div>
+      <label>Rua/Avenida</label>
+      <input id="rua" oninput="converterMaiusculas(this)">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Número</label>
+    <input id="numero" inputmode="numeric" oninput="this.value = this.value.replace(/\D/g, '')">
+    </div>
+
+    <div>
+      <label>Bairro</label>
+      <input id="bairro" oninput="converterMaiusculas(this)">
+    </div>
+
+    <div>
+      <label>Cidade</label>
+      <input id="cidade" oninput="converterMaiusculas(this)">
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <label>UF</label>
+      <input id="estado" maxlength="2" oninput="converterMaiusculas(this)">
+    </div>
+
+    <div>
+      <label>Complemento</label>
+      <input id="complemento" oninput="converterMaiusculas(this)">
+    </div>
+  </div>
+
+  <div id="areaVinculados">
+    <h2>Pessoas Vinculadas ao Atendimento</h2>
+
+    <div id="listaVinculados"></div>
+
+    <button class="btn-primary" onclick="adicionarPessoaVinculada()">
+      + Adicionar Pessoa Vinculada
+    </button>
+  </div>
+
+  <h2>Observações</h2>
+  <textarea id="observacoes" oninput="converterMaiusculas(this)"></textarea>
+
+  <h2>Responsável pelo Atendimento</h2>
+
+  <label>Nome do responsável</label>
+  <input
+    id="responsavel"
+    oninput="converterMaiusculas(this); this.style.border='1px solid #d8e2ea';">
+
+  <button class="btn-success" onclick="salvar()">
+    Salvar Atendimento
+  </button>
+
+  <div id="mensagem"></div>
+
+<div class="copyright">
+  © 2026 - Sistema de Atendimento Integrado dos CAPS/NAPS<br>
+  Desenvolvido por Sargento PM Felix e Cabo PM Myazaki
+</div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+  function verificarTipoAtendimento() {
+    const tipo = document.getElementById("tipoAtendimento").value;
+    const area = document.getElementById("areaVinculados");
+
+    if (tipo === "atendimento familiar" || tipo === "atendimento em grupo") {
+      area.style.display = "block";
+    } else {
+      area.style.display = "none";
+      document.getElementById("listaVinculados").innerHTML = "";
+    }
+  }
+
+  function adicionarPessoaVinculada() {
+    const container = document.getElementById("listaVinculados");
+
+    const div = document.createElement("div");
+    div.className = "vinculado";
+
+    div.innerHTML = `
+      <div class="grid">
+        <div>
+        <label>Nome</label>
+        <input class="v_nome" oninput="converterMaiusculas(this)">
+        </div>
+
+<div>
+      <label>CPF</label>
+      <input class="v_cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+    </div>
+
+
+        <div>
+          <label>Tipo de Vínculo</label>
+          <select class="v_tipo">
+            <option value="">Selecione</option>
+            <option>familiar</option>
+            <option>grupo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Parentesco/Vínculo</label>
+          <select class="v_parentesco">
+            <option value="">Selecione</option>
+            <option>conjuge</option>
+            <option>filho</option>
+            <option>pai</option>
+            <option>mae</option>
+            <option>irmao</option>
+            <option>participante</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Observações</label>
+          <input class="v_observacoes" oninput="converterMaiusculas(this)">
+        </div>
+      </div>
+
+      <button class="btn-secondary" onclick="this.parentElement.remove()">
+        Remover
+      </button>
+    `;
+
+    container.appendChild(div);
+  }
+
+  function coletarPessoasVinculadas() {
+    const blocos = document.querySelectorAll(".vinculado");
+    const pessoas = [];
+
+    blocos.forEach(bloco => {
+      pessoas.push({
+        nome: bloco.querySelector(".v_nome").value,
+        cpf: bloco.querySelector(".v_cpf").value,
+        tipoVinculo: bloco.querySelector(".v_tipo").value,
+        parentesco: bloco.querySelector(".v_parentesco").value,
+        observacoes: bloco.querySelector(".v_observacoes").value
+      });
+    });
+
+    return pessoas;
+  }
+
+  function buscarCep() {
+    const cep = document.getElementById("cep").value.replace(/\D/g, "");
+
+    if (cep.length !== 8) return;
+
+    fetch("https://viacep.com.br/ws/" + cep + "/json/")
+      .then(resposta => resposta.json())
+      .then(dados => {
+        if (!dados.erro) {
+          document.getElementById("rua").value = dados.bairro || "";
+          document.getElementById("bairro").value = dados.bairro || "";
+          document.getElementById("cidade").value = dados.localidade || "";
+          document.getElementById("estado").value = dados.uf || "";
+        } else {
+          alert("CEP não encontrado.");
+        }
+      })
+      .catch(() => {
+        alert("Erro ao buscar CEP.");
+      });
+  }
+
+  function salvar() {
+    const campoResponsavel = document.getElementById("responsavel");
+
+if (campoResponsavel.value.trim() === "") {
+
+    campoResponsavel.style.border = "2px solid #d32f2f";
+    campoResponsavel.focus();
+
+    return;
+}
+
+campoResponsavel.style.border = "1px solid #d8e2ea";
+    const dados = {
+      naps: "teste_naps",
+      tipoAtendimento: document.getElementById("tipoAtendimento").value,
+      motivo: document.getElementById("motivo").value,
+      re: document.getElementById("re").value,
+      nome: document.getElementById("nome").value,
+      cpf: document.getElementById("cpf").value,
+      telefone: document.getElementById("telefone").value,
+      email: document.getElementById("email").value,
+      dataNascimento: document.getElementById("dataNascimento").value,
+      estadoCivil: document.getElementById("estadoCivil").value,
+      numeroFilhos: document.getElementById("numeroFilhos").value,
+      sexo: document.getElementById("sexo").value,
+      opmAtual: document.getElementById("opmAtual").value,
+      situacaoStatus: document.getElementById("situacaoStatus").value,
+      dataIngresso: document.getElementById("dataIngresso").value,
+      dataInatividade: document.getElementById("dataInatividade").value,
+      cep: document.getElementById("cep").value,
+      rua: document.getElementById("rua").value,
+      bairro: document.getElementById("bairro").value,
+      cidade: document.getElementById("cidade").value,
+      estado: document.getElementById("estado").value,
+      numero: document.getElementById("numero").value,
+      complemento: document.getElementById("complemento").value,
+      observacoes: document.getElementById("observacoes").value,
+      responsavel: document.getElementById("responsavel").value,
+      pessoasVinculadas: coletarPessoasVinculadas()
+    };
+
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        document.getElementById("mensagem").innerText = resposta;
+        limparFormulario();
+      })
+      .withFailureHandler(function(erro) {
+        document.getElementById("mensagem").innerText = "Erro: " + erro.message;
+      })
+      .salvarAtendimento(dados);
+  }
+
+  function limparFormulario() {
+    document.querySelectorAll("input, textarea, select").forEach(el => {
+      el.value = "";
+    });
+
+    document.getElementById("listaVinculados").innerHTML = "";
+    document.getElementById("areaVinculados").style.display = "none";
+  }
+
+// Máscara para o campo 
+
+
+
+function mascaraRE(campo) {
+  let valor = campo.value.toUpperCase();
+
+  valor = valor.replace(/[^0-9A]/g, "");
+
+  if (valor.length > 7) {
+    valor = valor.substring(0, 7);
+  }
+
+  if (valor.length > 6) {
+    valor = valor.substring(0, 6) + "-" + valor.substring(6);
+  }
+
+  campo.value = valor;
+}
+
+function mascaraCPF(campo) {
+  let valor = campo.value.replace(/\D/g, "");
+
+  valor = valor.substring(0, 11);
+
+  valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+  valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+  valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+  campo.value = valor;
+}
+
+function mascaraTelefone(campo) {
+  let valor = campo.value.replace(/\D/g, "");
+
+  valor = valor.substring(0, 11);
+
+  if (valor.length <= 10) {
+    valor = valor.replace(/(\d{2})(\d)/, "($1) $2");
+    valor = valor.replace(/(\d{4})(\d)/, "$1-$2");
+  } else {
+    valor = valor.replace(/(\d{2})(\d)/, "($1) $2");
+    valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+  }
+
+  campo.value = valor;
+}
+
+function mascaraCEP(campo) {
+  let valor = campo.value.replace(/\D/g, "");
+
+  valor = valor.substring(0, 8);
+
+  valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+
+  campo.value = valor;
+}
+
+
+/* ==================================================== */
+/* BUSCA POR RE, CPF, NOME                               */
+/* ==================================================== */
+
+
+function buscarCadastroTela() {
+  const termo = document.getElementById("campoBusca").value.trim();
+
+  if (!termo) {
+    alert("Digite um R.E., CPF ou Nome para buscar.");
+    return;
+  }
+
+  document.getElementById("resultadoBusca").innerHTML = "Buscando...";
+
   google.script.run
-    .withSuccessHandler(function(relatorio) {
-      document.getElementById("conteudo").innerHTML = `
-        <div class="card">
-          <div>Total de atendimentos</div>
-          <div class="numero">${relatorio.totalAtendimentos}</div>
-        </div>
-
-        <div class="card">
-          <h2>Atendimentos por NAPS</h2>
-          ${montarTabela(relatorio.porNAPS, "NAPS")}
-        </div>
-
-        <div class="card">
-          <h2>Atendimentos por tipo de atendimento</h2>
-          ${montarTabela(relatorio.porTipo, "Tipo de atendimento")}
-        </div>
-
-        <div class="card">
-          <h2>Atendimentos por OPM</h2>
-          ${montarTabela(relatorio.porOPM, "OPM")}
-        </div>
-
-        <div class="card">
-          <h2>Atendimentos por cidade</h2>
-          ${montarTabela(relatorio.porCidade, "Cidade")}
-        </div>
-
-        <div class="card">
-          <h2>Atendimentos por responsável</h2>
-          ${montarTabela(relatorio.porResponsavel, "Responsável")}
-        </div>
-      `;
+    .withSuccessHandler(function(resposta) {
+      tratarResultadoBusca(resposta);
     })
     .withFailureHandler(function(erro) {
-      document.getElementById("conteudo").innerHTML =
-        "Erro ao carregar relatório: " + erro.message;
+      document.getElementById("resultadoBusca").innerHTML =
+        "Erro na busca: " + erro.message;
     })
-    .gerarRelatorioGerencial();
+    .buscarCadastro(termo);
 }
 
-function montarTabela(dados, tituloColuna) {
-  let linhas = "";
+function tratarResultadoBusca(resposta) {
+  const div = document.getElementById("resultadoBusca");
+  div.innerHTML = "";
 
-  Object.keys(dados).forEach(function(chave) {
-    linhas += `
-      <tr>
-        <td>${chave}</td>
-        <td>${dados[chave]}</td>
-      </tr>
+  if (!resposta.encontrado) {
+    div.innerHTML = `<p style="color:#9a3412; font-weight:bold;">${resposta.mensagem}</p>`;
+    return;
+  }
+
+  if (!resposta.multiplos) {
+    preencherFormulario(resposta.registro);
+    div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro localizado e preenchido automaticamente.</p>`;
+    return;
+  }
+
+  div.innerHTML = `<p style="font-weight:bold;"> cadastros encontrados. Clique no correto:</p>`;
+
+  resposta.resultados.forEach(function(registro) {
+    const item = document.createElement("div");
+
+    item.style.padding = "12px";
+    item.style.marginTop = "8px";
+    item.style.border = "1px solid #d8e2ea";
+    item.style.borderRadius = "8px";
+    item.style.cursor = "pointer";
+    item.style.background = "#f8fbfd";
+
+    item.innerHTML = `
+      <strong>${registro.nome || "sem nome"}</strong><br>
+      R.E.: ${registro.re || "-"} |
+      CPF: ${registro.cpf || "-"} |
+      OPM: ${registro.opmAtual || "-"}
     `;
-  });
 
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th>${tituloColuna}</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${linhas}
-      </tbody>
-    </table>
-  `;
+    item.onclick = function() {
+      preencherFormulario(registro);
+      div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro selecionado e preenchido automaticamente.</p>`;
+    };
+
+    div.appendChild(item);
+  });
 }
-  </script>
+
+function preencherFormulario(r) {
+  // Limpa os dados antigos antes de carregar o novo cadastro
+  document.getElementById("re").value = "";
+  document.getElementById("cpf").value = "";
+  document.getElementById("telefone").value = "";
+  document.getElementById("nome").value = "";
+  document.getElementById("sexo").value = "";
+  document.getElementById("email").value = "";
+  document.getElementById("dataNascimento").value = "";
+  document.getElementById("estadoCivil").value = "";
+  document.getElementById("numeroFilhos").value = "";
+  document.getElementById("opmAtual").value = "";
+  document.getElementById("situacaoStatus").value = "";
+  document.getElementById("dataIngresso").value = "";
+  document.getElementById("dataInatividade").value = "";
+  document.getElementById("cep").value = "";
+  document.getElementById("rua").value = capitalizarTexto(r.rua);
+  document.getElementById("numero").value = "";
+  document.getElementById("bairro").value = capitalizarTexto(r.bairro);
+  document.getElementById("cidade").value = capitalizarTexto(r.cidade);
+  document.getElementById("estado").value = "";
+  document.getElementById("complemento").value = capitalizarTexto(r.complemento);
+
+  // Preenche com os dados do cadastro selecionado
+  document.getElementById("re").value = r.re || "";
+  document.getElementById("cpf").value = r.cpf || "";
+  document.getElementById("telefone").value = r.telefone || "";
+  document.getElementById("nome").value = converterMaiusculas(r.nome || "");
+  document.getElementById("sexo").value = r.sexo || "";
+  document.getElementById("email").value = r.email || "";
+  document.getElementById("dataNascimento").value = r.dataNascimento || "";
+  document.getElementById("estadoCivil").value = r.estadoCivil || "";
+  document.getElementById("numeroFilhos").value = r.numeroFilhos || "";
+  document.getElementById("opmAtual").value = r.opmAtual || "";
+  document.getElementById("situacaoStatus").value = r.situacaoStatus || "";
+  document.getElementById("dataIngresso").value = r.dataIngresso || "";
+  document.getElementById("dataInatividade").value = r.dataInatividade || "";
+  document.getElementById("cep").value = r.cep || "";
+  document.getElementById("rua").value = capitalizarTexto(r.rua);
+  document.getElementById("numero").value = r.numero || "";
+  document.getElementById("bairro").value = capitalizarTexto(r.bairro);
+  document.getElementById("cidade").value = capitalizarTexto(r.cidade);
+  document.getElementById("estado").value = r.estado || "";
+  document.getElementById("complemento").value = converterMaiusculas(r.complemento || "");
+}
+
+
+function mascaraBusca(campo) {
+  let valor = campo.value.toUpperCase();
+
+  // Se tiver letras que indicam nome, não aplica máscara
+  if (/[B-Z]/.test(valor)) {
+    campo.value = valor;
+    return;
+  }
+
+  // Se começa com A, é nome, não RE
+  if (valor.startsWith("A")) {
+    campo.value = valor;
+    return;
+  }
+
+  let limpo = valor.replace(/[^0-9A]/g, "");
+
+  // CPF: se passou de 7 números, deixa virar CPF
+  if (/^\d{8,11}$/.test(limpo)) {
+    limpo = limpo.substring(0, 11);
+
+    campo.value = limpo
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    return;
+  }
+
+  // RE com A apenas no final: 6 números + A
+  if (/^\d{6}A$/.test(limpo)) {
+    campo.value = limpo.substring(0, 6) + "-A";
+    return;
+  }
+
+  // RE numérico: 6 números + 1 dígito
+  if (/^\d{7}$/.test(limpo)) {
+    campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
+    return;
+  }
+
+  campo.value = valor;
+}
+
+
+function buscarComEnter(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    buscarCadastroTela();
+  }
+}
+
+function novoAtendimento() {
+  limparFormulario();
+
+  document.getElementById("mensagem").innerText = "";
+  document.getElementById("campoBusca").value = "";
+  document.getElementById("resultadoBusca").innerHTML =
+    `<p style="color:#166534; font-weight:bold;">
+      Novo atendimento iniciado. Preencha os dados manualmente.
+    </p>`;
+}
+
+let ultimaBuscaAutomatica = "";
+let temporizadorBusca = null;
+
+function buscarAutomaticamenteSeCompleto() {
+  const campo = document.getElementById("campoBusca");
+  const valor = campo.value.trim();
+
+  const numeros = valor.replace(/\D/g, "");
+
+  const ehCPFCompleto = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(valor);
+  const ehRECompleto = /^\d{6}-[\dA]$/i.test(valor);
+
+  // Cancela qualquer busca anterior aguardando
+  if (temporizadorBusca) {
+    clearTimeout(temporizadorBusca);
+  }
+
+  // CPF completo: busca imediatamente
+  if (ehCPFCompleto) {
+    if (valor !== ultimaBuscaAutomatica) {
+      ultimaBuscaAutomatica = valor;
+      buscarCadastroTela();
+    }
+    return;
+  }
+
+  // RE completo: aguarda 1 segundo antes de buscar
+  if (ehRECompleto) {
+    temporizadorBusca = setTimeout(function() {
+      const valorAtual = document.getElementById("campoBusca").value.trim();
+
+      if (valorAtual === valor && valorAtual !== ultimaBuscaAutomatica) {
+        ultimaBuscaAutomatica = valorAtual;
+        buscarCadastroTela();
+      }
+    }, 1000);
+  }
+}
+function capitalizarTexto(texto) {
+  if (!texto) return "";
+
+  return String(texto)
+    .toLowerCase()
+    .split(" ")
+    .map(function(palavra) {
+      if (!palavra) return "";
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    })
+    .join(" ");
+}
+
+function converterMaiusculas(valor) {
+  if (typeof valor === "string") {
+    return valor.toUpperCase();
+  }
+
+  valor.value = (valor.value || "").toUpperCase();
+}
+
+
+function alternarMenu() {
+  const menu = document.getElementById("menuOpcoes");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function abrirRelatorios() {
+  alert("Relatórios Gerenciais será implementado na próxima etapa.");
+}
+
+function abrirDashboard() {
+  alert("Dashboard Estatístico será implementado na próxima etapa.");
+}
+
+function abrirIA() {
+  alert("IA para Consulta será implementada na próxima etapa.");
+}
+
+function abrirRelatorios() {
+  google.script.run
+    .withSuccessHandler(function(url) {
+      window.open(url + "?pagina=relatorios", "_blank");
+    })
+    .obterUrlApp();
+}
+
+function limparAvisosBusca() {
+  document.getElementById("resultadoBusca").innerHTML = "";
+  document.getElementById("mensagem").innerText = "";
+}
+
+document.addEventListener("input", function(event) {
+  if (event.target.id !== "campoBusca") {
+    document.getElementById("mensagem").innerText = "";
+  }
+});
+
+function capitalizarTexto(texto) {
+  if (!texto) return "";
+
+  return String(texto)
+    .toLowerCase()
+    .split(" ")
+    .map(function(palavra) {
+      if (!palavra) return "";
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    })
+    .join(" ");
+}
+
+</script>
 
 </body>
 </html>
