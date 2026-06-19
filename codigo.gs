@@ -264,32 +264,66 @@ function converterData(valor) {
 
   return "";
 }
-function gerarRelatorioGerencial() {
+function gerarRelatorioGerencial(dataInicial, dataFinal, tiposRelatorio) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
   const dados = sheet.getDataRange().getValues();
 
-  const totalAtendimentos = dados.length - 1;
+  const inicio = dataInicial ? new Date(dataInicial + "T00:00:00") : null;
+  const fim = dataFinal ? new Date(dataFinal + "T23:59:59") : null;
+
+  tiposRelatorio = tiposRelatorio || [];
+
+  let totalAtendimentos = 0;
 
   const porNAPS = {};
   const porTipo = {};
   const porOPM = {};
   const porCidade = {};
   const porResponsavel = {};
+  const porSituacao = {};
 
   for (let i = 1; i < dados.length; i++) {
     const linha = dados[i];
+    const dataCadastro = linha[26];
+
+    if (inicio || fim) {
+      if (!(dataCadastro instanceof Date)) continue;
+
+      if (inicio && dataCadastro < inicio) continue;
+      if (fim && dataCadastro > fim) continue;
+    }
 
     const naps = linha[1] || "nao informado";
     const tipoAtendimento = linha[2] || "nao informado";
     const opm = linha[12] || "nao informado";
     const cidade = linha[20] || "nao informado";
     const responsavel = linha[25] || "nao informado";
+    const situacao = linha[13] || "nao informado";
 
-    porNAPS[naps] = (porNAPS[naps] || 0) + 1;
-    porTipo[tipoAtendimento] = (porTipo[tipoAtendimento] || 0) + 1;
-    porOPM[opm] = (porOPM[opm] || 0) + 1;
-    porCidade[cidade] = (porCidade[cidade] || 0) + 1;
-    porResponsavel[responsavel] = (porResponsavel[responsavel] || 0) + 1;
+    totalAtendimentos++;
+
+    if (tiposRelatorio.includes("naps")) {
+      porNAPS[naps] = (porNAPS[naps] || 0) + 1;
+    }
+
+    if (tiposRelatorio.includes("tipo")) {
+      porTipo[tipoAtendimento] = (porTipo[tipoAtendimento] || 0) + 1;
+    }
+
+    if (tiposRelatorio.includes("opm")) {
+      porOPM[opm] = (porOPM[opm] || 0) + 1;
+    }
+
+    if (tiposRelatorio.includes("cidade")) {
+      porCidade[cidade] = (porCidade[cidade] || 0) + 1;
+    }
+
+    if (tiposRelatorio.includes("responsavel")) {
+      porResponsavel[responsavel] = (porResponsavel[responsavel] || 0) + 1;
+    }
+    if (tiposRelatorio.includes("situacao")) {
+  porSituacao[situacao] = (porSituacao[situacao] || 0) + 1;
+}
   }
 
   return {
@@ -298,7 +332,8 @@ function gerarRelatorioGerencial() {
     porTipo: porTipo,
     porOPM: porOPM,
     porCidade: porCidade,
-    porResponsavel: porResponsavel
+    porResponsavel: porResponsavel,
+    porSituacao: porSituacao
   };
 }
 
