@@ -962,10 +962,16 @@ function tratarResultadoBusca(resposta) {
   }
 
   if (!resposta.multiplos) {
-    preencherFormulario(resposta.registro);
-    div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro localizado e preenchido automaticamente.</p>`;
-    return;
-  }
+  preencherFormulario(resposta.registro);
+
+  const data = resposta.registro.dataCadastro || "data não informada";
+
+  div.innerHTML = `<p style="color:#166534; font-weight:bold;">
+    Cadastro localizado. Último atendimento em: ${data}.
+  </p>`;
+
+  return;
+}
 
   div.innerHTML = `<p style="font-weight:bold;"> cadastros encontrados. Clique no correto:</p>`;
 
@@ -987,9 +993,14 @@ function tratarResultadoBusca(resposta) {
     `;
 
     item.onclick = function() {
-      preencherFormulario(registro);
-      div.innerHTML = `<p style="color:#166534; font-weight:bold;">Cadastro selecionado e preenchido automaticamente.</p>`;
-    };
+  preencherFormulario(registro);
+
+  const data = registro.dataCadastro || "data não informada";
+
+  div.innerHTML = `<p style="color:#166534; font-weight:bold;">
+    Cadastro localizado. Último atendimento em: ${data}.
+  </p>`;
+};
 
     div.appendChild(item);
   });
