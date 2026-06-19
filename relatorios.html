@@ -1,268 +1,1255 @@
+
 <!DOCTYPE html>
 <html>
 <head>
   <base target="_top">
 
   <style>
+    :root {
+      --bg: #f4f8fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbfd;
+      --line: #d8e2ea;
+      --line-soft: #e8eef3;
+      --text: #334155;
+      --muted: #64748b;
+      --primary: #3b82a0;
+      --primary-dark: #2f6f89;
+      --success: #166534;
+      --success-soft: #e8f5ee;
+      --warning: #a16207;
+      --warning-soft: #fff7df;
+      --danger: #b42318;
+      --danger-soft: #fff1f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f4f8fb;
       margin: 0;
-      padding: 30px;
-      color: #334155;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 30px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
 
     h1 {
-      color: #3b82a0;
+      color: var(--primary);
+      font-size: 26px;
+      margin: 0 0 4px;
     }
 
-    .card {
-      background: white;
-      border: 1px solid #d8e2ea;
-      border-radius: 12px;
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .actions {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      min-height: 40px;
+      padding: 10px 14px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .btn-light {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .filters-panel,
+    .content-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
       padding: 20px;
+    }
+
+    .filters-panel {
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      align-items: baseline;
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
       margin-bottom: 16px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
     }
 
-    .numero {
-      font-size: 32px;
-      font-weight: bold;
-      color: #166534;
+    .section-title h2 {
+      color: var(--primary);
+      font-size: 18px;
+      margin: 0;
     }
-.filtros {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
 
-.opcoes-relatorio {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px 20px;
-  margin-bottom: 16px;
-}
+    .section-title span {
+      color: var(--muted);
+      font-size: 13px;
+    }
 
-input,
-button {
-  padding: 12px;
-  border: 1px solid #d8e2ea;
-  border-radius: 10px;
-  box-sizing: border-box;
-  font-size: 14px;
-}
+    .filters-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 
-input[type="date"] {
-  width: 100%;
-}
+    .field label {
+      color: #475569;
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
 
-input[type="checkbox"] {
-  width: auto;
-  margin-right: 8px;
-}
+    input,
+    select {
+      background: #fcfdff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      min-height: 40px;
+      padding: 10px;
+      width: 100%;
+    }
 
-button {
-  background: #7fb6cc;
-  color: white;
-  cursor: pointer;
-  border: none;
-}
+    .filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
 
-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
+    .metrics-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      margin-bottom: 18px;
+    }
 
-@media (max-width: 800px) {
-  .filtros,
-  .opcoes-relatorio {
-    grid-template-columns: 1fr;
-  }
-}
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 96px;
+      padding: 15px;
+    }
 
+    .metric span {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      color: var(--success);
+      display: block;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .tabs {
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 4px;
+      margin-bottom: 18px;
+      overflow-x: auto;
+    }
+
+    .tab-button {
+      background: transparent;
+      border-radius: 8px 8px 0 0;
+      color: var(--muted);
+      flex: 0 0 auto;
+      min-height: 42px;
+      padding: 10px 14px;
+    }
+
+    .tab-button.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .tab-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .chart-box,
+    .table-box {
+      background: var(--surface-soft);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .chart-box h3,
+    .table-box h3 {
+      color: var(--primary);
+      font-size: 16px;
+      margin: 0 0 14px;
+    }
+
+    .bar-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(130px, 220px) 1fr 56px;
+      margin-bottom: 10px;
+      min-height: 26px;
+    }
+
+    .bar-label {
+      color: var(--text);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      background: linear-gradient(90deg, #3b82a0, #6ca88d);
+      border-radius: 999px;
+      height: 100%;
+      min-width: 3px;
+    }
+
+    .bar-total {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .empty-state {
+      background: var(--warning-soft);
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      color: var(--warning);
+      padding: 14px;
+    }
+
+    .loading,
+    .error {
+      border-radius: 8px;
+      font-weight: 700;
+      padding: 16px;
+    }
+
+    .loading {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .error {
+      background: var(--danger-soft);
+      border: 1px solid #fecaca;
+      color: var(--danger);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 13px;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #edf3f7;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    .status-line {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 12px;
+      text-align: right;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .pill {
+      background: var(--success-soft);
+      border-radius: 999px;
+      color: var(--success);
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+    }
+
+    @media (max-width: 1100px) {
+      .filters-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 800px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 18px;
+        position: static;
+      }
+
+      main {
+        padding: 14px;
+      }
+
+      .filters-grid,
+      .tab-grid,
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions,
+      .filter-actions {
+        justify-content: stretch;
+        width: 100%;
+      }
+
+      .actions button,
+      .filter-actions button {
+        flex: 1 1 auto;
+      }
+
+      .bar-row {
+        grid-template-columns: 1fr 54px;
+      }
+
+      .bar-track {
+        grid-column: 1 / -1;
+        height: 12px;
+      }
+    }
+
+    @media print {
+      .topbar,
+      .filters-panel,
+      .tabs,
+      .actions,
+      .filter-actions {
+        display: none;
+      }
+
+      body {
+        background: #ffffff;
+      }
+
+      main {
+        max-width: none;
+        padding: 0;
+      }
+
+      .content-panel,
+      .metric,
+      .chart-box,
+      .table-box {
+        border-color: #cbd5e1;
+        box-shadow: none;
+      }
+    }
   </style>
 </head>
 
 <body>
-
-  <h1>Relatórios Gerenciais</h1>
-
-  <div class="card">
-  <h2>Período</h2>
-
-  <div class="filtros">
+  <header class="topbar">
     <div>
-      <label>Data inicial</label>
-      <input id="dataInicial" type="date">
+      <h1>Relatórios Gerenciais</h1>
+      <p class="subtitle">Sistema de Atendimento Integrado dos CAPS/NAPS</p>
     </div>
 
-    <div>
-      <label>Data final</label>
-      <input id="dataFinal" type="date">
+    <div class="actions">
+      <button class="btn-light" onclick="window.print()">Imprimir</button>
+      <button class="btn-light" onclick="exportarCSV()">Exportar CSV</button>
     </div>
-  </div>
-</div>
+  </header>
 
-<div class="card">
-  <h2>Selecione os relatórios</h2>
+  <main>
+    <section class="filters-panel">
+      <div class="section-title">
+        <h2>Filtros</h2>
+        <span id="statusFiltros">Todos os registros</span>
+      </div>
 
-  <div class="opcoes-relatorio">
-    <label><input type="checkbox" name="relatorio" value="total"> Total de atendimentos</label>
-    <label><input type="checkbox" name="relatorio" value="naps"> Por NAPS</label>
-    <label><input type="checkbox" name="relatorio" value="tipo"> Por tipo de atendimento</label>
-    <label><input type="checkbox" name="relatorio" value="opm"> Por OPM</label>
-    <label><input type="checkbox" name="relatorio" value="cidade"> Por cidade</label>
-    <label><input type="checkbox" name="relatorio" value="responsavel"> Por responsável</label>
-    <label><input type="checkbox" name="relatorio" value="situacao"> Por situação/status</label>
-  </div>
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial</label>
+          <input id="dataInicial" type="date">
+        </div>
 
-  <button onclick="carregarRelatorio()">Gerar relatório</button>
-</div>
+        <div class="field">
+          <label>Data final</label>
+          <input id="dataFinal" type="date">
+        </div>
 
-  <div id="conteudo">
-    Carregando relatório...
-  </div>
+        <div class="field">
+          <label>Busca livre</label>
+          <input id="buscaLivre" placeholder="Nome, CPF, R.E., OPM, cidade">
+        </div>
+
+        <div class="field">
+          <label>Tipo de atendimento</label>
+          <select id="tipoAtendimento"></select>
+        </div>
+
+        <div class="field">
+          <label>Motivo</label>
+          <input id="motivo" placeholder="Ex.: ansiedade, luto">
+        </div>
+
+        <div class="field">
+          <label>NAPS</label>
+          <select id="naps"></select>
+        </div>
+
+        <div class="field">
+          <label>OPM</label>
+          <select id="opmAtual"></select>
+        </div>
+
+        <div class="field">
+          <label>Responsável</label>
+          <select id="responsavel"></select>
+        </div>
+
+        <div class="field">
+          <label>Situação/status</label>
+          <select id="situacaoStatus"></select>
+        </div>
+
+        <div class="field">
+          <label>Sexo</label>
+          <select id="sexo"></select>
+        </div>
+
+        <div class="field">
+          <label>Estado civil</label>
+          <select id="estadoCivil"></select>
+        </div>
+
+        <div class="field">
+          <label>Faixa etária</label>
+          <select id="faixaEtaria">
+            <option value="">Todas</option>
+            <option value="ate 17 anos">Até 17 anos</option>
+            <option value="18 a 29 anos">18 a 29 anos</option>
+            <option value="30 a 39 anos">30 a 39 anos</option>
+            <option value="40 a 49 anos">40 a 49 anos</option>
+            <option value="50 a 59 anos">50 a 59 anos</option>
+            <option value="60 anos ou mais">60 anos ou mais</option>
+            <option value="nao informado">Não informado</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Tempo de serviço</label>
+          <select id="tempoServico">
+            <option value="">Todos</option>
+            <option value="ate 5 anos">Até 5 anos</option>
+            <option value="6 a 10 anos">6 a 10 anos</option>
+            <option value="11 a 20 anos">11 a 20 anos</option>
+            <option value="21 a 30 anos">21 a 30 anos</option>
+            <option value="31 anos ou mais">31 anos ou mais</option>
+            <option value="nao informado">Não informado</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Cidade</label>
+          <select id="cidade"></select>
+        </div>
+
+        <div class="field">
+          <label>Bairro</label>
+          <select id="bairro"></select>
+        </div>
+
+        <div class="field">
+          <label>UF</label>
+          <select id="estado"></select>
+        </div>
+
+        <div class="field">
+          <label>Vínculos</label>
+          <select id="vinculos">
+            <option value="">Todos</option>
+            <option value="com">Com pessoas vinculadas</option>
+            <option value="sem">Sem pessoas vinculadas</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Tipo de vínculo</label>
+          <select id="tipoVinculo"></select>
+        </div>
+
+        <div class="field">
+          <label>Parentesco/vínculo</label>
+          <select id="parentesco"></select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn-secondary" onclick="limparFiltros()">Limpar filtros</button>
+        <button id="btnGerar" class="btn-primary" onclick="carregarRelatorio()">Gerar relatório</button>
+      </div>
+    </section>
+
+    <div id="mensagem" class="loading">Carregando relatório...</div>
+
+    <section id="painelResultado" class="content-panel" style="display:none;">
+      <div id="metricas" class="metrics-grid"></div>
+
+      <nav class="tabs">
+        <button class="tab-button active" data-tab="resumo" onclick="trocarAba('resumo')">Resumo</button>
+        <button class="tab-button" data-tab="atendimentos" onclick="trocarAba('atendimentos')">Atendimentos</button>
+        <button class="tab-button" data-tab="perfil" onclick="trocarAba('perfil')">Perfil</button>
+        <button class="tab-button" data-tab="localidade" onclick="trocarAba('localidade')">OPM / Localidade</button>
+        <button class="tab-button" data-tab="vinculos" onclick="trocarAba('vinculos')">Vínculos</button>
+        <button class="tab-button" data-tab="detalhado" onclick="trocarAba('detalhado')">Tabela detalhada</button>
+      </nav>
+
+      <div id="conteudoAba"></div>
+      <div id="rodapeResultado" class="status-line"></div>
+    </section>
+  </main>
 
   <script>
-    function carregarRelatorio() {
-  const dataInicial = document.getElementById("dataInicial").value;
-  const dataFinal = document.getElementById("dataFinal").value;
+    let relatorioAtual = null;
+    let abaAtual = "resumo";
+    let opcoesCarregadas = false;
 
-  const tiposRelatorio = Array.from(
-    document.querySelectorAll('input[name="relatorio"]:checked')
-  ).map(function(input) {
-    return input.value;
-  });
-
-  if (tiposRelatorio.length === 0) {
-    document.getElementById("conteudo").innerHTML = `
-      <div class="card">
-        Selecione pelo menos um relatório.
-      </div>
-    `;
-    return;
-  }
-
-  document.getElementById("conteudo").innerHTML = "Carregando relatório...";
-
-  google.script.run
-    .withSuccessHandler(function(relatorio) {
-      montarResultado(relatorio, tiposRelatorio);
-    })
-    .withFailureHandler(function(erro) {
-      document.getElementById("conteudo").innerHTML =
-        "Erro ao carregar relatório: " + erro.message;
-    })
-    .gerarRelatorioGerencial(dataInicial, dataFinal, tiposRelatorio);
-}
-
-function montarResultado(relatorio, tiposRelatorio) {
-  let html = "";
-
-  if (tiposRelatorio.includes("total")) {
-    html += `
-      <div class="card">
-        <div>Total de atendimentos</div>
-        <div class="numero">${relatorio.totalAtendimentos}</div>
-      </div>
-    `;
-  }
-
-  if (tiposRelatorio.includes("naps")) {
-    html += `
-      <div class="card">
-        <h2>Atendimentos por NAPS</h2>
-        ${montarTabela(relatorio.porNAPS, "NAPS")}
-      </div>
-    `;
-  }
-
-  if (tiposRelatorio.includes("tipo")) {
-    html += `
-      <div class="card">
-        <h2>Atendimentos por tipo de atendimento</h2>
-        ${montarTabela(relatorio.porTipo, "Tipo de atendimento")}
-      </div>
-    `;
-  }
-
-  if (tiposRelatorio.includes("opm")) {
-    html += `
-      <div class="card">
-        <h2>Atendimentos por OPM</h2>
-        ${montarTabela(relatorio.porOPM, "OPM")}
-      </div>
-    `;
-  }
-
-  if (tiposRelatorio.includes("cidade")) {
-    html += `
-      <div class="card">
-        <h2>Atendimentos por cidade</h2>
-        ${montarTabela(relatorio.porCidade, "Cidade")}
-      </div>
-    `;
-  }
-
-  if (tiposRelatorio.includes("responsavel")) {
-    html += `
-      <div class="card">
-        <h2>Atendimentos por responsável</h2>
-        ${montarTabela(relatorio.porResponsavel, "Responsável")}
-      </div>
-    `;
-  }
-  if (tiposRelatorio.includes("situacao")) {
-  html += `
-    <div class="card">
-      <h2>Atendimentos por situação/status</h2>
-      ${montarTabela(relatorio.porSituacao, "Situação/Status")}
-    </div>
-  `;
-}
-
-  document.getElementById("conteudo").innerHTML = html;
-}
-
-function montarTabela(dados, tituloColuna) {
-  let linhas = "";
-
-  const itensOrdenados = Object.keys(dados || {})
-    .map(function(chave) {
-      return {
-        nome: chave,
-        total: dados[chave]
-      };
-    })
-    .sort(function(a, b) {
-      return b.total - a.total;
+    document.addEventListener("DOMContentLoaded", function() {
+      prepararSelectsVazios();
+      carregarRelatorio();
     });
 
-  itensOrdenados.forEach(function(item) {
-    linhas += `
-      <tr>
-        <td>${item.nome}</td>
-        <td>${item.total}</td>
-      </tr>
-    `;
-  });
+    function prepararSelectsVazios() {
+      [
+        "tipoAtendimento",
+        "naps",
+        "opmAtual",
+        "responsavel",
+        "situacaoStatus",
+        "sexo",
+        "estadoCivil",
+        "cidade",
+        "bairro",
+        "estado",
+        "tipoVinculo",
+        "parentesco"
+      ].forEach(function(id) {
+        preencherSelect(id, [], "Todos");
+      });
+    }
 
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th>${tituloColuna}</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${linhas}
-      </tbody>
-    </table>
-  `;
-}
+    function coletarFiltros() {
+      return {
+        dataInicial: valorCampo("dataInicial"),
+        dataFinal: valorCampo("dataFinal"),
+        buscaLivre: valorCampo("buscaLivre"),
+        tipoAtendimento: valorCampo("tipoAtendimento"),
+        motivo: valorCampo("motivo"),
+        naps: valorCampo("naps"),
+        opmAtual: valorCampo("opmAtual"),
+        cidade: valorCampo("cidade"),
+        bairro: valorCampo("bairro"),
+        estado: valorCampo("estado"),
+        responsavel: valorCampo("responsavel"),
+        situacaoStatus: valorCampo("situacaoStatus"),
+        sexo: valorCampo("sexo"),
+        estadoCivil: valorCampo("estadoCivil"),
+        faixaEtaria: valorCampo("faixaEtaria"),
+        tempoServico: valorCampo("tempoServico"),
+        vinculos: valorCampo("vinculos"),
+        tipoVinculo: valorCampo("tipoVinculo"),
+        parentesco: valorCampo("parentesco"),
+        limiteDetalhes: 800
+      };
+    }
+
+    function valorCampo(id) {
+      return document.getElementById(id).value || "";
+    }
+
+    function carregarRelatorio() {
+      const botao = document.getElementById("btnGerar");
+      const mensagem = document.getElementById("mensagem");
+      const painel = document.getElementById("painelResultado");
+
+      botao.disabled = true;
+      mensagem.className = "loading";
+      mensagem.innerText = "Carregando relatório...";
+      mensagem.style.display = "block";
+      painel.style.display = "none";
+
+      google.script.run
+        .withSuccessHandler(function(relatorio) {
+          relatorioAtual = relatorio;
+          botao.disabled = false;
+          mensagem.style.display = "none";
+          painel.style.display = "block";
+
+          if (!opcoesCarregadas && relatorio.opcoes) {
+            preencherOpcoes(relatorio.opcoes);
+            opcoesCarregadas = true;
+          }
+
+          atualizarStatusFiltros();
+          renderizarRelatorio();
+        })
+        .withFailureHandler(function(erro) {
+          botao.disabled = false;
+          painel.style.display = "none";
+          mensagem.className = "error";
+          mensagem.innerText = "Erro ao carregar relatório: " + erro.message;
+        })
+        .gerarRelatorioGerencial(coletarFiltros());
+    }
+
+    function preencherOpcoes(opcoes) {
+      preencherSelect("tipoAtendimento", opcoes.tipoAtendimento, "Todos");
+      preencherSelect("naps", opcoes.naps, "Todos");
+      preencherSelect("opmAtual", opcoes.opmAtual, "Todos");
+      preencherSelect("responsavel", opcoes.responsavel, "Todos");
+      preencherSelect("situacaoStatus", opcoes.situacaoStatus, "Todos");
+      preencherSelect("sexo", opcoes.sexo, "Todos");
+      preencherSelect("estadoCivil", opcoes.estadoCivil, "Todos");
+      preencherSelect("cidade", opcoes.cidade, "Todas");
+      preencherSelect("bairro", opcoes.bairro, "Todos");
+      preencherSelect("estado", opcoes.estado, "Todas");
+      preencherSelect("tipoVinculo", opcoes.tipoVinculo, "Todos");
+      preencherSelect("parentesco", opcoes.parentesco, "Todos");
+    }
+
+    function preencherSelect(id, valores, textoPadrao) {
+      const select = document.getElementById(id);
+      const atual = select.value;
+      let html = `<option value="">${escaparHtml(textoPadrao)}</option>`;
+
+      (valores || []).forEach(function(valor) {
+        html += `<option value="${escaparAttr(valor)}">${escaparHtml(formatarTexto(valor, id))}</option>`;
+      });
+
+      select.innerHTML = html;
+
+      if (atual) {
+        select.value = atual;
+      }
+    }
+
+    function limparFiltros() {
+      [
+        "dataInicial",
+        "dataFinal",
+        "buscaLivre",
+        "tipoAtendimento",
+        "motivo",
+        "naps",
+        "opmAtual",
+        "cidade",
+        "bairro",
+        "estado",
+        "responsavel",
+        "situacaoStatus",
+        "sexo",
+        "estadoCivil",
+        "faixaEtaria",
+        "tempoServico",
+        "vinculos",
+        "tipoVinculo",
+        "parentesco"
+      ].forEach(function(id) {
+        document.getElementById(id).value = "";
+      });
+
+      carregarRelatorio();
+    }
+
+    function atualizarStatusFiltros() {
+      const filtros = coletarFiltros();
+      const ativos = Object.keys(filtros).filter(function(chave) {
+        return chave !== "limiteDetalhes" && filtros[chave];
+      }).length;
+
+      document.getElementById("statusFiltros").innerText =
+        ativos === 0 ? "Todos os registros" : ativos + " filtro(s) aplicado(s)";
+    }
+
+    function trocarAba(aba) {
+      abaAtual = aba;
+
+      document.querySelectorAll(".tab-button").forEach(function(botao) {
+        botao.classList.toggle("active", botao.dataset.tab === aba);
+      });
+
+      renderizarRelatorio();
+    }
+
+    function renderizarRelatorio() {
+      if (!relatorioAtual) return;
+
+      document.getElementById("metricas").innerHTML = montarMetricas(relatorioAtual.resumo);
+      document.getElementById("conteudoAba").innerHTML = montarConteudoAba();
+
+      const total = relatorioAtual.totalRegistros || 0;
+      const exibidos = (relatorioAtual.registros || []).length;
+      const limite = relatorioAtual.limiteDetalhes || exibidos;
+
+      document.getElementById("rodapeResultado").innerText =
+        total > limite
+          ? `Exibindo ${exibidos} de ${total} registros filtrados.`
+          : `${total} registro(s) filtrado(s).`;
+    }
+
+    function montarMetricas(resumo) {
+      return [
+        montarMetrica("Atendimentos", resumo.totalAtendimentos),
+        montarMetrica("Pessoas distintas", resumo.pessoasDistintas),
+        montarMetrica("Retornos", resumo.retornos),
+        montarMetrica("Com vínculos", resumo.atendimentosComVinculos),
+        montarMetrica("Pessoas vinculadas", resumo.totalVinculos),
+        montarMetrica("Familiar/grupo", resumo.atendimentosFamiliaresOuGrupo)
+      ].join("");
+    }
+
+    function montarMetrica(rotulo, valor) {
+      return `
+        <article class="metric">
+          <span>${escaparHtml(rotulo)}</span>
+          <strong>${Number(valor || 0).toLocaleString("pt-BR")}</strong>
+        </article>
+      `;
+    }
+
+    function montarConteudoAba() {
+      const d = relatorioAtual.distribuicoes || {};
+
+      if ((relatorioAtual.totalRegistros || 0) === 0) {
+        return `<div class="empty-state">Nenhum registro encontrado para os filtros selecionados.</div>`;
+      }
+
+      if (abaAtual === "resumo") {
+        return `
+          <div class="tab-grid">
+            ${montarGraficoBarras("Evolução mensal", d.porMes, { tipo: "mes", limite: 18 })}
+            ${montarGraficoBarras("Tipos de atendimento", d.porTipo, { limite: 10 })}
+            ${montarGraficoBarras("Situação/status", d.porSituacao, { limite: 8 })}
+            ${montarGraficoBarras("Responsáveis", d.porResponsavel, { limite: 10 })}
+          </div>
+        `;
+      }
+
+      if (abaAtual === "atendimentos") {
+        return `
+          <div class="tab-grid">
+            ${montarGraficoBarras("Evolução mensal", d.porMes, { tipo: "mes", limite: 24 })}
+            ${montarGraficoBarras("Tipo de atendimento", d.porTipo, { limite: 12 })}
+            ${montarGraficoBarras("Motivos mais frequentes", d.porMotivo, { limite: 15 })}
+            ${montarTabelaContagem("Tipos de atendimento", d.porTipo, "Tipo")}
+          </div>
+        `;
+      }
+
+      if (abaAtual === "perfil") {
+        return `
+          <div class="tab-grid">
+            ${montarGraficoBarras("Sexo", d.porSexo, { limite: 8 })}
+            ${montarGraficoBarras("Faixa etária", d.porFaixaEtaria, { ordem: ordemFaixaEtaria() })}
+            ${montarGraficoBarras("Estado civil", d.porEstadoCivil, { limite: 8 })}
+            ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico() })}
+          </div>
+        `;
+      }
+
+      if (abaAtual === "localidade") {
+        return `
+          <div class="tab-grid">
+            ${montarGraficoBarras("OPM", d.porOPM, { limite: 15 })}
+            ${montarGraficoBarras("Cidade", d.porCidade, { limite: 15 })}
+            ${montarGraficoBarras("Bairro", d.porBairro, { limite: 15 })}
+            ${montarGraficoBarras("UF", d.porUF, { limite: 10 })}
+            ${montarGraficoBarras("NAPS", d.porNAPS, { limite: 10, classe: "wide" })}
+          </div>
+        `;
+      }
+
+      if (abaAtual === "vinculos") {
+        return `
+          <div class="tab-grid">
+            ${montarGraficoBarras("Tipo de vínculo", d.porTipoVinculo, { limite: 10 })}
+            ${montarGraficoBarras("Parentesco/vínculo", d.porParentesco, { limite: 12 })}
+            ${montarTabelaVinculos()}
+          </div>
+        `;
+      }
+
+      return montarTabelaDetalhada();
+    }
+
+    function montarGraficoBarras(titulo, dados, config) {
+      config = config || {};
+      const itens = ordenarItens(dados, config);
+
+      if (itens.length === 0) {
+        return `
+          <section class="chart-box ${config.classe || ""}">
+            <h3>${escaparHtml(titulo)}</h3>
+            <div class="empty-state">Sem dados para exibir.</div>
+          </section>
+        `;
+      }
+
+      const maximo = Math.max.apply(null, itens.map(function(item) { return item.total; }));
+      let linhas = "";
+
+      itens.forEach(function(item) {
+        const largura = maximo > 0 ? Math.max((item.total / maximo) * 100, 2) : 0;
+        const label = config.tipo === "mes" ? formatarMes(item.nome) : formatarTexto(item.nome);
+
+        linhas += `
+          <div class="bar-row">
+            <div class="bar-label" title="${escaparAttr(label)}">${escaparHtml(label)}</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${largura}%;"></div>
+            </div>
+            <div class="bar-total">${Number(item.total).toLocaleString("pt-BR")}</div>
+          </div>
+        `;
+      });
+
+      return `
+        <section class="chart-box ${config.classe || ""}">
+          <h3>${escaparHtml(titulo)}</h3>
+          ${linhas}
+        </section>
+      `;
+    }
+
+    function montarTabelaContagem(titulo, dados, coluna) {
+      const itens = ordenarItens(dados, { limite: 30 });
+
+      if (itens.length === 0) {
+        return `
+          <section class="table-box">
+            <h3>${escaparHtml(titulo)}</h3>
+            <div class="empty-state">Sem dados para exibir.</div>
+          </section>
+        `;
+      }
+
+      const linhas = itens.map(function(item) {
+        return `
+          <tr>
+            <td>${escaparHtml(formatarTexto(item.nome))}</td>
+            <td>${Number(item.total).toLocaleString("pt-BR")}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <section class="table-box">
+          <h3>${escaparHtml(titulo)}</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>${escaparHtml(coluna)}</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function montarTabelaVinculos() {
+      const registros = (relatorioAtual.registros || []).filter(function(registro) {
+        return registro.quantidadeVinculos > 0;
+      });
+
+      if (registros.length === 0) {
+        return `
+          <section class="table-box wide">
+            <h3>Atendimentos com vínculos</h3>
+            <div class="empty-state">Sem vínculos nos registros filtrados.</div>
+          </section>
+        `;
+      }
+
+      const linhas = registros.map(function(registro) {
+        const vinculos = (registro.vinculos || []).map(function(vinculo) {
+          return [
+            escaparHtml(formatarTexto(vinculo.nome)),
+            escaparHtml(formatarTexto(vinculo.tipoVinculo)),
+            escaparHtml(formatarTexto(vinculo.parentesco))
+          ].filter(Boolean).join(" - ");
+        }).join("<br>");
+
+        return `
+          <tr>
+            <td>${escaparHtml(registro.dataCadastro || "-")}</td>
+            <td>${escaparHtml(formatarTexto(registro.nome))}</td>
+            <td>${escaparHtml(formatarTexto(registro.tipoAtendimento))}</td>
+            <td>${registro.quantidadeVinculos}</td>
+            <td>${vinculos || "-"}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <section class="table-box wide">
+          <h3>Atendimentos com vínculos</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Atendido</th>
+                  <th>Tipo</th>
+                  <th>Total</th>
+                  <th>Vínculos</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function montarTabelaDetalhada() {
+      const registros = relatorioAtual.registros || [];
+
+      if (registros.length === 0) {
+        return `<div class="empty-state">Nenhum registro para detalhar.</div>`;
+      }
+
+      const linhas = registros.map(function(registro) {
+        return `
+          <tr>
+            <td>${escaparHtml(registro.dataCadastro || "-")}</td>
+            <td>${escaparHtml(formatarTexto(registro.nome))}</td>
+            <td>${escaparHtml(registro.re || "-")}</td>
+            <td>${escaparHtml(registro.cpf || "-")}</td>
+            <td>${escaparHtml(formatarTexto(registro.tipoAtendimento))}</td>
+            <td>${escaparHtml(formatarTexto(registro.motivo))}</td>
+            <td>${escaparHtml(formatarTexto(registro.naps, "naps"))}</td>
+            <td>${escaparHtml(formatarTexto(registro.opmAtual, "opmAtual"))}</td>
+            <td>${escaparHtml(formatarTexto(registro.situacaoStatus))}</td>
+            <td>${escaparHtml(formatarTexto(registro.responsavel))}</td>
+            <td>${escaparHtml(formatarTexto(registro.cidade))}/${escaparHtml(formatarTexto(registro.estado, "estado"))}</td>
+            <td>${escaparHtml(registro.cep || "-")}</td>
+            <td>${escaparHtml(formatarTexto(registro.endereco))}</td>
+            <td>${registro.quantidadeVinculos > 0 ? `<span class="pill">${registro.quantidadeVinculos}</span>` : "-"}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <section class="table-box wide">
+          <h3>Tabela detalhada</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Nome</th>
+                  <th>R.E.</th>
+                  <th>CPF</th>
+                  <th>Tipo</th>
+                  <th>Motivo</th>
+                  <th>NAPS</th>
+                  <th>OPM</th>
+                  <th>Status</th>
+                  <th>Responsável</th>
+                  <th>Cidade/UF</th>
+                  <th>CEP</th>
+                  <th>Endereço</th>
+                  <th>Vínculos</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function ordenarItens(dados, config) {
+      config = config || {};
+      let itens = Object.keys(dados || {}).map(function(nome) {
+        return {
+          nome: nome,
+          total: dados[nome]
+        };
+      });
+
+      if (config.ordem) {
+        const ordem = config.ordem;
+        itens.sort(function(a, b) {
+          return ordem.indexOf(a.nome) - ordem.indexOf(b.nome);
+        });
+      } else if (config.tipo === "mes") {
+        itens.sort(function(a, b) {
+          return String(a.nome).localeCompare(String(b.nome));
+        });
+      } else {
+        itens.sort(function(a, b) {
+          return b.total - a.total || String(a.nome).localeCompare(String(b.nome));
+        });
+      }
+
+      if (config.limite) {
+        itens = itens.slice(0, config.limite);
+      }
+
+      return itens;
+    }
+
+    function ordemFaixaEtaria() {
+      return [
+        "ate 17 anos",
+        "18 a 29 anos",
+        "30 a 39 anos",
+        "40 a 49 anos",
+        "50 a 59 anos",
+        "60 anos ou mais",
+        "nao informado"
+      ];
+    }
+
+    function ordemTempoServico() {
+      return [
+        "ate 5 anos",
+        "6 a 10 anos",
+        "11 a 20 anos",
+        "21 a 30 anos",
+        "31 anos ou mais",
+        "nao informado"
+      ];
+    }
+
+    function exportarCSV() {
+      if (!relatorioAtual || !relatorioAtual.registros || relatorioAtual.registros.length === 0) {
+        return;
+      }
+
+      const cabecalho = [
+        "Data",
+        "Nome",
+        "R.E.",
+        "CPF",
+        "Tipo",
+        "Motivo",
+        "NAPS",
+        "OPM",
+        "Status",
+        "Responsável",
+        "Cidade",
+        "UF",
+        "CEP",
+        "Endereço",
+        "Vínculos"
+      ];
+
+      const linhas = relatorioAtual.registros.map(function(registro) {
+        return [
+          registro.dataCadastro,
+          formatarTexto(registro.nome),
+          registro.re,
+          registro.cpf,
+          formatarTexto(registro.tipoAtendimento),
+          formatarTexto(registro.motivo),
+          formatarTexto(registro.naps, "naps"),
+          formatarTexto(registro.opmAtual, "opmAtual"),
+          formatarTexto(registro.situacaoStatus),
+          formatarTexto(registro.responsavel),
+          formatarTexto(registro.cidade),
+          formatarTexto(registro.estado, "estado"),
+          registro.cep,
+          formatarTexto(registro.endereco),
+          registro.quantidadeVinculos
+        ];
+      });
+
+      const csv = [cabecalho].concat(linhas).map(function(linha) {
+        return linha.map(formatarCampoCSV).join(";");
+      }).join("\n");
+
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "relatorio_saic_" + new Date().toISOString().slice(0, 10) + ".csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function formatarCampoCSV(valor) {
+      return `"${String(valor || "").replace(/"/g, '""')}"`;
+    }
+
+    function formatarMes(valor) {
+      if (!valor || valor === "sem data") return "Sem data";
+
+      const partes = String(valor).split("-");
+      if (partes.length !== 2) return formatarTexto(valor);
+
+      return partes[1] + "/" + partes[0];
+    }
+
+    function formatarTexto(valor, contexto) {
+      if (valor === null || valor === undefined || valor === "") return "-";
+
+      const texto = String(valor);
+      const chave = normalizarTexto(texto);
+      const traducoes = {
+        "nao informado": "Não informado",
+        "sem data": "Sem data",
+        "ate 17 anos": "Até 17 anos",
+        "ate 5 anos": "Até 5 anos",
+        "viuvo": "Viúvo",
+        "uniao estavel": "União estável",
+        "conjuge": "Cônjuge",
+        "irmao": "Irmão",
+        "mae": "Mãe"
+      };
+
+      if (traducoes[chave]) return traducoes[chave];
+
+      if (contexto === "opmAtual" || contexto === "naps" || contexto === "estado") {
+        return texto.toUpperCase();
+      }
+
+      if (/^[0-9A-Z./ -]+$/i.test(texto) && (texto.indexOf(".") >= 0 || texto.indexOf("/") >= 0)) {
+        return texto.toUpperCase();
+      }
+
+      return texto
+        .toLowerCase()
+        .split(" ")
+        .map(function(parte) {
+          if (!parte) return "";
+          return parte.charAt(0).toUpperCase() + parte.slice(1);
+        })
+        .join(" ");
+    }
+
+    function normalizarTexto(valor) {
+      return String(valor || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function escaparHtml(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escaparAttr(valor) {
+      return escaparHtml(valor);
+    }
   </script>
-
 </body>
 </html>
