@@ -793,7 +793,7 @@
       .then(resposta => resposta.json())
       .then(dados => {
         if (!dados.erro) {
-          document.getElementById("rua").value = dados.bairro || "";
+          document.getElementById("rua").value = dados.logradouro || "";
           document.getElementById("bairro").value = dados.bairro || "";
           document.getElementById("cidade").value = dados.localidade || "";
           document.getElementById("estado").value = dados.uf || "";
@@ -965,6 +965,7 @@ function tratarResultadoBusca(resposta) {
   preencherFormulario(resposta.registro);
 
   const data = resposta.registro.dataCadastro || "data não informada";
+
 
   div.innerHTML = `<p style="color:#166534; font-weight:bold;">
     Cadastro localizado. Último atendimento em: ${data}.
@@ -1211,18 +1212,6 @@ document.addEventListener("input", function(event) {
   }
 });
 
-function capitalizarTexto(texto) {
-  if (!texto) return "";
-
-  return String(texto)
-    .toLowerCase()
-    .split(" ")
-    .map(function(palavra) {
-      if (!palavra) return "";
-      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
-    })
-    .join(" ");
-}
 
 </script>
 
