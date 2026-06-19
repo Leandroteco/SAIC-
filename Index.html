@@ -180,13 +180,7 @@
       background: #f1f5f9;
     }
 
-    @media (max-width: 900px) {
-      .grid,
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-
-    @media (max-width: 900px) {
+        @media (max-width: 900px) {
       .grid,
       .grid-2 {
         grid-template-columns: 1fr;
@@ -204,6 +198,14 @@
         text-align: center;
       }
     }
+
+    .copyright {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(71, 85, 105, 0.35);
+  font-weight: 400;
+}
   </style>
 </head>
 
@@ -239,7 +241,7 @@
     <input
   id="campoBusca"
   placeholder="Digite R.E., CPF ou Nome e aperte ENTER"
-  oninput="mascaraBusca(this); buscarAutomaticamenteSeCompleto()"
+  oninput="limparAvisosBusca(); mascaraBusca(this); buscarAutomaticamenteSeCompleto()"
   onkeydown="buscarComEnter(event)">
   </div>
 
@@ -675,13 +677,23 @@
   <h2>Responsável pelo Atendimento</h2>
 
   <label>Nome do responsável</label>
-  <input id="responsavel" oninput="converterMaiusculas(this)">
+  <input
+    id="responsavel"
+    oninput="converterMaiusculas(this); this.style.border='1px solid #d8e2ea';">
 
   <button class="btn-success" onclick="salvar()">
     Salvar Atendimento
   </button>
 
   <div id="mensagem"></div>
+
+<div class="copyright">
+  © 2026 - Sistema de Atendimento Integrado dos CAPS/NAPS<br>
+  Desenvolvido por Sargento PM Felix e Cabo PM Myazaki
+</div>
+</div>
+
+</div>
 
 </div>
 
@@ -713,7 +725,7 @@
 
 <div>
       <label>CPF</label>
-      <input id="cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+      <input class="v_cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
     </div>
 
 
@@ -781,7 +793,7 @@
       .then(resposta => resposta.json())
       .then(dados => {
         if (!dados.erro) {
-          document.getElementById("rua").value = dados.logradouro || "";
+          document.getElementById("rua").value = dados.bairro || "";
           document.getElementById("bairro").value = dados.bairro || "";
           document.getElementById("cidade").value = dados.localidade || "";
           document.getElementById("estado").value = dados.uf || "";
@@ -795,6 +807,17 @@
   }
 
   function salvar() {
+    const campoResponsavel = document.getElementById("responsavel");
+
+if (campoResponsavel.value.trim() === "") {
+
+    campoResponsavel.style.border = "2px solid #d32f2f";
+    campoResponsavel.focus();
+
+    return;
+}
+
+campoResponsavel.style.border = "1px solid #d8e2ea";
     const dados = {
       naps: "teste_naps",
       tipoAtendimento: document.getElementById("tipoAtendimento").value,
@@ -988,12 +1011,12 @@ function preencherFormulario(r) {
   document.getElementById("dataIngresso").value = "";
   document.getElementById("dataInatividade").value = "";
   document.getElementById("cep").value = "";
-  document.getElementById("rua").value = "";
+  document.getElementById("rua").value = capitalizarTexto(r.rua);
   document.getElementById("numero").value = "";
-  document.getElementById("bairro").value = "";
-  document.getElementById("cidade").value = "";
+  document.getElementById("bairro").value = capitalizarTexto(r.bairro);
+  document.getElementById("cidade").value = capitalizarTexto(r.cidade);
   document.getElementById("estado").value = "";
-  document.getElementById("complemento").value = "";
+  document.getElementById("complemento").value = capitalizarTexto(r.complemento);
 
   // Preenche com os dados do cadastro selecionado
   document.getElementById("re").value = r.re || "";
@@ -1010,10 +1033,10 @@ function preencherFormulario(r) {
   document.getElementById("dataIngresso").value = r.dataIngresso || "";
   document.getElementById("dataInatividade").value = r.dataInatividade || "";
   document.getElementById("cep").value = r.cep || "";
-  document.getElementById("rua").value = (r.rua || "");
+  document.getElementById("rua").value = capitalizarTexto(r.rua);
   document.getElementById("numero").value = r.numero || "";
-  document.getElementById("bairro").value = (r.bairro || "");
-  document.getElementById("cidade").value = (r.cidade || "");
+  document.getElementById("bairro").value = capitalizarTexto(r.bairro);
+  document.getElementById("cidade").value = capitalizarTexto(r.cidade);
   document.getElementById("estado").value = r.estado || "";
   document.getElementById("complemento").value = converterMaiusculas(r.complemento || "");
 }
@@ -1073,6 +1096,7 @@ function buscarComEnter(event) {
 function novoAtendimento() {
   limparFormulario();
 
+  document.getElementById("mensagem").innerText = "";
   document.getElementById("campoBusca").value = "";
   document.getElementById("resultadoBusca").innerHTML =
     `<p style="color:#166534; font-weight:bold;">
@@ -1118,6 +1142,18 @@ function buscarAutomaticamenteSeCompleto() {
     }, 1000);
   }
 }
+function capitalizarTexto(texto) {
+  if (!texto) return "";
+
+  return String(texto)
+    .toLowerCase()
+    .split(" ")
+    .map(function(palavra) {
+      if (!palavra) return "";
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    })
+    .join(" ");
+}
 
 function converterMaiusculas(valor) {
   if (typeof valor === "string") {
@@ -1126,6 +1162,7 @@ function converterMaiusculas(valor) {
 
   valor.value = (valor.value || "").toUpperCase();
 }
+
 
 function alternarMenu() {
   const menu = document.getElementById("menuOpcoes");
@@ -1150,6 +1187,30 @@ function abrirRelatorios() {
       window.open(url + "?pagina=relatorios", "_blank");
     })
     .obterUrlApp();
+}
+
+function limparAvisosBusca() {
+  document.getElementById("resultadoBusca").innerHTML = "";
+  document.getElementById("mensagem").innerText = "";
+}
+
+document.addEventListener("input", function(event) {
+  if (event.target.id !== "campoBusca") {
+    document.getElementById("mensagem").innerText = "";
+  }
+});
+
+function capitalizarTexto(texto) {
+  if (!texto) return "";
+
+  return String(texto)
+    .toLowerCase()
+    .split(" ")
+    .map(function(palavra) {
+      if (!palavra) return "";
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    })
+    .join(" ");
 }
 
 </script>
