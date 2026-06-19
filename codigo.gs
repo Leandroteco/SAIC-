@@ -110,99 +110,7 @@ function normalizarTelefone(valor) {
   if (!valor) return "";
   return String(valor).replace(/\D/g, "");
 }
-function buscarCadastro(termo) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
-  const linhas = sheet.getDataRange().getValues();
 
-  const termoOriginal = String(termo || "").trim();
-  const buscaTexto = normalizar(termoOriginal);
-  const buscaNumeros = somenteNumeros(termoOriginal);
-
-  let resultados = [];
-
-  const contemLetras = /[A-Z]/i.test(termoOriginal);
-  const pareceNome = contemLetras && !/^\d{1,6}-?[\dA]?$/i.test(termoOriginal);
-  const pareceCPF = buscaNumeros.length >= 8;
-  const pareceRE = !pareceNome && buscaNumeros.length > 0 && buscaNumeros.length <= 7;
-
-  for (let i = linhas.length - 1; i >= 1; i--) {
-    const l = linhas[i];
-
-    const registro = {
-      re: l[4] || "",
-      nome: l[5] || "",
-      cpf: l[6] || "",
-      telefone: l[7] || "",
-      email: l[8] || "",
-      dataIngresso: converterData(l[9]),
-      dataNascimento: converterData(l[10]),
-      sexo: l[11] || "",
-      opmAtual: l[12] || "",
-      situacaoStatus: l[13] || "",
-      dataInatividade: converterData(l[14]),
-      estadoCivil: l[15] || "",
-      numeroFilhos: l[16] || "",
-      cep: l[17] || "",
-      rua: l[18] || "",
-      bairro: l[19] || "",
-      cidade: l[20] || "",
-      estado: l[21] || "",
-      numero: l[22] || "",
-      complemento: l[23] || ""
-    };
-
-    const reTexto = normalizar(registro.re);
-    const reNumerico = somenteNumeros(registro.re);
-    const nomeTexto = normalizar(registro.nome);
-    const cpfNumerico = somenteNumeros(registro.cpf);
-
-    let achou = false;
-
-    if (pareceCPF) {
-      achou = cpfNumerico.includes(buscaNumeros);
-    } else if (pareceRE) {
-     achou = reNumerico.startsWith(buscaNumeros) || reTexto.includes(buscaTexto);
-    } else {
-      achou = nomeTexto.includes(buscaTexto);
-    }
-
-    if (achou) {
-      resultados.push(registro);
-    }
-  }
-
-  if (resultados.length === 0) {
-    return {
-      encontrado: false,
-      mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
-    };
-  }
-
-  // Se for CPF completo ou RE completo, preenche direto com o registro mais recente
-  const reCompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
-const cpfCompleto = buscaNumeros.length === 11;
-
-if ((reCompleto || cpfCompleto) && resultados.length >= 1) {
-  return {
-    encontrado: true,
-    multiplos: false,
-    registro: resultados[0]
-  };
-}
-
-return {
-  encontrado: true,
-  multiplos: true,
-  resultados: resultados.slice(0, 10)
-};
-
-  // Em todos os demais casos, mostra lista de opções
-  return {
-    encontrado: true,
-    multiplos: true,
-    resultados: resultados.slice(0, 10)
-  };
-}
 
 function montarRegistro(linha) {
   return {
@@ -285,7 +193,8 @@ function buscarCadastro(termo) {
       cidade: l[20] || "",
       estado: l[21] || "",
       numero: l[22] || "",
-      complemento: l[23] || ""
+      complemento: l[23] || "",
+      dataCadastro: formatarDataBrasil(l[26])
     };
 
     const reTexto = normalizar(registro.re);
@@ -397,3 +306,16 @@ function obterUrlApp() {
   return ScriptApp.getService().getUrl();
 }
 
+function formatarDataBrasil(valor) {
+  if (!valor) return "";
+
+  if (Object.prototype.toString.call(valor) === "[object Date]") {
+    const dia = String(valor.getDate()).padStart(2, "0");
+    const mes = String(valor.getMonth() + 1).padStart(2, "0");
+    const ano = valor.getFullYear();
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  return String(valor);
+}
