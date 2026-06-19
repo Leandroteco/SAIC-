@@ -1,321 +1,259 @@
-const ABA_DADOS = "dados_cadastro";
-const ABA_VINCULOS = "pessoas_vinculadas";
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
 
-function doGet(e) {
-  if (e && e.parameter && e.parameter.pagina === "relatorios") {
-    return HtmlService.createHtmlOutputFromFile("Relatorios")
-      .setTitle("SAIC - Relatórios Gerenciais");
-  }
-
-  return HtmlService.createHtmlOutputFromFile("Index")
-    .setTitle("SAIC - Atendimento Integrado dos NAPS");
-}
-
-function salvarAtendimento(dados) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ABA_DADOS);
-  const sheetVinculos = ss.getSheetByName(ABA_VINCULOS);
-
-  if (!sheet) throw new Error("A aba dados_cadastro não foi encontrada.");
-  if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas não foi encontrada.");
-
-  const idAtendimento = gerarNovoId(sheet, 1);
-  const dataCadastro = new Date();
-
- sheet.appendRow([
-  idAtendimento,
-  normalizar(dados.naps),
-  normalizar(dados.tipoAtendimento),
-  normalizar(dados.motivo),
-  normalizar(dados.re),
-  normalizar(dados.nome),
-  formatarCPF(dados.cpf),
-  normalizarTelefone(dados.telefone),
-  normalizar(dados.email),
-  dados.dataIngresso || "",
-  dados.dataNascimento || "",
-  normalizar(dados.sexo),
-  normalizar(dados.opmAtual),
-  normalizar(dados.situacaoStatus),
-  dados.dataInatividade || "",
-  normalizar(dados.estadoCivil),
-  dados.numeroFilhos || "",
-  dados.cep || "",
-  normalizar(dados.rua),
-  normalizar(dados.bairro),
-  normalizar(dados.cidade),
-  normalizar(dados.estado),
-  dados.numero || "",
-  normalizar(dados.complemento),
-  normalizar(dados.observacoes),
-  normalizar(dados.responsavel),
-  dataCadastro
-]);
-
-  if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
-    dados.pessoasVinculadas.forEach(function(pessoa) {
-      if (pessoa.nome || pessoa.cpf) {
-        const idVinculo = gerarNovoId(sheetVinculos, 1);
-
-        sheetVinculos.appendRow([
-          idVinculo,
-          idAtendimento,
-          normalizar(pessoa.nome),
-          formatarCPF(pessoa.cpf),
-          normalizar(pessoa.tipoVinculo),
-          normalizar(pessoa.parentesco),
-          normalizar(pessoa.observacoes)
-        ]);
-      }
-    });
-  }
-
-  return "Atendimento salvo com sucesso!";
-}
-
-function gerarNovoId(sheet, coluna) {
-  const lastRow = sheet.getLastRow();
-
-  if (lastRow < 2) return 1;
-
-  const valores = sheet.getRange(2, coluna, lastRow - 1, 1).getValues().flat();
-  const numeros = valores.filter(v => !isNaN(v) && v !== "").map(Number);
-
-  return numeros.length ? Math.max(...numeros) + 1 : 1;
-}
-
-function normalizar(texto) {
-  if (!texto) return "";
-
-  return String(texto)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function somenteNumeros(valor) {
-  if (!valor) return "";
-  return String(valor).replace(/\D/g, "");
-}
-
-function formatarCPF(cpf) {
-  cpf = somenteNumeros(cpf);
-
-  if (cpf.length !== 11) return cpf;
-
-  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-}
-function normalizarTelefone(valor) {
-  if (!valor) return "";
-  return String(valor).replace(/\D/g, "");
-}
-
-
-function montarRegistro(linha) {
-  return {
-    id: linha[0],
-    naps: linha[1],
-    tipoAtendimento: linha[2],
-    motivo: linha[3],
-    re: linha[4],
-    nome: linha[5],
-    cpf: linha[6],
-    telefone: linha[7],
-    email: linha[8],
-    dataIngresso: formatarDataParaInput(linha[9]),
-    dataNascimento: formatarDataParaInput(linha[10]),
-    sexo: linha[11],
-    opmAtual: linha[12],
-    situacaoStatus: linha[13],
-    dataInatividade: formatarDataParaInput(linha[14]),
-    estadoCivil: linha[15],
-    numeroFilhos: linha[16],
-    cep: linha[17],
-    rua: linha[18],
-    bairro: linha[19],
-    cidade: linha[20],
-    estado: linha[21],
-    numero: linha[22],
-    complemento: linha[23],
-    observacoes: linha[24],
-    responsavel: linha[25],
-    dataCadastro: linha[26]
-  };
-}
-
-function formatarDataParaInput(valor) {
-  if (!valor) return "";
-
-  if (Object.prototype.toString.call(valor) === "[object Date]") {
-    const ano = valor.getFullYear();
-    const mes = String(valor.getMonth() + 1).padStart(2, "0");
-    const dia = String(valor.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-  }
-
-  return "";
-}
-
-// BUSCA POR RE, CPF E NOME
-
-
-function buscarCadastro(termo) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
-  const linhas = sheet.getDataRange().getValues();
-
-  const buscaTexto = normalizar(termo);
-  const buscaNumeros = somenteNumeros(termo);
-
-  let resultados = [];
-  let chavesEncontradas = {};
-
-  for (let i = linhas.length - 1; i >= 1; i--) {
-    const l = linhas[i];
-
-    const registro = {
-      re: l[4] || "",
-      nome: l[5] || "",
-      cpf: l[6] || "",
-      telefone: l[7] || "",
-      email: l[8] || "",
-      dataIngresso: converterData(l[9]),
-      dataNascimento: converterData(l[10]),
-      sexo: l[11] || "",
-      opmAtual: l[12] || "",
-      situacaoStatus: l[13] || "",
-      dataInatividade: converterData(l[14]),
-      estadoCivil: l[15] || "",
-      numeroFilhos: l[16] || "",
-      cep: l[17] || "",
-      rua: l[18] || "",
-      bairro: l[19] || "",
-      cidade: l[20] || "",
-      estado: l[21] || "",
-      numero: l[22] || "",
-      complemento: l[23] || "",
-      dataCadastro: formatarDataBrasil(l[26])
-    };
-
-    const reTexto = normalizar(registro.re);
-    const nomeTexto = normalizar(registro.nome);
-    const cpfNumerico = somenteNumeros(registro.cpf);
-
-    const pesquisouCPF = buscaNumeros.length >= 11;
-    const pesquisouRE = /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim());
-    const pesquisouNome = buscaTexto.length >= 3 && !pesquisouCPF && !pesquisouRE;
-
-    const achouCPF = pesquisouCPF && cpfNumerico === buscaNumeros;
-    const achouRE = pesquisouRE && reTexto === buscaTexto;
-    const achouNome = pesquisouNome && nomeTexto.includes(buscaTexto);
-
-    if (achouCPF || achouRE || achouNome) {
-      const chaveUnica = cpfNumerico || reTexto || nomeTexto;
-
-      if (!chavesEncontradas[chaveUnica]) {
-        chavesEncontradas[chaveUnica] = true;
-        resultados.push(registro);
-      }
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f8fb;
+      margin: 0;
+      padding: 30px;
+      color: #334155;
     }
-  }
 
-  if (resultados.length === 0) {
-    return {
-      encontrado: false,
-      mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
-    };
-  }
+    h1 {
+      color: #3b82a0;
+    }
 
-  // CPF ou RE completo: preenche direto
-  if (buscaNumeros.length >= 11 || /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim())) {
-    return {
-      encontrado: true,
-      multiplos: false,
-      registro: resultados[0]
-    };
-  }
+    .card {
+      background: white;
+      border: 1px solid #d8e2ea;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
 
-  // Se encontrou apenas um cadastro pelo nome, preenche direto.
-// Se encontrou mais de um, mostra lista.
-if (resultados.length === 1) {
-  return {
-    encontrado: true,
-    multiplos: false,
-    registro: resultados[0]
-  };
+    .numero {
+      font-size: 32px;
+      font-weight: bold;
+      color: #166534;
+    }
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
-return {
-  encontrado: true,
-  multiplos: true,
-  resultados: resultados.slice(0, 10)
-};
+.opcoes-relatorio {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+  margin-bottom: 16px;
 }
 
-function converterData(valor) {
-  if (!valor) return "";
+input,
+button {
+  padding: 12px;
+  border: 1px solid #d8e2ea;
+  border-radius: 10px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
 
-  if (Object.prototype.toString.call(valor) === "[object Date]") {
-    const ano = valor.getFullYear();
-    const mes = String(valor.getMonth() + 1).padStart(2, "0");
-    const dia = String(valor.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
+input[type="date"] {
+  width: 100%;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+button {
+  background: #7fb6cc;
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 800px) {
+  .filtros,
+  .opcoes-relatorio {
+    grid-template-columns: 1fr;
+  }
+}
+
+  </style>
+</head>
+
+<body>
+
+  <h1>Relatórios Gerenciais</h1>
+
+  <div class="card">
+  <h2>Período</h2>
+
+  <div class="filtros">
+    <div>
+      <label>Data inicial</label>
+      <input id="dataInicial" type="date">
+    </div>
+
+    <div>
+      <label>Data final</label>
+      <input id="dataFinal" type="date">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Selecione os relatórios</h2>
+
+  <div class="opcoes-relatorio">
+    <label><input type="checkbox" name="relatorio" value="total"> Total de atendimentos</label>
+    <label><input type="checkbox" name="relatorio" value="naps"> Por NAPS</label>
+    <label><input type="checkbox" name="relatorio" value="tipo"> Por tipo de atendimento</label>
+    <label><input type="checkbox" name="relatorio" value="opm"> Por OPM</label>
+    <label><input type="checkbox" name="relatorio" value="cidade"> Por cidade</label>
+    <label><input type="checkbox" name="relatorio" value="responsavel"> Por responsável</label>
+  </div>
+
+  <button onclick="carregarRelatorio()">Gerar relatório</button>
+</div>
+
+  <div id="conteudo">
+    Carregando relatório...
+  </div>
+
+  <script>
+    function carregarRelatorio() {
+  const dataInicial = document.getElementById("dataInicial").value;
+  const dataFinal = document.getElementById("dataFinal").value;
+
+  const tiposRelatorio = Array.from(
+    document.querySelectorAll('input[name="relatorio"]:checked')
+  ).map(function(input) {
+    return input.value;
+  });
+
+  if (tiposRelatorio.length === 0) {
+    document.getElementById("conteudo").innerHTML = `
+      <div class="card">
+        Selecione pelo menos um relatório.
+      </div>
+    `;
+    return;
   }
 
-  return "";
+  document.getElementById("conteudo").innerHTML = "Carregando relatório...";
+
+  google.script.run
+    .withSuccessHandler(function(relatorio) {
+      montarResultado(relatorio, tiposRelatorio);
+    })
+    .withFailureHandler(function(erro) {
+      document.getElementById("conteudo").innerHTML =
+        "Erro ao carregar relatório: " + erro.message;
+    })
+    .gerarRelatorioGerencial(dataInicial, dataFinal, tiposRelatorio);
 }
-function gerarRelatorioGerencial() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
-  const dados = sheet.getDataRange().getValues();
 
-  const totalAtendimentos = dados.length - 1;
+function montarResultado(relatorio, tiposRelatorio) {
+  let html = "";
 
-  const porNAPS = {};
-  const porTipo = {};
-  const porOPM = {};
-  const porCidade = {};
-  const porResponsavel = {};
-
-  for (let i = 1; i < dados.length; i++) {
-    const linha = dados[i];
-
-    const naps = linha[1] || "nao informado";
-    const tipoAtendimento = linha[2] || "nao informado";
-    const opm = linha[12] || "nao informado";
-    const cidade = linha[20] || "nao informado";
-    const responsavel = linha[25] || "nao informado";
-
-    porNAPS[naps] = (porNAPS[naps] || 0) + 1;
-    porTipo[tipoAtendimento] = (porTipo[tipoAtendimento] || 0) + 1;
-    porOPM[opm] = (porOPM[opm] || 0) + 1;
-    porCidade[cidade] = (porCidade[cidade] || 0) + 1;
-    porResponsavel[responsavel] = (porResponsavel[responsavel] || 0) + 1;
+  if (tiposRelatorio.includes("total")) {
+    html += `
+      <div class="card">
+        <div>Total de atendimentos</div>
+        <div class="numero">${relatorio.totalAtendimentos}</div>
+      </div>
+    `;
   }
 
-  return {
-    totalAtendimentos: totalAtendimentos,
-    porNAPS: porNAPS,
-    porTipo: porTipo,
-    porOPM: porOPM,
-    porCidade: porCidade,
-    porResponsavel: porResponsavel
-  };
-}
-
-function obterUrlApp() {
-  return ScriptApp.getService().getUrl();
-}
-
-function formatarDataBrasil(valor) {
-  if (!valor) return "";
-
-  if (Object.prototype.toString.call(valor) === "[object Date]") {
-    const dia = String(valor.getDate()).padStart(2, "0");
-    const mes = String(valor.getMonth() + 1).padStart(2, "0");
-    const ano = valor.getFullYear();
-
-    return `${dia}/${mes}/${ano}`;
+  if (tiposRelatorio.includes("naps")) {
+    html += `
+      <div class="card">
+        <h2>Atendimentos por NAPS</h2>
+        ${montarTabela(relatorio.porNAPS, "NAPS")}
+      </div>
+    `;
   }
 
-  return String(valor);
+  if (tiposRelatorio.includes("tipo")) {
+    html += `
+      <div class="card">
+        <h2>Atendimentos por tipo de atendimento</h2>
+        ${montarTabela(relatorio.porTipo, "Tipo de atendimento")}
+      </div>
+    `;
+  }
+
+  if (tiposRelatorio.includes("opm")) {
+    html += `
+      <div class="card">
+        <h2>Atendimentos por OPM</h2>
+        ${montarTabela(relatorio.porOPM, "OPM")}
+      </div>
+    `;
+  }
+
+  if (tiposRelatorio.includes("cidade")) {
+    html += `
+      <div class="card">
+        <h2>Atendimentos por cidade</h2>
+        ${montarTabela(relatorio.porCidade, "Cidade")}
+      </div>
+    `;
+  }
+
+  if (tiposRelatorio.includes("responsavel")) {
+    html += `
+      <div class="card">
+        <h2>Atendimentos por responsável</h2>
+        ${montarTabela(relatorio.porResponsavel, "Responsável")}
+      </div>
+    `;
+  }
+
+  document.getElementById("conteudo").innerHTML = html;
 }
+
+function montarTabela(dados, tituloColuna) {
+  let linhas = "";
+
+  const itensOrdenados = Object.keys(dados || {})
+    .map(function(chave) {
+      return {
+        nome: chave,
+        total: dados[chave]
+      };
+    })
+    .sort(function(a, b) {
+      return b.total - a.total;
+    });
+
+  itensOrdenados.forEach(function(item) {
+    linhas += `
+      <tr>
+        <td>${item.nome}</td>
+        <td>${item.total}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>${tituloColuna}</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${linhas}
+      </tbody>
+    </table>
+  `;
+}
+  </script>
+
+</body>
+</html>
