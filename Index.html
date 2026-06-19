@@ -219,7 +219,7 @@
 
   <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
 
-<div id="menuOpcoes" class="menu-opcoes">
+<div id="menuOpcoes" class="menu-opcoes" onmouseleave="fecharMenu()">
   <button onclick="abrirRelatorios()">Relatórios Gerenciais</button>
   <button onclick="abrirDashboard()">Dashboard Estatístico</button>
   <button onclick="abrirIA()">Consulta por IA</button>
@@ -1181,6 +1181,10 @@ function alternarMenu() {
   menu.style.display = menu.style.display === "block" ? "none" : "block";
 }
 
+function fecharMenu() {
+  document.getElementById("menuOpcoes").style.display = "none";
+}
+
 function abrirRelatorios() {
   alert("Relatórios Gerenciais será implementado na próxima etapa.");
 }
@@ -1194,6 +1198,8 @@ function abrirIA() {
 }
 
 function abrirRelatorios() {
+  fecharMenu();
+
   google.script.run
     .withSuccessHandler(function(url) {
       window.open(url + "?pagina=relatorios", "_blank");
