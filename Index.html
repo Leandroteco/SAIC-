@@ -267,10 +267,16 @@
       <label>Tipo de Atendimento</label>
       <select id="tipoAtendimento" onchange="verificarTipoAtendimento()">
         <option value="">Selecione</option>
-        <option>atendimento psicologico individual</option>
+        <option>atendimento psicológico individual</option>
         <option>atendimento familiar</option>
-        <option>atendimento em grupo</option>
+        <option>atendimento grupo</option>
         <option>atendimento social</option>
+        <option>atendimento emergencial</option>
+        <option>atendimento luto</option>
+        <option>atendimento saúde</option>
+        <option>atendimento financeiro</option>
+        <option>atendimento dependência química</option>
+        <option>atendimento habitação</option>
       </select>
     </div>
 
@@ -349,6 +355,7 @@
         <option>ativo administrativo</option>
         <option>ativo operacional</option>
         <option>inativo</option>
+        <option>inativo falecido</option>
       </select>
     </div>
   </div>
@@ -702,7 +709,7 @@
     const tipo = document.getElementById("tipoAtendimento").value;
     const area = document.getElementById("areaVinculados");
 
-    if (tipo === "atendimento familiar" || tipo === "atendimento em grupo") {
+    if (tipo === "atendimento familiar" || tipo === "atendimento grupo") {
       area.style.display = "block";
     } else {
       area.style.display = "none";
