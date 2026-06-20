@@ -724,27 +724,17 @@
     div.className = "vinculado";
 
     div.innerHTML = `
-      <div class="grid">
-        <div>
-        <label>Nome</label>
-        <input class="v_nome" oninput="converterMaiusculas(this)">
-        </div>
+      <div class="grid-2">
+  <div>
+    <label>Nome</label>
+    <input class="v_nome" oninput="converterMaiusculas(this)">
+  </div>
 
-<div>
-      <label>CPF</label>
-      <input class="v_cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
-    </div>
-
-
-        <div>
-          <label>Tipo de Vínculo</label>
-          <select class="v_tipo">
-            <option value="">Selecione</option>
-            <option>familiar</option>
-            <option>grupo</option>
-          </select>
-        </div>
-      </div>
+  <div>
+    <label>CPF</label>
+    <input class="v_cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+  </div>
+</div>
 
       <div class="grid-2">
         <div>
@@ -782,7 +772,6 @@
       pessoas.push({
         nome: bloco.querySelector(".v_nome").value,
         cpf: bloco.querySelector(".v_cpf").value,
-        tipoVinculo: bloco.querySelector(".v_tipo").value,
         parentesco: bloco.querySelector(".v_parentesco").value,
         observacoes: bloco.querySelector(".v_observacoes").value
       });
@@ -1190,10 +1179,6 @@ function alternarMenu() {
 
 function fecharMenu() {
   document.getElementById("menuOpcoes").style.display = "none";
-}
-
-function abrirRelatorios() {
-  alert("Relatórios Gerenciais será implementado na próxima etapa.");
 }
 
 function abrirDashboard() {
