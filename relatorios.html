@@ -567,11 +567,7 @@
           </select>
         </div>
 
-        <div class="field">
-          <label>Tipo de vínculo</label>
-          <select id="tipoVinculo"></select>
-        </div>
-
+       
         <div class="field">
           <label>Parentesco/vínculo</label>
           <select id="parentesco"></select>
@@ -608,10 +604,11 @@
     let abaAtual = "resumo";
     let opcoesCarregadas = false;
 
-    document.addEventListener("DOMContentLoaded", function() {
-      prepararSelectsVazios();
-      carregarRelatorio();
-    });
+  document.addEventListener("DOMContentLoaded", function() {
+  prepararSelectsVazios();
+  preencherMesVigente();
+  carregarRelatorio();
+});
 
     function prepararSelectsVazios() {
       [
@@ -625,12 +622,31 @@
         "cidade",
         "bairro",
         "estado",
-        "tipoVinculo",
         "parentesco"
       ].forEach(function(id) {
         preencherSelect(id, [], "Todos");
       });
     }
+
+    function preencherMesVigente() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+
+  const inicio = new Date(ano, mes, 1);
+  const fim = new Date(ano, mes + 1, 0);
+
+  document.getElementById("dataInicial").value = formatarDataInput(inicio);
+  document.getElementById("dataFinal").value = formatarDataInput(fim);
+}
+
+function formatarDataInput(data) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
 
     function coletarFiltros() {
       return {
@@ -651,7 +667,6 @@
         faixaEtaria: valorCampo("faixaEtaria"),
         tempoServico: valorCampo("tempoServico"),
         vinculos: valorCampo("vinculos"),
-        tipoVinculo: valorCampo("tipoVinculo"),
         parentesco: valorCampo("parentesco"),
         limiteDetalhes: 800
       };
@@ -707,7 +722,6 @@
       preencherSelect("cidade", opcoes.cidade, "Todas");
       preencherSelect("bairro", opcoes.bairro, "Todos");
       preencherSelect("estado", opcoes.estado, "Todas");
-      preencherSelect("tipoVinculo", opcoes.tipoVinculo, "Todos");
       preencherSelect("parentesco", opcoes.parentesco, "Todos");
     }
 
@@ -746,7 +760,6 @@
         "faixaEtaria",
         "tempoServico",
         "vinculos",
-        "tipoVinculo",
         "parentesco"
       ].forEach(function(id) {
         document.getElementById(id).value = "";
@@ -796,8 +809,6 @@
         montarMetrica("Atendimentos", resumo.totalAtendimentos),
         montarMetrica("Pessoas distintas", resumo.pessoasDistintas),
         montarMetrica("Retornos", resumo.retornos),
-        montarMetrica("Com vínculos", resumo.atendimentosComVinculos),
-        montarMetrica("Pessoas vinculadas", resumo.totalVinculos),
         montarMetrica("Familiar/grupo", resumo.atendimentosFamiliaresOuGrupo)
       ].join("");
     }
@@ -863,15 +874,14 @@
         `;
       }
 
-      if (abaAtual === "vinculos") {
-        return `
-          <div class="tab-grid">
-            ${montarGraficoBarras("Tipo de vínculo", d.porTipoVinculo, { limite: 10 })}
-            ${montarGraficoBarras("Parentesco/vínculo", d.porParentesco, { limite: 12 })}
-            ${montarTabelaVinculos()}
-          </div>
-        `;
-      }
+     if (abaAtual === "vinculos") {
+  return `
+    <div class="tab-grid">
+      ${montarGraficoBarras("Parentesco/vínculo", d.porParentesco, { limite: 12 })}
+      ${montarTabelaVinculos()}
+    </div>
+  `;
+}
 
       return montarTabelaDetalhada();
     }
