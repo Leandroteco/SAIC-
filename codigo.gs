@@ -1,6 +1,76 @@
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
 
+const CABECALHOS_DADOS = [
+  "id_atendimento",
+  "naps",
+  "tipoAtendimento",
+  "motivo",
+  "re",
+  "nome",
+  "cpf",
+  "telefone",
+  "email",
+  "dataIngresso",
+  "dataNascimento",
+  "sexo",
+  "opmAtual",
+  "situacaoStatus",
+  "dataInatividade",
+  "estadoCivil",
+  "numeroFilhos",
+  "cep",
+  "rua",
+  "bairro",
+  "cidade",
+  "estado",
+  "numero",
+  "complemento",
+  "observacoes",
+  "responsavel",
+  "dataCadastro"
+];
+
+const CABECALHOS_VINCULOS = [
+  "id_vinculo",
+  "id_atendimento",
+  "nome",
+  "cpf",
+  "tipoVinculo",
+  "parentesco",
+  "observacoes"
+];
+
+function configurarEstruturaPlanilha() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheetDados = obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS);
+  const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
+
+  return {
+    sheetDados: sheetDados,
+    sheetVinculos: sheetVinculos
+  };
+}
+
+function obterOuCriarAba(ss, nomeAba, cabecalhos) {
+  let sheet = ss.getSheetByName(nomeAba);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(nomeAba);
+    sheet.getRange(1, 1, 1, cabecalhos.length).setValues([cabecalhos]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, cabecalhos.length).setValues([cabecalhos]);
+    sheet.setFrozenRows(1);
+  }
+
+  return sheet;
+}
+
 function doGet(e) {
   if (e && e.parameter && e.parameter.pagina === "relatorios") {
     return HtmlService.createHtmlOutputFromFile("relatorios")
@@ -12,9 +82,9 @@ function doGet(e) {
 }
 
 function salvarAtendimento(dados) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ABA_DADOS);
-  const sheetVinculos = ss.getSheetByName(ABA_VINCULOS);
+  const estrutura = configurarEstruturaPlanilha();
+  const sheet = estrutura.sheetDados;
+  const sheetVinculos = estrutura.sheetVinculos;
 
   if (!sheet) throw new Error("A aba dados_cadastro não foi encontrada.");
   if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas não foi encontrada.");
@@ -57,15 +127,15 @@ function salvarAtendimento(dados) {
       if (pessoa.nome || pessoa.cpf) {
         const idVinculo = gerarNovoId(sheetVinculos, 1);
 
-        sheetVinculos.appendRow([
-          idVinculo,
-          idAtendimento,
-          normalizar(pessoa.nome),
-          formatarCPF(pessoa.cpf),
-          normalizar(pessoa.tipoVinculo),
-          normalizar(pessoa.parentesco),
-          normalizar(pessoa.observacoes)
-        ]);
+sheetVinculos.appendRow([
+  idVinculo,
+  idAtendimento,
+  normalizar(pessoa.nome),
+  formatarCPF(pessoa.cpf),
+  "",
+  normalizar(pessoa.parentesco),
+  normalizar(pessoa.observacoes)
+]);
       }
     });
   }
@@ -257,10 +327,9 @@ function converterData(valor) {
 
 function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio) {
   const filtros = normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio);
+  const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ABA_DADOS);
-
-  if (!sheet) throw new Error("A aba dados_cadastro não foi encontrada.");
+  const sheet = estrutura.sheetDados;
 
   const dados = sheet.getDataRange().getValues();
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
@@ -319,7 +388,6 @@ function prepararFiltrosRelatorio(filtros) {
     faixaEtaria: normalizar(filtros.faixaEtaria),
     tempoServico: normalizar(filtros.tempoServico),
     vinculos: normalizar(filtros.vinculos),
-    tipoVinculo: normalizar(filtros.tipoVinculo),
     parentesco: normalizar(filtros.parentesco)
   };
 }
@@ -367,12 +435,6 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
 
   if (filtros.vinculos === "com" && registro.quantidadeVinculos === 0) return false;
   if (filtros.vinculos === "sem" && registro.quantidadeVinculos > 0) return false;
-
-  if (filtros.tipoVinculo && !registro.vinculos.some(function(vinculo) {
-    return normalizar(vinculo.tipoVinculo) === filtros.tipoVinculo;
-  })) {
-    return false;
-  }
 
   if (filtros.parentesco && !registro.vinculos.some(function(vinculo) {
     return normalizar(vinculo.parentesco) === filtros.parentesco;
@@ -531,7 +593,6 @@ function montarDistribuicoesRelatorio(registros) {
     porEstadoCivil: contarPorCampo(registros, "estadoCivil"),
     porFaixaEtaria: contarPorCampo(registros, "faixaEtaria"),
     porTempoServico: contarPorCampo(registros, "tempoServico"),
-    porTipoVinculo: contarPorVinculo(registros, "tipoVinculo"),
     porParentesco: contarPorVinculo(registros, "parentesco")
   };
 }
@@ -592,7 +653,6 @@ function montarOpcoesRelatorio(registros, vinculosPorAtendimento) {
     situacaoStatus: listarUnicosRelatorio(registros, "situacaoStatus"),
     sexo: listarUnicosRelatorio(registros, "sexo"),
     estadoCivil: listarUnicosRelatorio(registros, "estadoCivil"),
-    tipoVinculo: listarUnicosRelatorio(todosVinculos, "tipoVinculo"),
     parentesco: listarUnicosRelatorio(todosVinculos, "parentesco")
   };
 }
