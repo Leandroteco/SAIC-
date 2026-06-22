@@ -1,9 +1,13 @@
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
+const ABA_USUARIOS = "usuarios_sistema";
+
+const PERFIL_ADMINISTRADOR = "administrador";
+const PERFIL_ATENDENTE = "atendente";
 
 const CABECALHOS_DADOS = [
   "id_atendimento",
-  "naps",
+  "emailCadastro",
   "tipoAtendimento",
   "motivo",
   "re",
@@ -42,15 +46,24 @@ const CABECALHOS_VINCULOS = [
   "observacoes"
 ];
 
+const CABECALHOS_USUARIOS = [
+  "email",
+  "perfil",
+  "ativo",
+  "nome"
+];
+
 function configurarEstruturaPlanilha() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const sheetDados = obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS);
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
+  const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
 
   return {
     sheetDados: sheetDados,
-    sheetVinculos: sheetVinculos
+    sheetVinculos: sheetVinculos,
+    sheetUsuarios: sheetUsuarios
   };
 }
 
@@ -72,10 +85,145 @@ function obterOuCriarAba(ss, nomeAba, cabecalhos) {
   return sheet;
 }
 
+function obterEmailUsuarioGoogle() {
+  return String(Session.getActiveUser().getEmail() || "")
+    .toLowerCase()
+    .trim();
+}
+
+function obterUsuarioSistema() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const email = obterEmailUsuarioGoogle();
+
+  if (!email) {
+    return {
+      autorizado: false,
+      email: "",
+      perfil: "",
+      nome: "",
+      mensagem: "Nao foi possivel identificar o email Google do usuario. Verifique a implantacao do Web App."
+    };
+  }
+
+  const dados = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    const emailCadastrado = String(dados[i][0] || "").toLowerCase().trim();
+    const perfil = String(dados[i][1] || "").toLowerCase().trim();
+    const ativo = String(dados[i][2] || "").toLowerCase().trim();
+    const nome = String(dados[i][3] || "").trim();
+
+    if (emailCadastrado === email) {
+      if (ativo !== "sim") {
+        return {
+          autorizado: false,
+          email: email,
+          perfil: perfil,
+          nome: nome,
+          mensagem: "Usuario cadastrado, mas inativo."
+        };
+      }
+
+      return {
+        autorizado: true,
+        email: email,
+        perfil: perfil,
+        nome: nome,
+        mensagem: ""
+      };
+    }
+  }
+
+  return {
+    autorizado: false,
+    email: email,
+    perfil: "",
+    nome: "",
+    mensagem: "Email nao autorizado: " + email
+  };
+}
+
+function validarUsuarioAutorizado() {
+  const usuario = obterUsuarioSistema();
+
+  if (!usuario.autorizado) {
+    throw new Error(usuario.mensagem || "Acesso negado.");
+  }
+
+  return usuario;
+}
+
+function validarUsuarioAdministrador() {
+  const usuario = validarUsuarioAutorizado();
+
+  if (usuario.perfil !== PERFIL_ADMINISTRADOR) {
+    throw new Error("Acesso negado. Somente administradores podem acessar este recurso.");
+  }
+
+  return usuario;
+}
+
+function renderizarAcessoNegado(usuario) {
+  const email = escaparHtmlServidor(usuario.email || "email nao identificado");
+  const mensagem = escaparHtmlServidor(usuario.mensagem || "Acesso negado.");
+
+  const html =
+    "<!DOCTYPE html>" +
+    "<html>" +
+    "<head>" +
+    "<base target='_top'>" +
+    "<style>" +
+    "body{background:#f4f8fb;color:#334155;font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:30px;}" +
+    ".box{background:white;border:1px solid #d8e2ea;border-radius:12px;margin:60px auto;max-width:560px;padding:28px;text-align:center;}" +
+    "h1{color:#b42318;margin-top:0;}" +
+    "p{line-height:1.5;}" +
+    ".email{background:#f1f5f9;border-radius:8px;display:inline-block;margin-top:10px;padding:8px 12px;}" +
+    "</style>" +
+    "</head>" +
+    "<body>" +
+    "<div class='box'>" +
+    "<h1>Acesso negado</h1>" +
+    "<p>" + mensagem + "</p>" +
+    "<div class='email'>" + email + "</div>" +
+    "</div>" +
+    "</body>" +
+    "</html>";
+
+  return HtmlService.createHtmlOutput(html).setTitle("SAIC - Acesso negado");
+}
+
+function escaparHtmlServidor(valor) {
+  return String(valor === null || valor === undefined ? "" : valor)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function doGet(e) {
+  configurarEstruturaPlanilha();
+
+  const usuario = obterUsuarioSistema();
+
+  if (!usuario.autorizado) {
+    return renderizarAcessoNegado(usuario);
+  }
+
   if (e && e.parameter && e.parameter.pagina === "relatorios") {
+    if (usuario.perfil !== PERFIL_ADMINISTRADOR) {
+      return renderizarAcessoNegado({
+        autorizado: false,
+        email: usuario.email,
+        perfil: usuario.perfil,
+        nome: usuario.nome,
+        mensagem: "Somente administradores podem acessar os relatorios gerenciais."
+      });
+    }
+
     return HtmlService.createHtmlOutputFromFile("relatorios")
-      .setTitle("SAIC - Relatórios Gerenciais");
+      .setTitle("SAIC - Relatorios Gerenciais");
   }
 
   return HtmlService.createHtmlOutputFromFile("Index")
@@ -83,61 +231,62 @@ function doGet(e) {
 }
 
 function salvarAtendimento(dados) {
+  const usuario = validarUsuarioAutorizado();
   const estrutura = configurarEstruturaPlanilha();
   const sheet = estrutura.sheetDados;
   const sheetVinculos = estrutura.sheetVinculos;
 
-  if (!sheet) throw new Error("A aba dados_cadastro não foi encontrada.");
-  if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas não foi encontrada.");
+  if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
+  if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
 
   const idAtendimento = gerarNovoId(sheet, 1);
   const dataCadastro = new Date();
 
- sheet.appendRow([
-  idAtendimento,
-  normalizar(dados.naps),
-  normalizar(dados.tipoAtendimento),
-  normalizar(dados.motivo),
-  normalizar(dados.re),
-  normalizar(dados.nome),
-  formatarCPF(dados.cpf),
-  normalizarTelefone(dados.telefone),
-  normalizar(dados.email),
-  dados.dataIngresso || "",
-  dados.dataNascimento || "",
-  normalizar(dados.sexo),
-  normalizar(dados.opmAtual),
-  normalizar(dados.situacaoStatus),
-  dados.dataInatividade || "",
-  normalizar(dados.estadoCivil),
-  dados.numeroFilhos || "",
-  dados.cep || "",
-  normalizar(dados.rua),
-  normalizar(dados.bairro),
-  normalizar(dados.cidade),
-  normalizar(dados.estado),
-  dados.numero || "",
-  normalizar(dados.complemento),
-  normalizar(dados.observacoes),
-  normalizar(dados.responsavel),
-  dataCadastro,
-  dados.postoGraduacao || ""
-]);
+  sheet.appendRow([
+    idAtendimento,
+    usuario.email,
+    normalizar(dados.tipoAtendimento),
+    normalizar(dados.motivo),
+    normalizar(dados.re),
+    normalizar(dados.nome),
+    formatarCPF(dados.cpf),
+    normalizarTelefone(dados.telefone),
+    normalizar(dados.email),
+    dados.dataIngresso || "",
+    dados.dataNascimento || "",
+    normalizar(dados.sexo),
+    normalizar(dados.opmAtual),
+    normalizar(dados.situacaoStatus),
+    dados.dataInatividade || "",
+    normalizar(dados.estadoCivil),
+    dados.numeroFilhos || "",
+    dados.cep || "",
+    normalizar(dados.rua),
+    normalizar(dados.bairro),
+    normalizar(dados.cidade),
+    normalizar(dados.estado),
+    dados.numero || "",
+    normalizar(dados.complemento),
+    normalizar(dados.observacoes),
+    normalizar(dados.responsavel),
+    dataCadastro,
+    dados.postoGraduacao || ""
+  ]);
 
   if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
     dados.pessoasVinculadas.forEach(function(pessoa) {
       if (pessoa.nome || pessoa.cpf) {
         const idVinculo = gerarNovoId(sheetVinculos, 1);
 
-sheetVinculos.appendRow([
-  idVinculo,
-  idAtendimento,
-  normalizar(pessoa.nome),
-  formatarCPF(pessoa.cpf),
-  "",
-  normalizar(pessoa.parentesco),
-  normalizar(pessoa.observacoes)
-]);
+        sheetVinculos.appendRow([
+          idVinculo,
+          idAtendimento,
+          normalizar(pessoa.nome),
+          formatarCPF(pessoa.cpf),
+          normalizar(pessoa.tipoVinculo),
+          normalizar(pessoa.parentesco),
+          normalizar(pessoa.observacoes)
+        ]);
       }
     });
   }
@@ -178,15 +327,16 @@ function formatarCPF(cpf) {
 
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 }
+
 function normalizarTelefone(valor) {
   if (!valor) return "";
   return String(valor).replace(/\D/g, "");
 }
 
-
 function montarRegistro(linha) {
   return {
     id: linha[0],
+    emailCadastro: linha[1],
     naps: linha[1],
     tipoAtendimento: linha[2],
     motivo: linha[3],
@@ -211,7 +361,7 @@ function montarRegistro(linha) {
     numero: linha[22],
     complemento: linha[23],
     observacoes: linha[24],
-     responsavel: linha[25],
+    responsavel: linha[25],
     dataCadastro: linha[26],
     postoGraduacao: linha[27] || ""
   };
@@ -226,16 +376,22 @@ function formatarDataParaInput(valor) {
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const dia = String(data.getDate()).padStart(2, "0");
 
-  return `${ano}-${mes}-${dia}`;
+  return ano + "-" + mes + "-" + dia;
 }
 
-// BUSCA POR RE, CPF E NOME
-
-
 function buscarCadastro(termo) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados_cadastro");
-  const linhas = sheet.getDataRange().getValues();
+  validarUsuarioAutorizado();
 
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_DADOS);
+
+  if (!sheet) {
+    return {
+      encontrado: false,
+      mensagem: "A aba dados_cadastro nao foi encontrada."
+    };
+  }
+
+  const linhas = sheet.getDataRange().getValues();
   const buscaTexto = normalizar(termo);
   const buscaNumeros = somenteNumeros(termo);
 
@@ -247,6 +403,7 @@ function buscarCadastro(termo) {
 
     const registro = {
       re: l[4] || "",
+      postoGraduacao: l[27] || "",
       nome: l[5] || "",
       cpf: l[6] || "",
       telefone: l[7] || "",
@@ -266,8 +423,7 @@ function buscarCadastro(termo) {
       estado: l[21] || "",
       numero: l[22] || "",
       complemento: l[23] || "",
-      dataCadastro: formatarDataBrasil(l[26]),
-      postoGraduacao: l[27] || ""
+      dataCadastro: formatarDataBrasil(l[26])
     };
 
     const reTexto = normalizar(registro.re);
@@ -299,7 +455,6 @@ function buscarCadastro(termo) {
     };
   }
 
-  // CPF ou RE completo: preenche direto
   if (buscaNumeros.length >= 11 || /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim())) {
     return {
       encontrado: true,
@@ -308,21 +463,19 @@ function buscarCadastro(termo) {
     };
   }
 
-  // Se encontrou apenas um cadastro pelo nome, preenche direto.
-// Se encontrou mais de um, mostra lista.
-if (resultados.length === 1) {
+  if (resultados.length === 1) {
+    return {
+      encontrado: true,
+      multiplos: false,
+      registro: resultados[0]
+    };
+  }
+
   return {
     encontrado: true,
-    multiplos: false,
-    registro: resultados[0]
+    multiplos: true,
+    resultados: resultados.slice(0, 10)
   };
-}
-
-return {
-  encontrado: true,
-  multiplos: true,
-  resultados: resultados.slice(0, 10)
-};
 }
 
 function converterData(valor) {
@@ -330,6 +483,8 @@ function converterData(valor) {
 }
 
 function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio) {
+  validarUsuarioAdministrador();
+
   const filtros = normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio);
   const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -404,7 +559,7 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
   }
 
   if (filtros.buscaLivre) {
-     const textoBusca = normalizar([
+    const textoBusca = normalizar([
       registro.nome,
       registro.postoGraduacao,
       registro.re,
@@ -412,6 +567,7 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
       registro.tipoAtendimento,
       registro.motivo,
       registro.naps,
+      registro.emailCadastro,
       registro.opmAtual,
       registro.cidade,
       registro.bairro,
@@ -501,6 +657,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento) {
 
   return {
     id: id,
+    emailCadastro: linha[1] || "",
     naps: linha[1] || "",
     tipoAtendimento: linha[2] || "",
     motivo: linha[3] || "",
@@ -572,9 +729,6 @@ function montarResumoRelatorio(registros) {
     }
   });
 
-const porPostoGraduacao = contarPorCampo(registros, "postoGraduacao");
-const postoMaisRecorrente = obterMaiorGrupoRelatorio(porPostoGraduacao);
-
   return {
     totalAtendimentos: registros.length,
     pessoasDistintas: Object.keys(pessoas).length,
@@ -582,27 +736,8 @@ const postoMaisRecorrente = obterMaiorGrupoRelatorio(porPostoGraduacao);
     pessoasComRetorno: pessoasComRetorno,
     atendimentosComVinculos: atendimentosComVinculos,
     totalVinculos: totalVinculos,
-    atendimentosFamiliaresOuGrupo: atendimentosFamiliaresOuGrupo,
-    postoMaisRecorrente: postoMaisRecorrente
+    atendimentosFamiliaresOuGrupo: atendimentosFamiliaresOuGrupo
   };
-  
-}
-
-function obterMaiorGrupoRelatorio(contagem) {
-  const itens = Object.keys(contagem || {}).map(function(chave) {
-    return {
-      nome: chave,
-      total: contagem[chave]
-    };
-  });
-
-  if (itens.length === 0) return "-";
-
-  itens.sort(function(a, b) {
-    return b.total - a.total;
-  });
-
-  return itens[0].nome;
 }
 
 function montarDistribuicoesRelatorio(registros) {
@@ -610,6 +745,7 @@ function montarDistribuicoesRelatorio(registros) {
     porMes: contarPorCampo(registros, "mesCadastro"),
     porNAPS: contarPorCampo(registros, "naps"),
     porTipo: contarPorCampo(registros, "tipoAtendimento"),
+    porPostoGraduacao: contarPorCampo(registros, "postoGraduacao"),
     porMotivo: contarPorCampo(registros, "motivo"),
     porOPM: contarPorCampo(registros, "opmAtual"),
     porCidade: contarPorCampo(registros, "cidade"),
@@ -634,6 +770,7 @@ function montarDetalhesRelatorio(registros, limite) {
     .slice(0, limite)
     .map(function(registro) {
       return {
+        dataCadastro: registro.dataCadastro,
         dataCadastroIso: registro.dataCadastroIso,
         postoGraduacao: registro.postoGraduacao,
         nome: registro.nome,
@@ -643,6 +780,7 @@ function montarDetalhesRelatorio(registros, limite) {
         tipoAtendimento: registro.tipoAtendimento,
         motivo: registro.motivo,
         naps: registro.naps,
+        emailCadastro: registro.emailCadastro,
         opmAtual: registro.opmAtual,
         situacaoStatus: registro.situacaoStatus,
         sexo: registro.sexo,
@@ -731,7 +869,7 @@ function obterChavePessoa(registro) {
   return somenteNumeros(registro.cpf) ||
     normalizar(registro.re) ||
     normalizar(registro.nome) ||
-    `id-${registro.id}`;
+    "id-" + registro.id;
 }
 
 function montarEnderecoRelatorio(linha) {
@@ -788,7 +926,7 @@ function obterMesAno(data) {
   const ano = data.getFullYear();
   const mes = String(data.getMonth() + 1).padStart(2, "0");
 
-  return `${ano}-${mes}`;
+  return ano + "-" + mes;
 }
 
 function obterDataInicio(valor) {
@@ -845,5 +983,5 @@ function formatarDataBrasil(valor) {
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const ano = data.getFullYear();
 
-  return `${dia}/${mes}/${ano}`;
+  return dia + "/" + mes + "/" + ano;
 }
