@@ -98,6 +98,11 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
     }
+    .grid-posto-nome {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 16px;
+}
 
     button {
       border: none;
@@ -182,9 +187,10 @@
 
         @media (max-width: 900px) {
       .grid,
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
+      .grid-2,
+      .grid-posto-nome {
+       grid-template-columns: 1fr;
+}
 
       .container {
         width: auto;
@@ -305,8 +311,32 @@
     </div>
   </div>
 
-  <label>Nome</label>
-  <input id="nome" oninput="converterMaiusculas(this)">
+  <div class="grid-posto-nome">
+    <div>
+      <label>Posto/Graduação</label>
+      <select id="postoGraduacao">
+        <option value="">Selecione</option>
+        <option>Sd PM</option>
+        <option>Cb PM</option>
+        <option>3 Sgt PM</option>
+        <option>2 Sgt PM</option>
+        <option>1 Sgt PM</option>
+        <option>Subten PM</option>
+        <option>Asp of PM</option>
+        <option>2 Ten PM</option>
+        <option>1 Ten PM</option>
+        <option>Cap PM</option>
+        <option>Maj PM</option>
+        <option>Ten Cel PM</option>
+        <option>Cel PM</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Nome</label>
+      <input id="nome" oninput="converterMaiusculas(this)">
+    </div>
+  </div>
 
   <div class="grid">
     <div>
@@ -819,6 +849,7 @@ campoResponsavel.style.border = "1px solid #d8e2ea";
       tipoAtendimento: document.getElementById("tipoAtendimento").value,
       motivo: document.getElementById("motivo").value,
       re: document.getElementById("re").value,
+      postoGraduacao: document.getElementById("postoGraduacao").value,
       nome: document.getElementById("nome").value,
       cpf: document.getElementById("cpf").value,
       telefone: document.getElementById("telefone").value,
@@ -1030,6 +1061,7 @@ function preencherFormulario(r) {
   document.getElementById("re").value = r.re || "";
   document.getElementById("cpf").value = r.cpf || "";
   document.getElementById("telefone").value = r.telefone || "";
+  document.getElementById("postoGraduacao").value = r.postoGraduacao || "";
   document.getElementById("nome").value = converterMaiusculas(r.nome || "");
   document.getElementById("sexo").value = r.sexo || "";
   document.getElementById("email").value = r.email || "";
