@@ -572,6 +572,9 @@ function montarResumoRelatorio(registros) {
     }
   });
 
+const porPostoGraduacao = contarPorCampo(registros, "postoGraduacao");
+const postoMaisRecorrente = obterMaiorGrupoRelatorio(porPostoGraduacao);
+
   return {
     totalAtendimentos: registros.length,
     pessoasDistintas: Object.keys(pessoas).length,
@@ -579,8 +582,27 @@ function montarResumoRelatorio(registros) {
     pessoasComRetorno: pessoasComRetorno,
     atendimentosComVinculos: atendimentosComVinculos,
     totalVinculos: totalVinculos,
-    atendimentosFamiliaresOuGrupo: atendimentosFamiliaresOuGrupo
+    atendimentosFamiliaresOuGrupo: atendimentosFamiliaresOuGrupo,
+    postoMaisRecorrente: postoMaisRecorrente
   };
+  
+}
+
+function obterMaiorGrupoRelatorio(contagem) {
+  const itens = Object.keys(contagem || {}).map(function(chave) {
+    return {
+      nome: chave,
+      total: contagem[chave]
+    };
+  });
+
+  if (itens.length === 0) return "-";
+
+  itens.sort(function(a, b) {
+    return b.total - a.total;
+  });
+
+  return itens[0].nome;
 }
 
 function montarDistribuicoesRelatorio(registros) {
