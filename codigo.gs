@@ -28,7 +28,8 @@ const CABECALHOS_DADOS = [
   "complemento",
   "observacoes",
   "responsavel",
-  "dataCadastro"
+  "dataCadastro",
+  "postoGraduacao"
 ];
 
 const CABECALHOS_VINCULOS = [
@@ -119,7 +120,8 @@ function salvarAtendimento(dados) {
   normalizar(dados.complemento),
   normalizar(dados.observacoes),
   normalizar(dados.responsavel),
-  dataCadastro
+  dataCadastro,
+  dados.postoGraduacao || ""
 ]);
 
   if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
@@ -209,8 +211,9 @@ function montarRegistro(linha) {
     numero: linha[22],
     complemento: linha[23],
     observacoes: linha[24],
-    responsavel: linha[25],
-    dataCadastro: linha[26]
+     responsavel: linha[25],
+    dataCadastro: linha[26],
+    postoGraduacao: linha[27] || ""
   };
 }
 
@@ -263,7 +266,8 @@ function buscarCadastro(termo) {
       estado: l[21] || "",
       numero: l[22] || "",
       complemento: l[23] || "",
-      dataCadastro: formatarDataBrasil(l[26])
+      dataCadastro: formatarDataBrasil(l[26]),
+      postoGraduacao: l[27] || ""
     };
 
     const reTexto = normalizar(registro.re);
@@ -400,8 +404,9 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
   }
 
   if (filtros.buscaLivre) {
-    const textoBusca = normalizar([
+     const textoBusca = normalizar([
       registro.nome,
+      registro.postoGraduacao,
       registro.re,
       registro.cpf,
       registro.tipoAtendimento,
@@ -501,6 +506,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento) {
     motivo: linha[3] || "",
     re: linha[4] || "",
     nome: linha[5] || "",
+    postoGraduacao: linha[27] || "",
     cpf: linha[6] || "",
     telefone: linha[7] || "",
     email: linha[8] || "",
@@ -606,8 +612,8 @@ function montarDetalhesRelatorio(registros, limite) {
     .slice(0, limite)
     .map(function(registro) {
       return {
-        dataCadastro: registro.dataCadastro,
         dataCadastroIso: registro.dataCadastroIso,
+        postoGraduacao: registro.postoGraduacao,
         nome: registro.nome,
         re: registro.re,
         cpf: registro.cpf,
