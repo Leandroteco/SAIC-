@@ -487,7 +487,7 @@
         </div>
 
         <div class="field">
-          <label>NAPS</label>
+          <label>Email de cadastro</label>
           <select id="naps"></select>
         </div>
 
@@ -536,9 +536,11 @@
             <option value="">Todos</option>
             <option value="ate 5 anos">Até 5 anos</option>
             <option value="6 a 10 anos">6 a 10 anos</option>
-            <option value="11 a 20 anos">11 a 20 anos</option>
-            <option value="21 a 30 anos">21 a 30 anos</option>
-            <option value="31 anos ou mais">31 anos ou mais</option>
+            <option value="11 a 15 anos">11 a 15 anos</option>
+            <option value="16 a 20 anos">16 a 20 anos</option>
+            <option value="21 a 25 anos">21 a 25 anos</option>
+            <option value="26 a 30 anos">26 a 30 anos</option>
+            <option value="35 a 35 anos">30 a 35 anos</option>
             <option value="nao informado">Não informado</option>
           </select>
         </div>
@@ -743,8 +745,6 @@ function formatarDataInput(data) {
 
     function limparFiltros() {
       [
-        "dataInicial",
-        "dataFinal",
         "buscaLivre",
         "tipoAtendimento",
         "motivo",
@@ -807,9 +807,7 @@ function formatarDataInput(data) {
     function montarMetricas(resumo) {
       return [
         montarMetrica("Atendimentos", resumo.totalAtendimentos),
-        montarMetrica("Pessoas distintas", resumo.pessoasDistintas),
         montarMetrica("Retornos", resumo.retornos),
-        montarMetrica("Posto/Graduação", resumo.postoMaisRecorrente),
         montarMetrica("Familiar/grupo", resumo.atendimentosFamiliaresOuGrupo)
       ].join("");
     }
@@ -853,15 +851,16 @@ function formatarDataInput(data) {
       }
 
       if (abaAtual === "perfil") {
-        return `
-          <div class="tab-grid">
-            ${montarGraficoBarras("Sexo", d.porSexo, { limite: 8 })}
-            ${montarGraficoBarras("Faixa etária", d.porFaixaEtaria, { ordem: ordemFaixaEtaria() })}
-            ${montarGraficoBarras("Estado civil", d.porEstadoCivil, { limite: 8 })}
-            ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico() })}
-          </div>
-        `;
-      }
+  return `
+    <div class="tab-grid">
+      ${montarGraficoBarras("Posto/Graduação", d.porPostoGraduacao, { ordem: ordemPostoGraduacao() })}
+      ${montarGraficoBarras("Sexo", d.porSexo, { limite: 8 })}
+      ${montarGraficoBarras("Faixa etária", d.porFaixaEtaria, { ordem: ordemFaixaEtaria() })}
+      ${montarGraficoBarras("Estado civil", d.porEstadoCivil, { limite: 8 })}
+      ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico() })}
+    </div>
+  `;
+}
 
       if (abaAtual === "localidade") {
         return `
@@ -870,7 +869,7 @@ function formatarDataInput(data) {
             ${montarGraficoBarras("Cidade", d.porCidade, { limite: 15 })}
             ${montarGraficoBarras("Bairro", d.porBairro, { limite: 15 })}
             ${montarGraficoBarras("UF", d.porUF, { limite: 10 })}
-            ${montarGraficoBarras("NAPS", d.porNAPS, { limite: 10, classe: "wide" })}
+            ${montarGraficoBarras("Email de cadastro", d.porNAPS, { limite: 10, classe: "wide" })}
           </div>
         `;
       }
@@ -1061,7 +1060,7 @@ function formatarDataInput(data) {
                   <th>CPF</th>
                   <th>Tipo</th>
                   <th>Motivo</th>
-                  <th>NAPS</th>
+                  <th>Email de cadastro</th>
                   <th>OPM</th>
                   <th>Status</th>
                   <th>Responsável</th>
@@ -1132,6 +1131,25 @@ function formatarDataInput(data) {
       ];
     }
 
+    function ordemPostoGraduacao() {
+  return [
+    "Sd PM",
+    "Cb PM",
+    "3 Sgt PM",
+    "2 Sgt PM",
+    "1 Sgt PM",
+    "Subten PM",
+    "Asp of PM",
+    "2 Ten PM",
+    "1 Ten PM",
+    "Cap PM",
+    "Maj PM",
+    "Ten Cel PM",
+    "Cel PM",
+    "nao informado"
+  ];
+}
+
     function exportarCSV() {
       if (!relatorioAtual || !relatorioAtual.registros || relatorioAtual.registros.length === 0) {
         return;
@@ -1144,7 +1162,7 @@ function formatarDataInput(data) {
         "CPF",
         "Tipo",
         "Motivo",
-        "NAPS",
+        "Email de cadastro",
         "OPM",
         "Status",
         "Responsável",
