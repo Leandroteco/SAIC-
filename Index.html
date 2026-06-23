@@ -2,6 +2,7 @@
 <html>
 <head>
   <base target="_top">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     body {
@@ -214,6 +215,30 @@
 }
   </style>
 </head>
+<div id="telaLogin" style="max-width:480px;margin:60px auto;background:white;border:1px solid #d8e2ea;border-radius:12px;padding:28px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;">
+  <h2 style="color:#3b82a0;margin-top:0;">SAIC</h2>
+  <p style="color:#64748b;">Entre com sua Conta Google para acessar o sistema.</p>
+  <div id="g_id_onload"
+     data-client_id="<?= googleClientId ?>"
+     data-login_uri="<?= webAppUrl ?>"
+     data-ux_mode="redirect"
+     data-auto_prompt="false"
+     data-state="index">
+</div>
+
+<div class="g_id_signin"
+     data-type="standard"
+     data-size="large"
+     data-theme="outline"
+     data-text="signin_with"
+     data-shape="rectangular"
+     data-logo_alignment="left"
+     style="display:flex;justify-content:center;margin-top:18px;">
+</div>
+  <div id="mensagemLogin" style="margin-top:16px;color:#b42318;font-weight:600;"><?= mensagemLoginInicial ?></div>
+</div>
+
+<div id="conteudoSistema" style="display:none;">
 
 <body>
 
@@ -368,8 +393,8 @@
         <option>solteiro</option>
         <option>casado</option>
         <option>divorciado</option>
-        <option>viuvo(a)</option>
-        <option>uniao estavel</option>
+        <option>viúvo(a)</option>
+        <option>união estável</option>
       </select>
     </div>
 
@@ -735,6 +760,16 @@
 </div>
 
 <script>
+let tokenGoogle = "<?= tokenGoogleInicial ?>";
+let usuarioLogado = <?!= usuarioInicialJson ?>;
+
+window.addEventListener("load", function() {
+  const autorizado = tokenGoogle && usuarioLogado && usuarioLogado.autorizado;
+
+  document.getElementById("telaLogin").style.display = autorizado ? "none" : "block";
+  document.getElementById("conteudoSistema").style.display = autorizado ? "block" : "none";
+});
+
   function verificarTipoAtendimento() {
     const tipo = document.getElementById("tipoAtendimento").value;
     const area = document.getElementById("areaVinculados");
@@ -882,7 +917,7 @@ campoResponsavel.style.border = "1px solid #d8e2ea";
       .withFailureHandler(function(erro) {
         document.getElementById("mensagem").innerText = "Erro: " + erro.message;
       })
-      .salvarAtendimento(dados);
+      .salvarAtendimento(dados, tokenGoogle);
   }
 
   function limparFormulario() {
@@ -976,7 +1011,7 @@ function buscarCadastroTela() {
       document.getElementById("resultadoBusca").innerHTML =
         "Erro na busca: " + erro.message;
     })
-    .buscarCadastro(termo);
+    .buscarCadastro(termo, tokenGoogle);
 }
 
 function tratarResultadoBusca(resposta) {
@@ -1244,6 +1279,6 @@ document.addEventListener("input", function(event) {
 
 
 </script>
-
+</div>
 </body>
 </html>
