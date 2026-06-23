@@ -1,6 +1,7 @@
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
 const ABA_USUARIOS = "usuarios_sistema";
+const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 
 const PERFIL_ADMINISTRADOR = "administrador";
 const PERFIL_ATENDENTE = "atendente";
@@ -203,35 +204,183 @@ function escaparHtmlServidor(valor) {
 }
 
 function doGet(e) {
-  configurarEstruturaPlanilha();
+  const pagina = e && e.parameter && e.parameter.pagina === "relatorios"
+    ? "relatorios"
+    : "Index";
 
-  const usuario = obterUsuarioSistema();
-
-  if (!usuario.autorizado) {
-    return renderizarAcessoNegado(usuario);
-  }
-
-  if (e && e.parameter && e.parameter.pagina === "relatorios") {
-    if (usuario.perfil !== PERFIL_ADMINISTRADOR) {
-      return renderizarAcessoNegado({
-        autorizado: false,
-        email: usuario.email,
-        perfil: usuario.perfil,
-        nome: usuario.nome,
-        mensagem: "Somente administradores podem acessar os relatorios gerenciais."
-      });
-    }
-
-    return HtmlService.createHtmlOutputFromFile("relatorios")
-      .setTitle("SAIC - Relatorios Gerenciais");
-  }
-
-  return HtmlService.createHtmlOutputFromFile("Index")
-    .setTitle("SAIC - Atendimento Integrado dos NAPS");
+  return renderizarPagina(pagina, "", null, "");
 }
 
-function salvarAtendimento(dados) {
-  const usuario = validarUsuarioAutorizado();
+function obterConfigLoginGoogle() {
+  return {
+    clientId: GOOGLE_CLIENT_ID
+  };
+}
+
+function doPost(e) {
+  const idToken = e && e.parameter ? String(e.parameter.credential || "") : "";
+  const destino = e && e.parameter ? String(e.parameter.state || "index") : "index";
+  const pagina = destino === "relatorios" ? "relatorios" : "Index";
+
+  try {
+    const usuario = validarLoginGoogle(idToken);
+
+    if (pagina === "relatorios" && usuario.perfil !== "administrador") {
+      throw new Error("Acesso permitido somente para administradores.");
+    }
+
+    return renderizarPagina(pagina, idToken, usuario, "");
+  } catch (erro) {
+    return renderizarPagina(pagina, "", null, erro.message);
+  }
+}
+
+function renderizarPagina(nomeArquivo, tokenGoogle, usuario, mensagemLogin) {
+  const template = HtmlService.createTemplateFromFile(nomeArquivo);
+
+  template.googleClientId = GOOGLE_CLIENT_ID;
+  template.webAppUrl = ScriptApp.getService().getUrl();
+  template.tokenGoogleInicial = tokenGoogle || "";
+  template.usuarioInicialJson = JSON.stringify(usuario || null);
+  template.mensagemLoginInicial = mensagemLogin || "";
+
+  return template
+    .evaluate()
+    .setTitle("SAIC")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function validarLoginGoogle(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+
+  return {
+    autorizado: true,
+    email: usuario.email,
+    perfil: usuario.perfil,
+    nome: usuario.nome,
+    administrador: usuario.perfil === PERFIL_ADMINISTRADOR
+  };
+}
+
+function validarUsuarioPorToken(idToken) {
+  const dadosToken = verificarTokenGoogle(idToken);
+  const usuario = obterUsuarioSistemaPorEmail(dadosToken.email);
+
+  if (!usuario.autorizado) {
+    throw new Error(usuario.mensagem || "Acesso negado.");
+  }
+
+  return usuario;
+}
+
+function validarAdministradorPorToken(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+
+  if (usuario.perfil !== PERFIL_ADMINISTRADOR) {
+    throw new Error("Acesso negado. Somente administradores podem acessar este recurso.");
+  }
+
+  return usuario;
+}
+
+function verificarTokenGoogle(idToken) {
+  if (!idToken) {
+    throw new Error("Login Google não informado.");
+  }
+
+  const resposta = UrlFetchApp.fetch(
+    "https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(idToken),
+    {
+      method: "get",
+      muteHttpExceptions: true
+    }
+  );
+
+  if (resposta.getResponseCode() !== 200) {
+    throw new Error("Login Google inválido ou expirado.");
+  }
+
+  const payload = JSON.parse(resposta.getContentText());
+
+  if (payload.aud !== GOOGLE_CLIENT_ID) {
+    throw new Error("Token Google não pertence a este sistema.");
+  }
+
+  if (payload.iss !== "https://accounts.google.com" && payload.iss !== "accounts.google.com") {
+    throw new Error("Emissor do token Google inválido.");
+  }
+
+  if (String(payload.email_verified) !== "true") {
+    throw new Error("Email Google não verificado.");
+  }
+
+  if (!payload.email) {
+    throw new Error("Token Google sem email.");
+  }
+
+  return {
+    email: String(payload.email).toLowerCase().trim(),
+    nome: payload.name || "",
+    sub: payload.sub || ""
+  };
+}
+
+function obterUsuarioSistemaPorEmail(email) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const emailNormalizado = String(email || "").toLowerCase().trim();
+
+  if (!emailNormalizado) {
+    return {
+      autorizado: false,
+      email: "",
+      perfil: "",
+      nome: "",
+      mensagem: "Email não identificado."
+    };
+  }
+
+  const dados = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    const emailCadastrado = String(dados[i][0] || "").toLowerCase().trim();
+    const perfil = String(dados[i][1] || "").toLowerCase().trim();
+    const ativo = String(dados[i][2] || "").toLowerCase().trim();
+    const nome = String(dados[i][3] || "").trim();
+
+    if (emailCadastrado === emailNormalizado) {
+      if (ativo !== "sim") {
+        return {
+          autorizado: false,
+          email: emailNormalizado,
+          perfil: perfil,
+          nome: nome,
+          mensagem: "Usuário cadastrado, mas inativo."
+        };
+      }
+
+      return {
+        autorizado: true,
+        email: emailNormalizado,
+        perfil: perfil,
+        nome: nome,
+        mensagem: ""
+      };
+    }
+  }
+
+  return {
+    autorizado: false,
+    email: emailNormalizado,
+    perfil: "",
+    nome: "",
+    mensagem: "Email não autorizado: " + emailNormalizado
+  };
+}
+
+
+function salvarAtendimento(dados, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
   const estrutura = configurarEstruturaPlanilha();
   const sheet = estrutura.sheetDados;
   const sheetVinculos = estrutura.sheetVinculos;
@@ -379,8 +528,8 @@ function formatarDataParaInput(valor) {
   return ano + "-" + mes + "-" + dia;
 }
 
-function buscarCadastro(termo) {
-  validarUsuarioAutorizado();
+function buscarCadastro(termo, idToken) {
+  validarUsuarioPorToken(idToken);
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_DADOS);
 
@@ -482,8 +631,8 @@ function converterData(valor) {
   return formatarDataParaInput(valor);
 }
 
-function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio) {
-  validarUsuarioAdministrador();
+function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio, idToken) {
+  validarAdministradorPorToken(idToken);
 
   const filtros = normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio);
   const estrutura = configurarEstruturaPlanilha();
@@ -984,4 +1133,12 @@ function formatarDataBrasil(valor) {
   const ano = data.getFullYear();
 
   return dia + "/" + mes + "/" + ano;
+}
+
+function autorizarServicosSAIC() {
+  UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo?id_token=teste", {
+    muteHttpExceptions: true
+  });
+
+  SpreadsheetApp.getActiveSpreadsheet().getName();
 }
