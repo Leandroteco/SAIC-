@@ -627,6 +627,7 @@ let opcoesCarregadas = false;
 
 document.addEventListener("DOMContentLoaded", function() {
   prepararSelectsVazios();
+  preencherMesVigente();
 
   const administrador = tokenGoogle &&
     usuarioLogado &&
@@ -660,7 +661,7 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     }
 
-    function preencherMesVigente() {
+ function preencherMesVigente() {
   const hoje = new Date();
   const ano = hoje.getFullYear();
   const mes = hoje.getMonth();
