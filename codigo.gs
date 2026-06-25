@@ -543,6 +543,24 @@ function buscarCadastro(termo, idToken) {
   const linhas = sheet.getDataRange().getValues();
   const buscaTexto = normalizar(termo);
   const buscaNumeros = somenteNumeros(termo);
+  const termoOriginal = String(termo || "").trim();
+
+  if (buscaTexto.length < 5 && buscaNumeros.length < 5) {
+    return {
+      encontrado: false,
+      mensagem: "Digite pelo menos 5 caracteres para R.E./Nome ou informe o CPF completo."
+    };
+  }
+
+  if (buscaNumeros.length >= 8 && buscaNumeros.length < 11 && !/[A-Z]/i.test(termoOriginal)) {
+    return {
+      encontrado: false,
+      mensagem: "Para pesquisar por CPF, informe o CPF completo."
+    };
+  }
+
+  const pesquisouCPFCompleto = buscaNumeros.length === 11;
+  const pesquisouRECompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
 
   let resultados = [];
   let chavesEncontradas = {};
@@ -576,16 +594,13 @@ function buscarCadastro(termo, idToken) {
     };
 
     const reTexto = normalizar(registro.re);
+    const reNumerico = somenteNumeros(registro.re);
     const nomeTexto = normalizar(registro.nome);
     const cpfNumerico = somenteNumeros(registro.cpf);
 
-    const pesquisouCPF = buscaNumeros.length >= 11;
-    const pesquisouRE = /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim());
-    const pesquisouNome = buscaTexto.length >= 3 && !pesquisouCPF && !pesquisouRE;
-
-    const achouCPF = pesquisouCPF && cpfNumerico === buscaNumeros;
-    const achouRE = pesquisouRE && reTexto === buscaTexto;
-    const achouNome = pesquisouNome && nomeTexto.includes(buscaTexto);
+    const achouCPF = pesquisouCPFCompleto && cpfNumerico === buscaNumeros;
+    const achouRE = buscaNumeros.length >= 5 && reNumerico.includes(buscaNumeros);
+    const achouNome = buscaTexto.length >= 5 && nomeTexto.includes(buscaTexto);
 
     if (achouCPF || achouRE || achouNome) {
       const chaveUnica = cpfNumerico || reTexto || nomeTexto;
@@ -604,7 +619,7 @@ function buscarCadastro(termo, idToken) {
     };
   }
 
-  if (buscaNumeros.length >= 11 || /^[0-9]{6}-[0-9A]$/i.test(String(termo).trim())) {
+  if (pesquisouCPFCompleto || pesquisouRECompleto) {
     return {
       encontrado: true,
       multiplos: false,
