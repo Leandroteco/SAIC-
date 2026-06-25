@@ -104,6 +104,17 @@
   grid-template-columns: 190px 1fr;
   gap: 16px;
 }
+.grid-endereco-1 {
+  display: grid;
+  grid-template-columns: 140px 1fr 120px;
+  gap: 16px;
+}
+
+.grid-endereco-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px 1fr;
+  gap: 16px;
+}
 
     button {
       border: none;
@@ -188,9 +199,11 @@
 
         @media (max-width: 900px) {
       .grid,
-      .grid-2,
-      .grid-posto-nome {
-       grid-template-columns: 1fr;
+.grid-2,
+.grid-posto-nome,
+.grid-endereco-1,
+.grid-endereco-2 {
+  grid-template-columns: 1fr;
 }
 
       .container {
@@ -405,7 +418,17 @@
 
     <div>
       <label>Número de Filhos</label>
-      <input id="numeroFilhos" type="number" min="0">
+      <input
+  id="numeroFilhos"
+  type="number"
+  min="0"
+  max="10"
+  step="1"
+  placeholder="0"
+  onkeydown="bloquearDigitacaoNumeroFilhos(event)"
+  onpaste="return false"
+  oninput="ajustarNumeroFilhos(this)"
+  onwheel="this.blur()">
     </div>
 
     <div>
@@ -687,47 +710,45 @@
 
   <h2>Endereço</h2>
 
-  <div class="grid-2">
-    <div>
-      <label>CEP</label>
-      <input id="cep" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCep()">
-    </div>
-
-    <div>
-      <label>Rua/Avenida</label>
-      <input id="rua" oninput="converterMaiusculas(this)">
-    </div>
+<div class="grid-endereco-1">
+  <div>
+    <label>CEP</label>
+    <input id="cep" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCep()">
   </div>
 
-  <div class="grid">
-    <div>
-      <label>Número</label>
+  <div>
+    <label>Rua/Avenida</label>
+    <input id="rua" oninput="converterMaiusculas(this)">
+  </div>
+
+  <div>
+    <label>Número</label>
     <input id="numero" inputmode="numeric" oninput="this.value = this.value.replace(/\D/g, '')">
-    </div>
+  </div>
+</div>
 
-    <div>
-      <label>Bairro</label>
-      <input id="bairro" oninput="converterMaiusculas(this)">
-    </div>
-
-    <div>
-      <label>Cidade</label>
-      <input id="cidade" oninput="converterMaiusculas(this)">
-    </div>
+<div class="grid-endereco-2">
+  <div>
+    <label>Bairro</label>
+    <input id="bairro" oninput="converterMaiusculas(this)">
   </div>
 
-  <div class="grid-2">
-    <div>
-      <label>UF</label>
-      <input id="estado" maxlength="2" oninput="converterMaiusculas(this)">
-    </div>
-
-    <div>
-      <label>Complemento</label>
-      <input id="complemento" oninput="converterMaiusculas(this)">
-    </div>
+  <div>
+    <label>Cidade</label>
+    <input id="cidade" oninput="converterMaiusculas(this)">
   </div>
 
+  <div>
+    <label>UF</label>
+    <input id="estado" maxlength="2" placeholder="SP" oninput="converterMaiusculas(this)">
+  </div>
+
+  <div>
+    <label>Complemento</label>
+    <input id="complemento" oninput="converterMaiusculas(this)">
+  </div>
+</div>
+  
   <div id="areaVinculados">
     <h2>Pessoas Vinculadas ao Atendimento</h2>
 
@@ -745,8 +766,9 @@
 
   <label>Nome do responsável</label>
   <input
-    id="responsavel"
-    oninput="converterMaiusculas(this); this.style.border='1px solid #d8e2ea';">
+  id="responsavel"
+  placeholder="EX: NOME COMPLETO"
+  oninput="converterMaiusculas(this); this.style.border='1px solid #d8e2ea';">
 
   <button class="btn-success" onclick="salvar()">
     Salvar Atendimento
@@ -871,6 +893,24 @@ window.addEventListener("load", function() {
         alert("Erro ao buscar CEP.");
       });
   }
+
+function bloquearDigitacaoNumeroFilhos(event) {
+  if (event.key !== "Tab") {
+    event.preventDefault();
+  }
+}
+
+function ajustarNumeroFilhos(campo) {
+  let valor = Number(campo.value);
+
+  if (campo.value === "") return;
+  if (valor < 0) valor = 0;
+  if (valor > 10) valor = 10;
+
+  campo.value = valor;
+}
+
+
 function marcarCampoObrigatorio(campo) {
   campo.style.border = "2px solid #d32f2f";
 }
@@ -887,100 +927,9 @@ function reValido(valor) {
 function cpfValido(valor) {
   return String(valor || "").replace(/\D/g, "").length === 11;
 }
-  function salvar() {
-  const campoRE = document.getElementById("re");
-  const campoCPF = document.getElementById("cpf");
-  const campoResponsavel = document.getElementById("responsavel");
-  const mensagem = document.getElementById("mensagem");
-  const camposComErro = [];
 
-  limparErroCampo(campoRE);
-  limparErroCampo(campoCPF);
-  limparErroCampo(campoResponsavel);
 
-  if (!reValido(campoRE.value)) {
-    marcarCampoObrigatorio(campoRE);
-    camposComErro.push(campoRE);
-  }
 
-  if (!cpfValido(campoCPF.value)) {
-    marcarCampoObrigatorio(campoCPF);
-    camposComErro.push(campoCPF);
-  }
-
-  if (campoResponsavel.value.trim() === "") {
-    marcarCampoObrigatorio(campoResponsavel);
-    camposComErro.push(campoResponsavel);
-  }
-
-  if (camposComErro.length > 0) {
-    mensagem.style.color = "#b42318";
-    mensagem.innerText = "Preencha corretamente os campos obrigatórios: R.E., CPF e responsável.";
-    camposComErro[0].focus();
-    return;
-  }
-
-  mensagem.style.color = "#4f9d69";
-```
-
-Depois desse trecho, mantenha normalmente:
-
-```javascript
-  const dados = {
-```
-
-## 4. Conferência rápida
-
-O início da função `salvar()` deve ficar assim:
-
-```javascript
-function salvar() {
-  const campoRE = document.getElementById("re");
-  const campoCPF = document.getElementById("cpf");
-  const campoResponsavel = document.getElementById("responsavel");
-  const mensagem = document.getElementById("mensagem");
-  const camposComErro = [];
-
-  limparErroCampo(campoRE);
-  limparErroCampo(campoCPF);
-  limparErroCampo(campoResponsavel);
-
-  if (!reValido(campoRE.value)) {
-    marcarCampoObrigatorio(campoRE);
-    camposComErro.push(campoRE);
-  }
-
-  if (!cpfValido(campoCPF.value)) {
-    marcarCampoObrigatorio(campoCPF);
-    camposComErro.push(campoCPF);
-  }
-
-  if (campoResponsavel.value.trim() === "") {
-    marcarCampoObrigatorio(campoResponsavel);
-    camposComErro.push(campoResponsavel);
-  }
-
-  if (camposComErro.length > 0) {
-    mensagem.style.color = "#b42318";
-    mensagem.innerText = "Preencha corretamente os campos obrigatórios: R.E., CPF e responsável.";
-    camposComErro[0].focus();
-    return;
-  }
-
-  mensagem.style.color = "#4f9d69";
-```
-
-Depois desse trecho, mantenha normalmente:
-
-```javascript
-  const dados = {
-```
-
-## 4. Conferência rápida
-
-O início da função `salvar()` deve ficar assim:
-
-```javascript
 function salvar() {
   const campoRE = document.getElementById("re");
   const campoCPF = document.getElementById("cpf");
@@ -1017,63 +966,86 @@ function salvar() {
   mensagem.style.color = "#4f9d69";
 
   const dados = {
+    naps: "teste_naps",
+    tipoAtendimento: document.getElementById("tipoAtendimento").value,
+    motivo: document.getElementById("motivo").value,
+    re: document.getElementById("re").value,
+    postoGraduacao: document.getElementById("postoGraduacao").value,
+    nome: document.getElementById("nome").value,
+    cpf: document.getElementById("cpf").value,
+    telefone: document.getElementById("telefone").value,
+    email: document.getElementById("email").value,
+    dataNascimento: document.getElementById("dataNascimento").value,
+    estadoCivil: document.getElementById("estadoCivil").value,
+    numeroFilhos: document.getElementById("numeroFilhos").value,
+    sexo: document.getElementById("sexo").value,
+    opmAtual: document.getElementById("opmAtual").value,
+    situacaoStatus: document.getElementById("situacaoStatus").value,
+    dataIngresso: document.getElementById("dataIngresso").value,
+    dataInatividade: document.getElementById("dataInatividade").value,
+    cep: document.getElementById("cep").value,
+    rua: document.getElementById("rua").value,
+    bairro: document.getElementById("bairro").value,
+    cidade: document.getElementById("cidade").value,
+    estado: document.getElementById("estado").value,
+    numero: document.getElementById("numero").value,
+    complemento: document.getElementById("complemento").value,
+    observacoes: document.getElementById("observacoes").value,
+    responsavel: document.getElementById("responsavel").value,
+    pessoasVinculadas: coletarPessoasVinculadas()
+  };
 
-campoResponsavel.style.border = "1px solid #d8e2ea";
-    const dados = {
-      naps: "teste_naps",
-      tipoAtendimento: document.getElementById("tipoAtendimento").value,
-      motivo: document.getElementById("motivo").value,
-      re: document.getElementById("re").value,
-      postoGraduacao: document.getElementById("postoGraduacao").value,
-      nome: document.getElementById("nome").value,
-      cpf: document.getElementById("cpf").value,
-      telefone: document.getElementById("telefone").value,
-      email: document.getElementById("email").value,
-      dataNascimento: document.getElementById("dataNascimento").value,
-      estadoCivil: document.getElementById("estadoCivil").value,
-      numeroFilhos: document.getElementById("numeroFilhos").value,
-      sexo: document.getElementById("sexo").value,
-      opmAtual: document.getElementById("opmAtual").value,
-      situacaoStatus: document.getElementById("situacaoStatus").value,
-      dataIngresso: document.getElementById("dataIngresso").value,
-      dataInatividade: document.getElementById("dataInatividade").value,
-      cep: document.getElementById("cep").value,
-      rua: document.getElementById("rua").value,
-      bairro: document.getElementById("bairro").value,
-      cidade: document.getElementById("cidade").value,
-      estado: document.getElementById("estado").value,
-      numero: document.getElementById("numero").value,
-      complemento: document.getElementById("complemento").value,
-      observacoes: document.getElementById("observacoes").value,
-      responsavel: document.getElementById("responsavel").value,
-      pessoasVinculadas: coletarPessoasVinculadas()
-    };
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      mensagem.innerText = resposta;
+      limparFormulario();
+    })
+    .withFailureHandler(function(erro) {
+      mensagem.style.color = "#b42318";
+      mensagem.innerText = "Erro: " + erro.message;
+    })
+    .salvarAtendimento(dados, tokenGoogle);
+}
 
-    google.script.run
-      .withSuccessHandler(function(resposta) {
-        document.getElementById("mensagem").innerText = resposta;
-        limparFormulario();
-      })
-      .withFailureHandler(function(erro) {
-        document.getElementById("mensagem").innerText = "Erro: " + erro.message;
-      })
-      .salvarAtendimento(dados, tokenGoogle);
+function limparFormulario() {
+  document.querySelectorAll("input, textarea, select").forEach(el => {
+    el.value = "";
+    el.style.border = "1px solid #d8e2ea";
+  });
+
+  document.getElementById("listaVinculados").innerHTML = "";
+  document.getElementById("areaVinculados").style.display = "none";
+  atualizarCampoDataInatividade();
+}
+
+function mascaraRE(campo) {
+  let valor = campo.value.toUpperCase();
+
+  valor = valor.replace(/[^0-9A]/g, "");
+
+  let numerosAntesHifen = "";
+  let digitoFinal = "";
+
+  for (let i = 0; i < valor.length; i++) {
+    const caractere = valor.charAt(i);
+
+    if (numerosAntesHifen.length < 6) {
+      if (/[0-9]/.test(caractere)) {
+        numerosAntesHifen += caractere;
+      }
+      continue;
+    }
+
+    if (!digitoFinal && /[0-9A]/.test(caractere)) {
+      digitoFinal = caractere;
+      break;
+    }
   }
 
-  function limparFormulario() {
-    document.querySelectorAll("input, textarea, select").forEach(el => {
-      el.value = "";
-    });
-
-    document.getElementById("listaVinculados").innerHTML = "";
-    document.getElementById("areaVinculados").style.display = "none";
-  }
-
-// Máscara para o campo 
-
-
-
-function mascaraRE(cam
+  campo.value = digitoFinal
+    ? numerosAntesHifen + "-" + digitoFinal
+    : numerosAntesHifen;
+}
 
 function mascaraCPF(campo) {
   let valor = campo.value.replace(/\D/g, "");
