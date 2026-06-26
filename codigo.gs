@@ -388,7 +388,7 @@ function salvarAtendimento(dados, idToken) {
   if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
   if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
 
-  const idAtendimento = gerarNovoId(sheet, 1);
+  const idAtendimento = gerarIdSeguro("ATD");
   const dataCadastro = new Date();
 
   sheet.appendRow([
@@ -425,7 +425,7 @@ function salvarAtendimento(dados, idToken) {
   if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
     dados.pessoasVinculadas.forEach(function(pessoa) {
       if (pessoa.nome || pessoa.cpf) {
-        const idVinculo = gerarNovoId(sheetVinculos, 1);
+        const idVinculo = gerarIdSeguro("VIN");
 
         sheetVinculos.appendRow([
           idVinculo,
@@ -443,15 +443,10 @@ function salvarAtendimento(dados, idToken) {
   return "Atendimento salvo com sucesso!";
 }
 
-function gerarNovoId(sheet, coluna) {
-  const lastRow = sheet.getLastRow();
+function gerarIdSeguro(prefixo) {
+  const id = Utilities.getUuid();
 
-  if (lastRow < 2) return 1;
-
-  const valores = sheet.getRange(2, coluna, lastRow - 1, 1).getValues().flat();
-  const numeros = valores.filter(v => !isNaN(v) && v !== "").map(Number);
-
-  return numeros.length ? Math.max(...numeros) + 1 : 1;
+  return prefixo ? prefixo + "-" + id : id;
 }
 
 function normalizar(texto) {
