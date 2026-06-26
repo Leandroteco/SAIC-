@@ -1,5 +1,6 @@
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
+const ABA_INDICE = "cadastro_indice";
 const ABA_USUARIOS = "usuarios_sistema";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 
@@ -47,6 +48,17 @@ const CABECALHOS_VINCULOS = [
   "observacoes"
 ];
 
+const CABECALHOS_INDICE = [
+  "chave",
+  "tipo_chave",
+  "id_atendimento",
+  "cpf",
+  "re",
+  "nome",
+  "dataCadastro",
+  "linha_dados"
+];
+
 const CABECALHOS_USUARIOS = [
   "email",
   "perfil",
@@ -59,11 +71,13 @@ function configurarEstruturaPlanilha() {
 
   const sheetDados = obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS);
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
+  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
 
   return {
     sheetDados: sheetDados,
     sheetVinculos: sheetVinculos,
+    sheetIndice: sheetIndice,
     sheetUsuarios: sheetUsuarios
   };
 }
@@ -391,9 +405,11 @@ function salvarAtendimento(dados, idToken) {
     const estrutura = configurarEstruturaPlanilha();
     const sheet = estrutura.sheetDados;
     const sheetVinculos = estrutura.sheetVinculos;
+    const sheetIndice = estrutura.sheetIndice;
 
     if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
     if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
+    if (!sheetIndice) throw new Error("A aba cadastro_indice nao foi encontrada.");
 
     const idAtendimento = gerarIdSeguro("ATD");
     const dataCadastro = new Date();
@@ -429,6 +445,13 @@ function salvarAtendimento(dados, idToken) {
       dados.postoGraduacao || ""
     ]);
 
+    const linhaDados = sheet.getLastRow();
+    const linhasIndice = montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados);
+
+    if (linhasIndice.length > 0) {
+      gravarLinhasAbaixo(sheetIndice, linhasIndice, CABECALHOS_INDICE.length);
+    }
+
     const linhasVinculos = [];
 
     if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
@@ -448,9 +471,7 @@ function salvarAtendimento(dados, idToken) {
     }
 
     if (linhasVinculos.length > 0) {
-      sheetVinculos
-        .getRange(sheetVinculos.getLastRow() + 1, 1, linhasVinculos.length, CABECALHOS_VINCULOS.length)
-        .setValues(linhasVinculos);
+      gravarLinhasAbaixo(sheetVinculos, linhasVinculos, CABECALHOS_VINCULOS.length);
     }
 
     return "Atendimento salvo com sucesso!";
@@ -465,6 +486,84 @@ function gerarIdSeguro(prefixo) {
   const id = Utilities.getUuid();
 
   return prefixo ? prefixo + "-" + id : id;
+}
+
+function montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados) {
+  const cpf = formatarCPF(dados.cpf);
+  const cpfNumeros = somenteNumeros(cpf);
+  const re = normalizar(dados.re);
+  const reNumeros = somenteNumeros(re);
+  const nome = normalizar(dados.nome);
+  const linhas = [];
+
+  if (cpfNumeros) {
+    linhas.push([cpfNumeros, "cpf", idAtendimento, cpf, re, nome, dataCadastro, linhaDados]);
+  }
+
+  if (reNumeros) {
+    linhas.push([reNumeros, "re", idAtendimento, cpf, re, nome, dataCadastro, linhaDados]);
+  }
+
+  if (nome) {
+    linhas.push([nome, "nome", idAtendimento, cpf, re, nome, dataCadastro, linhaDados]);
+  }
+
+  return linhas;
+}
+
+function gravarLinhasAbaixo(sheet, linhas, quantidadeColunas) {
+  const tamanhoLote = 5000;
+
+  for (let i = 0; i < linhas.length; i += tamanhoLote) {
+    const lote = linhas.slice(i, i + tamanhoLote);
+
+    sheet
+      .getRange(sheet.getLastRow() + 1, 1, lote.length, quantidadeColunas)
+      .setValues(lote);
+  }
+}
+
+function reconstruirIndiceCadastros() {
+  const estrutura = configurarEstruturaPlanilha();
+  const sheetDados = estrutura.sheetDados;
+  const sheetIndice = estrutura.sheetIndice;
+
+  if (!sheetDados) throw new Error("A aba dados_cadastro nao foi encontrada.");
+  if (!sheetIndice) throw new Error("A aba cadastro_indice nao foi encontrada.");
+
+  if (sheetIndice.getLastRow() > 1) {
+    sheetIndice
+      .getRange(2, 1, sheetIndice.getLastRow() - 1, CABECALHOS_INDICE.length)
+      .clearContent();
+  }
+
+  if (sheetDados.getLastRow() < 2) {
+    return "Indice reconstruido. Nenhum cadastro encontrado.";
+  }
+
+  const dados = sheetDados
+    .getRange(2, 1, sheetDados.getLastRow() - 1, CABECALHOS_DADOS.length)
+    .getValues();
+  const linhasIndice = [];
+
+  dados.forEach(function(linha, indice) {
+    const dadosCadastro = {
+      cpf: linha[6],
+      re: linha[4],
+      nome: linha[5]
+    };
+
+    Array.prototype.push.apply(
+      linhasIndice,
+      montarLinhasIndiceCadastro(linha[0], dadosCadastro, linha[26], indice + 2)
+    );
+  });
+
+  if (linhasIndice.length > 0) {
+    gravarLinhasAbaixo(sheetIndice, linhasIndice, CABECALHOS_INDICE.length);
+  }
+
+  return "Indice reconstruido com sucesso. Chaves criadas: " + linhasIndice.length + ".";
 }
 
 function normalizar(texto) {
@@ -544,7 +643,9 @@ function formatarDataParaInput(valor) {
 function buscarCadastro(termo, idToken) {
   validarUsuarioPorToken(idToken);
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_DADOS);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ABA_DADOS);
+  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
 
   if (!sheet) {
     return {
@@ -553,7 +654,6 @@ function buscarCadastro(termo, idToken) {
     };
   }
 
-  const linhas = sheet.getDataRange().getValues();
   const buscaTexto = normalizar(termo);
   const buscaNumeros = somenteNumeros(termo);
   const termoOriginal = String(termo || "").trim();
@@ -575,55 +675,13 @@ function buscarCadastro(termo, idToken) {
   const pesquisouCPFCompleto = buscaNumeros.length === 11;
   const pesquisouRECompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
 
-  let resultados = [];
-  let chavesEncontradas = {};
-
-  for (let i = linhas.length - 1; i >= 1; i--) {
-    const l = linhas[i];
-
-    const registro = {
-      re: l[4] || "",
-      postoGraduacao: l[27] || "",
-      nome: l[5] || "",
-      cpf: l[6] || "",
-      telefone: l[7] || "",
-      email: l[8] || "",
-      dataIngresso: converterData(l[9]),
-      dataNascimento: converterData(l[10]),
-      sexo: l[11] || "",
-      opmAtual: l[12] || "",
-      situacaoStatus: l[13] || "",
-      dataInatividade: converterData(l[14]),
-      estadoCivil: l[15] || "",
-      numeroFilhos: l[16] || "",
-      cep: l[17] || "",
-      rua: l[18] || "",
-      bairro: l[19] || "",
-      cidade: l[20] || "",
-      estado: l[21] || "",
-      numero: l[22] || "",
-      complemento: l[23] || "",
-      dataCadastro: formatarDataBrasil(l[26])
-    };
-
-    const reTexto = normalizar(registro.re);
-    const reNumerico = somenteNumeros(registro.re);
-    const nomeTexto = normalizar(registro.nome);
-    const cpfNumerico = somenteNumeros(registro.cpf);
-
-    const achouCPF = pesquisouCPFCompleto && cpfNumerico === buscaNumeros;
-    const achouRE = buscaNumeros.length >= 5 && reNumerico.includes(buscaNumeros);
-    const achouNome = buscaTexto.length >= 5 && nomeTexto.includes(buscaTexto);
-
-    if (achouCPF || achouRE || achouNome) {
-      const chaveUnica = cpfNumerico || reTexto || nomeTexto;
-
-      if (!chavesEncontradas[chaveUnica]) {
-        chavesEncontradas[chaveUnica] = true;
-        resultados.push(registro);
-      }
-    }
-  }
+  const candidatos = localizarCadastrosNoIndice(
+    sheetIndice,
+    buscaTexto,
+    buscaNumeros,
+    pesquisouCPFCompleto
+  );
+  const resultados = montarResultadosBuscaPorIndice(sheet, candidatos);
 
   if (resultados.length === 0) {
     return {
@@ -652,6 +710,98 @@ function buscarCadastro(termo, idToken) {
     encontrado: true,
     multiplos: true,
     resultados: resultados.slice(0, 10)
+  };
+}
+
+function localizarCadastrosNoIndice(sheetIndice, buscaTexto, buscaNumeros, pesquisouCPFCompleto) {
+  const lastRow = sheetIndice.getLastRow();
+
+  if (lastRow < 2) return [];
+
+  const linhas = sheetIndice.getRange(2, 1, lastRow - 1, CABECALHOS_INDICE.length).getValues();
+  const encontrados = [];
+
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+    const chave = String(linha[0] || "");
+    const tipoChave = String(linha[1] || "");
+    const linhaDados = Number(linha[7] || 0);
+
+    if (!linhaDados) continue;
+
+    const achouCPF = tipoChave === "cpf" && pesquisouCPFCompleto && chave === buscaNumeros;
+    const achouRE = tipoChave === "re" && buscaNumeros.length >= 5 && chave.includes(buscaNumeros);
+    const achouNome = tipoChave === "nome" && buscaTexto.length >= 5 && chave.includes(buscaTexto);
+
+    if (achouCPF || achouRE || achouNome) {
+      encontrados.push({
+        idAtendimento: linha[2],
+        cpf: linha[3],
+        re: linha[4],
+        nome: linha[5],
+        dataCadastro: linha[6],
+        linhaDados: linhaDados
+      });
+    }
+  }
+
+  encontrados.sort(function(a, b) {
+    return b.linhaDados - a.linhaDados;
+  });
+
+  return encontrados;
+}
+
+function montarResultadosBuscaPorIndice(sheetDados, candidatos) {
+  const resultados = [];
+  const chavesEncontradas = {};
+
+  for (let i = 0; i < candidatos.length; i++) {
+    const candidato = candidatos[i];
+    const chaveUnica = somenteNumeros(candidato.cpf) ||
+      normalizar(candidato.re) ||
+      normalizar(candidato.nome) ||
+      String(candidato.idAtendimento || "");
+
+    if (chavesEncontradas[chaveUnica]) continue;
+    chavesEncontradas[chaveUnica] = true;
+
+    const linha = sheetDados
+      .getRange(candidato.linhaDados, 1, 1, CABECALHOS_DADOS.length)
+      .getValues()[0];
+
+    resultados.push(montarRegistroBusca(linha));
+
+    if (resultados.length >= 10) break;
+  }
+
+  return resultados;
+}
+
+function montarRegistroBusca(l) {
+  return {
+    re: l[4] || "",
+    postoGraduacao: l[27] || "",
+    nome: l[5] || "",
+    cpf: l[6] || "",
+    telefone: l[7] || "",
+    email: l[8] || "",
+    dataIngresso: converterData(l[9]),
+    dataNascimento: converterData(l[10]),
+    sexo: l[11] || "",
+    opmAtual: l[12] || "",
+    situacaoStatus: l[13] || "",
+    dataInatividade: converterData(l[14]),
+    estadoCivil: l[15] || "",
+    numeroFilhos: l[16] || "",
+    cep: l[17] || "",
+    rua: l[18] || "",
+    bairro: l[19] || "",
+    cidade: l[20] || "",
+    estado: l[21] || "",
+    numero: l[22] || "",
+    complemento: l[23] || "",
+    dataCadastro: formatarDataBrasil(l[26])
   };
 }
 
