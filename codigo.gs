@@ -381,66 +381,84 @@ function obterUsuarioSistemaPorEmail(email) {
 
 function salvarAtendimento(dados, idToken) {
   const usuario = validarUsuarioPorToken(idToken);
-  const estrutura = configurarEstruturaPlanilha();
-  const sheet = estrutura.sheetDados;
-  const sheetVinculos = estrutura.sheetVinculos;
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
 
-  if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
-  if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
+  try {
+    lock.waitLock(10000);
+    lockObtido = true;
 
-  const idAtendimento = gerarIdSeguro("ATD");
-  const dataCadastro = new Date();
+    const estrutura = configurarEstruturaPlanilha();
+    const sheet = estrutura.sheetDados;
+    const sheetVinculos = estrutura.sheetVinculos;
 
-  sheet.appendRow([
-    idAtendimento,
-    usuario.email,
-    normalizar(dados.tipoAtendimento),
-    normalizar(dados.motivo),
-    normalizar(dados.re),
-    normalizar(dados.nome),
-    formatarCPF(dados.cpf),
-    normalizarTelefone(dados.telefone),
-    normalizar(dados.email),
-    dados.dataIngresso || "",
-    dados.dataNascimento || "",
-    normalizar(dados.sexo),
-    normalizar(dados.opmAtual),
-    normalizar(dados.situacaoStatus),
-    dados.dataInatividade || "",
-    normalizar(dados.estadoCivil),
-    dados.numeroFilhos || "",
-    dados.cep || "",
-    normalizar(dados.rua),
-    normalizar(dados.bairro),
-    normalizar(dados.cidade),
-    normalizar(dados.estado),
-    dados.numero || "",
-    normalizar(dados.complemento),
-    normalizar(dados.observacoes),
-    normalizar(dados.responsavel),
-    dataCadastro,
-    dados.postoGraduacao || ""
-  ]);
+    if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
+    if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
 
-  if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
-    dados.pessoasVinculadas.forEach(function(pessoa) {
-      if (pessoa.nome || pessoa.cpf) {
-        const idVinculo = gerarIdSeguro("VIN");
+    const idAtendimento = gerarIdSeguro("ATD");
+    const dataCadastro = new Date();
 
-        sheetVinculos.appendRow([
-          idVinculo,
-          idAtendimento,
-          normalizar(pessoa.nome),
-          formatarCPF(pessoa.cpf),
-          normalizar(pessoa.tipoVinculo),
-          normalizar(pessoa.parentesco),
-          normalizar(pessoa.observacoes)
-        ]);
-      }
-    });
+    sheet.appendRow([
+      idAtendimento,
+      usuario.email,
+      normalizar(dados.tipoAtendimento),
+      normalizar(dados.motivo),
+      normalizar(dados.re),
+      normalizar(dados.nome),
+      formatarCPF(dados.cpf),
+      normalizarTelefone(dados.telefone),
+      normalizar(dados.email),
+      dados.dataIngresso || "",
+      dados.dataNascimento || "",
+      normalizar(dados.sexo),
+      normalizar(dados.opmAtual),
+      normalizar(dados.situacaoStatus),
+      dados.dataInatividade || "",
+      normalizar(dados.estadoCivil),
+      dados.numeroFilhos || "",
+      dados.cep || "",
+      normalizar(dados.rua),
+      normalizar(dados.bairro),
+      normalizar(dados.cidade),
+      normalizar(dados.estado),
+      dados.numero || "",
+      normalizar(dados.complemento),
+      normalizar(dados.observacoes),
+      normalizar(dados.responsavel),
+      dataCadastro,
+      dados.postoGraduacao || ""
+    ]);
+
+    const linhasVinculos = [];
+
+    if (dados.pessoasVinculadas && dados.pessoasVinculadas.length > 0) {
+      dados.pessoasVinculadas.forEach(function(pessoa) {
+        if (pessoa.nome || pessoa.cpf) {
+          linhasVinculos.push([
+            gerarIdSeguro("VIN"),
+            idAtendimento,
+            normalizar(pessoa.nome),
+            formatarCPF(pessoa.cpf),
+            normalizar(pessoa.tipoVinculo),
+            normalizar(pessoa.parentesco),
+            normalizar(pessoa.observacoes)
+          ]);
+        }
+      });
+    }
+
+    if (linhasVinculos.length > 0) {
+      sheetVinculos
+        .getRange(sheetVinculos.getLastRow() + 1, 1, linhasVinculos.length, CABECALHOS_VINCULOS.length)
+        .setValues(linhasVinculos);
+    }
+
+    return "Atendimento salvo com sucesso!";
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
   }
-
-  return "Atendimento salvo com sucesso!";
 }
 
 function gerarIdSeguro(prefixo) {
