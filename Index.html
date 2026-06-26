@@ -311,29 +311,7 @@
 <!-- ==================================================== -->
 
 
-  <div class="grid-2">
-    <div>
-      <label>Tipo de Atendimento</label>
-      <select id="tipoAtendimento" onchange="verificarTipoAtendimento()">
-        <option value="">Selecione</option>
-        <option>atendimento psicológico individual</option>
-        <option>atendimento familiar</option>
-        <option>atendimento grupo</option>
-        <option>atendimento social</option>
-        <option>atendimento emergencial</option>
-        <option>atendimento luto</option>
-        <option>atendimento saúde</option>
-        <option>atendimento financeiro</option>
-        <option>atendimento dependência química</option>
-        <option>atendimento habitação</option>
-      </select>
-    </div>
-
-    <div>
-      <label>Motivo</label>
-      <input id="motivo" oninput="converterMaiusculas(this)">
-    </div>
-  </div>
+ 
 
   <h2>Dados Pessoais e Funcionais</h2>
 
@@ -408,9 +386,9 @@
       <label>Estado Civil</label>
       <select id="estadoCivil">
         <option value="">Selecione</option>
-        <option>solteiro</option>
-        <option>casado</option>
-        <option>divorciado</option>
+        <option>solteiro(a)</option>
+        <option>casado(a)</option>
+        <option>divorciado(a)</option>
         <option>viúvo(a)</option>
         <option>união estável</option>
       </select>
@@ -438,7 +416,7 @@
         <option>ativo administrativo</option>
         <option>ativo operacional</option>
         <option>inativo</option>
-        <option>inativo falecido</option>
+        <option>inativo (falecido/a)</option>
       </select>
     </div>
   </div>
@@ -708,6 +686,31 @@
     </div>
   </div>
 
+
+   <div class="grid-2">
+    <div>
+      <label>Tipo de Atendimento</label>
+      <select id="tipoAtendimento" onchange="verificarTipoAtendimento()">
+        <option value="">Selecione</option>
+        <option>atendimento psicológico individual</option>
+        <option>atendimento familiar</option>
+        <option>atendimento grupo</option>
+        <option>atendimento social</option>
+        <option>atendimento emergencial</option>
+        <option>atendimento luto</option>
+        <option>atendimento saúde</option>
+        <option>atendimento financeiro</option>
+        <option>atendimento dependência química</option>
+        <option>atendimento habitação</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Motivo</label>
+      <input id="motivo" oninput="converterMaiusculas(this)">
+    </div>
+  </div>
+
   <h2>Endereço</h2>
 
 <div class="grid-endereco-1">
@@ -778,7 +781,7 @@
 
 <div class="copyright">
   © 2026 - Sistema de Atendimento Integrado dos CAPS/NAPS<br>
-  Desenvolvido por Sargento PM Felix e Cabo PM Myazaki
+  Desenvolvido por Major Isabela,Subtenente Tome, Sargento PM Felix e Cabo PM Myazaki
 </div>
 </div>
 
