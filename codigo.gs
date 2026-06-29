@@ -2,6 +2,8 @@ const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
 const ABA_INDICE = "cadastro_indice";
 const ABA_USUARIOS = "usuarios_sistema";
+const ABA_CEPS_CACHE = "ceps_cache";
+const ABA_RECADOS = "recados_sistema";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 
 const PERFIL_ADMINISTRADOR = "administrador";
@@ -63,7 +65,29 @@ const CABECALHOS_USUARIOS = [
   "email",
   "perfil",
   "ativo",
-  "nome"
+  "nome",
+  "naps",
+  "cep_naps"
+];
+
+const CABECALHOS_CEPS_CACHE = [
+  "cep",
+  "latitude",
+  "longitude",
+  "endereco",
+  "data_atualizacao"
+];
+
+const CABECALHOS_RECADOS = [
+  "id_recado",
+  "titulo",
+  "mensagem",
+  "cor",
+  "ativo",
+  "data_inicio",
+  "data_fim",
+  "naps_destino",
+  "data_criacao"
 ];
 
 function configurarEstruturaPlanilha() {
@@ -73,12 +97,16 @@ function configurarEstruturaPlanilha() {
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
   const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const sheetCepsCache = obterOuCriarAba(ss, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+  const sheetRecados = obterOuCriarAba(ss, ABA_RECADOS, CABECALHOS_RECADOS);
 
   return {
     sheetDados: sheetDados,
     sheetVinculos: sheetVinculos,
     sheetIndice: sheetIndice,
-    sheetUsuarios: sheetUsuarios
+    sheetUsuarios: sheetUsuarios,
+    sheetCepsCache: sheetCepsCache,
+    sheetRecados: sheetRecados
   };
 }
 
@@ -100,6 +128,58 @@ function obterOuCriarAba(ss, nomeAba, cabecalhos) {
   return sheet;
 }
 
+function obterIndicesUsuariosSistema(sheet) {
+  const mapa = obterMapaCabecalhos(sheet);
+
+  return {
+    email: obterIndiceCabecalho(mapa, ["email", "e-mail"], 0),
+    perfil: obterIndiceCabecalho(mapa, ["perfil"], 1),
+    ativo: obterIndiceCabecalho(mapa, ["ativo", "status"], 2),
+    nome: obterIndiceCabecalho(mapa, ["nome", "nomeusuario", "nome_usuario"], 3),
+    naps: obterIndiceCabecalho(mapa, ["naps", "nap", "unidade", "unidadenaps", "nome_naps"], 4),
+    cepNaps: obterIndiceCabecalho(mapa, ["cep_naps", "cepnaps", "cepdonaps", "cep_do_naps", "cep"], 5)
+  };
+}
+
+function obterMapaCabecalhos(sheet) {
+  const mapa = {};
+  const ultimaColuna = Math.max(sheet.getLastColumn(), CABECALHOS_USUARIOS.length);
+  const cabecalhos = sheet.getRange(1, 1, 1, ultimaColuna).getValues()[0];
+
+  cabecalhos.forEach(function(cabecalho, indice) {
+    const chave = normalizarCabecalho(cabecalho);
+    if (chave && mapa[chave] === undefined) {
+      mapa[chave] = indice;
+    }
+  });
+
+  return mapa;
+}
+
+function normalizarCabecalho(valor) {
+  return normalizar(valor).replace(/[^a-z0-9]/g, "");
+}
+
+function obterIndiceCabecalho(mapa, aliases, fallback) {
+  for (let i = 0; i < aliases.length; i++) {
+    const chave = normalizarCabecalho(aliases[i]);
+    if (mapa[chave] !== undefined) return mapa[chave];
+  }
+
+  return fallback;
+}
+
+function lerDadosUsuarioSistema(linha, indices) {
+  return {
+    email: String(linha[indices.email] || "").toLowerCase().trim(),
+    perfil: String(linha[indices.perfil] || "").toLowerCase().trim(),
+    ativo: String(linha[indices.ativo] || "").toLowerCase().trim(),
+    nome: String(linha[indices.nome] || "").trim(),
+    naps: String(linha[indices.naps] || "").trim(),
+    cepNaps: formatarCEP(linha[indices.cepNaps] || "")
+  };
+}
+
 function obterEmailUsuarioGoogle() {
   return String(Session.getActiveUser().getEmail() || "")
     .toLowerCase()
@@ -117,25 +197,27 @@ function obterUsuarioSistema() {
       email: "",
       perfil: "",
       nome: "",
+      naps: "",
+      cepNaps: "",
       mensagem: "Nao foi possivel identificar o email Google do usuario. Verifique a implantacao do Web App."
     };
   }
 
   const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesUsuariosSistema(sheet);
 
   for (let i = 1; i < dados.length; i++) {
-    const emailCadastrado = String(dados[i][0] || "").toLowerCase().trim();
-    const perfil = String(dados[i][1] || "").toLowerCase().trim();
-    const ativo = String(dados[i][2] || "").toLowerCase().trim();
-    const nome = String(dados[i][3] || "").trim();
+    const usuarioLinha = lerDadosUsuarioSistema(dados[i], indices);
 
-    if (emailCadastrado === email) {
-      if (ativo !== "sim") {
+    if (usuarioLinha.email === email) {
+      if (usuarioLinha.ativo !== "sim") {
         return {
           autorizado: false,
           email: email,
-          perfil: perfil,
-          nome: nome,
+          perfil: usuarioLinha.perfil,
+          nome: usuarioLinha.nome,
+          naps: usuarioLinha.naps,
+          cepNaps: usuarioLinha.cepNaps,
           mensagem: "Usuario cadastrado, mas inativo."
         };
       }
@@ -143,8 +225,10 @@ function obterUsuarioSistema() {
       return {
         autorizado: true,
         email: email,
-        perfil: perfil,
-        nome: nome,
+        perfil: usuarioLinha.perfil,
+        nome: usuarioLinha.nome,
+        naps: usuarioLinha.naps,
+        cepNaps: usuarioLinha.cepNaps,
         mensagem: ""
       };
     }
@@ -155,6 +239,8 @@ function obterUsuarioSistema() {
     email: email,
     perfil: "",
     nome: "",
+    naps: "",
+    cepNaps: "",
     mensagem: "Email nao autorizado: " + email
   };
 }
@@ -218,11 +304,22 @@ function escaparHtmlServidor(valor) {
 }
 
 function doGet(e) {
-  const pagina = e && e.parameter && e.parameter.pagina === "relatorios"
-    ? "relatorios"
-    : "Index";
+  const pagina = obterPaginaSolicitada(e && e.parameter ? e.parameter.pagina : "");
 
   return renderizarPagina(pagina, "", null, "");
+}
+
+function obterPaginaSolicitada(valor) {
+  const pagina = String(valor || "").toLowerCase().trim();
+
+  if (pagina === "relatorios") return "relatorios";
+  if (pagina === "dashboard") return "dashboard";
+
+  return "Index";
+}
+
+function paginaExigeAdministrador(pagina) {
+  return pagina === "relatorios" || pagina === "dashboard";
 }
 
 function obterConfigLoginGoogle() {
@@ -234,12 +331,12 @@ function obterConfigLoginGoogle() {
 function doPost(e) {
   const idToken = e && e.parameter ? String(e.parameter.credential || "") : "";
   const destino = e && e.parameter ? String(e.parameter.state || "index") : "index";
-  const pagina = destino === "relatorios" ? "relatorios" : "Index";
+  const pagina = obterPaginaSolicitada(destino);
 
   try {
     const usuario = validarLoginGoogle(idToken);
 
-    if (pagina === "relatorios" && usuario.perfil !== "administrador") {
+    if (paginaExigeAdministrador(pagina) && usuario.perfil !== "administrador") {
       throw new Error("Acesso permitido somente para administradores.");
     }
 
@@ -272,6 +369,7 @@ function validarLoginGoogle(idToken) {
     email: usuario.email,
     perfil: usuario.perfil,
     nome: usuario.nome,
+    naps: usuario.naps || "",
     administrador: usuario.perfil === PERFIL_ADMINISTRADOR
   };
 }
@@ -350,25 +448,27 @@ function obterUsuarioSistemaPorEmail(email) {
       email: "",
       perfil: "",
       nome: "",
+      naps: "",
+      cepNaps: "",
       mensagem: "Email não identificado."
     };
   }
 
   const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesUsuariosSistema(sheet);
 
   for (let i = 1; i < dados.length; i++) {
-    const emailCadastrado = String(dados[i][0] || "").toLowerCase().trim();
-    const perfil = String(dados[i][1] || "").toLowerCase().trim();
-    const ativo = String(dados[i][2] || "").toLowerCase().trim();
-    const nome = String(dados[i][3] || "").trim();
+    const usuarioLinha = lerDadosUsuarioSistema(dados[i], indices);
 
-    if (emailCadastrado === emailNormalizado) {
-      if (ativo !== "sim") {
+    if (usuarioLinha.email === emailNormalizado) {
+      if (usuarioLinha.ativo !== "sim") {
         return {
           autorizado: false,
           email: emailNormalizado,
-          perfil: perfil,
-          nome: nome,
+          perfil: usuarioLinha.perfil,
+          nome: usuarioLinha.nome,
+          naps: usuarioLinha.naps,
+          cepNaps: usuarioLinha.cepNaps,
           mensagem: "Usuário cadastrado, mas inativo."
         };
       }
@@ -376,8 +476,10 @@ function obterUsuarioSistemaPorEmail(email) {
       return {
         autorizado: true,
         email: emailNormalizado,
-        perfil: perfil,
-        nome: nome,
+        perfil: usuarioLinha.perfil,
+        nome: usuarioLinha.nome,
+        naps: usuarioLinha.naps,
+        cepNaps: usuarioLinha.cepNaps,
         mensagem: ""
       };
     }
@@ -388,8 +490,131 @@ function obterUsuarioSistemaPorEmail(email) {
     email: emailNormalizado,
     perfil: "",
     nome: "",
+    naps: "",
+    cepNaps: "",
     mensagem: "Email não autorizado: " + emailNormalizado
   };
+}
+
+function obterRecadoAtivo(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaPlanilha();
+  const sheet = estrutura.sheetRecados;
+
+  if (!sheet || sheet.getLastRow() < 2) {
+    return {
+      encontrado: false
+    };
+  }
+
+  const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesRecadosSistema(sheet);
+  const hoje = new Date();
+  const recadosValidos = [];
+
+  for (let i = 1; i < dados.length; i++) {
+    const recado = lerRecadoSistema(dados[i], indices);
+
+    if (!recado.id && !recado.titulo && !recado.mensagem) continue;
+    if (normalizar(recado.ativo) !== "sim") continue;
+    if (!recado.mensagem) continue;
+    if (!recadoDentroDoPeriodo(recado, hoje)) continue;
+    if (!recadoDestinadoAoNaps(recado, usuario)) continue;
+
+    recadosValidos.push(recado);
+  }
+
+  if (recadosValidos.length === 0) {
+    return {
+      encontrado: false
+    };
+  }
+
+  recadosValidos.sort(function(a, b) {
+    return b.dataCriacaoTimestamp - a.dataCriacaoTimestamp;
+  });
+
+  const recadoSelecionado = recadosValidos[0];
+
+  return {
+    encontrado: true,
+    id: recadoSelecionado.id,
+    titulo: recadoSelecionado.titulo || "Recado",
+    mensagem: recadoSelecionado.mensagem,
+    cor: normalizarCorRecado(recadoSelecionado.cor),
+    dataInicio: formatarDataBrasil(recadoSelecionado.dataInicio),
+    dataFim: formatarDataBrasil(recadoSelecionado.dataFim)
+  };
+}
+
+function obterIndicesRecadosSistema(sheet) {
+  const mapa = obterMapaCabecalhos(sheet);
+
+  return {
+    id: obterIndiceCabecalho(mapa, ["id_recado", "idrecado", "id"], 0),
+    titulo: obterIndiceCabecalho(mapa, ["titulo", "title"], 1),
+    mensagem: obterIndiceCabecalho(mapa, ["mensagem", "recado", "texto"], 2),
+    cor: obterIndiceCabecalho(mapa, ["cor", "color"], 3),
+    ativo: obterIndiceCabecalho(mapa, ["ativo", "status"], 4),
+    dataInicio: obterIndiceCabecalho(mapa, ["data_inicio", "datainicio", "inicio"], 5),
+    dataFim: obterIndiceCabecalho(mapa, ["data_fim", "datafim", "fim"], 6),
+    napsDestino: obterIndiceCabecalho(mapa, ["naps_destino", "napsdestino", "destino", "naps"], 7),
+    dataCriacao: obterIndiceCabecalho(mapa, ["data_criacao", "datacriacao", "criacao"], 8)
+  };
+}
+
+function lerRecadoSistema(linha, indices) {
+  const dataInicio = obterData(linha[indices.dataInicio]);
+  const dataFim = obterData(linha[indices.dataFim]);
+  const dataCriacao = obterData(linha[indices.dataCriacao]);
+
+  return {
+    id: String(linha[indices.id] || "").trim(),
+    titulo: String(linha[indices.titulo] || "").trim(),
+    mensagem: String(linha[indices.mensagem] || "").trim(),
+    cor: String(linha[indices.cor] || "").trim(),
+    ativo: String(linha[indices.ativo] || "").trim(),
+    dataInicio: dataInicio,
+    dataFim: dataFim,
+    napsDestino: String(linha[indices.napsDestino] || "").trim(),
+    dataCriacao: dataCriacao,
+    dataCriacaoTimestamp: dataCriacao ? dataCriacao.getTime() : 0
+  };
+}
+
+function recadoDentroDoPeriodo(recado, hoje) {
+  const agora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const dataInicio = recado.dataInicio
+    ? new Date(recado.dataInicio.getFullYear(), recado.dataInicio.getMonth(), recado.dataInicio.getDate())
+    : null;
+  const dataFim = recado.dataFim
+    ? new Date(recado.dataFim.getFullYear(), recado.dataFim.getMonth(), recado.dataFim.getDate())
+    : null;
+
+  if (dataInicio && agora < dataInicio) return false;
+  if (dataFim && agora > dataFim) return false;
+
+  return true;
+}
+
+function recadoDestinadoAoNaps(recado, usuario) {
+  const destino = normalizar(recado.napsDestino || "todos");
+
+  if (!destino || destino === "todos") return true;
+
+  return normalizar(usuario.naps) === destino;
+}
+
+function normalizarCorRecado(cor) {
+  const corNormalizada = normalizar(cor || "amarelo");
+  const coresPermitidas = {
+    amarelo: true,
+    azul: true,
+    verde: true,
+    rosa: true
+  };
+
+  return coresPermitidas[corNormalizada] ? corNormalizada : "amarelo";
 }
 
 
@@ -413,6 +638,9 @@ function salvarAtendimento(dados, idToken) {
 
     const idAtendimento = gerarIdSeguro("ATD");
     const dataCadastro = new Date();
+    const dataIngresso = validarDataFormulario(dados.dataIngresso, "Data de Ingresso");
+    const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
+    const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
 
     sheet.appendRow([
       idAtendimento,
@@ -424,12 +652,12 @@ function salvarAtendimento(dados, idToken) {
       formatarCPF(dados.cpf),
       normalizarTelefone(dados.telefone),
       normalizar(dados.email),
-      dados.dataIngresso || "",
-      dados.dataNascimento || "",
+      dataIngresso,
+      dataNascimento,
       normalizar(dados.sexo),
       normalizar(dados.opmAtual),
       normalizar(dados.situacaoStatus),
-      dados.dataInatividade || "",
+      dataInatividade,
       normalizar(dados.estadoCivil),
       dados.numeroFilhos || "",
       dados.cep || "",
@@ -486,6 +714,33 @@ function gerarIdSeguro(prefixo) {
   const id = Utilities.getUuid();
 
   return prefixo ? prefixo + "-" + id : id;
+}
+
+function validarDataFormulario(valor, nomeCampo) {
+  const data = String(valor || "").trim();
+
+  if (!data) return "";
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    throw new Error(nomeCampo + " deve ter ano com 4 digitos.");
+  }
+
+  const ano = Number(data.substring(0, 4));
+  const mes = Number(data.substring(5, 7));
+  const dia = Number(data.substring(8, 10));
+
+  if (ano < 1 || ano > 9999 || mes < 1 || mes > 12) {
+    throw new Error(nomeCampo + " invalida.");
+  }
+
+  const anoBissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+  const diasPorMes = [31, anoBissexto ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  if (dia < 1 || dia > diasPorMes[mes - 1]) {
+    throw new Error(nomeCampo + " invalida.");
+  }
+
+  return data;
 }
 
 function montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados) {
@@ -587,6 +842,14 @@ function formatarCPF(cpf) {
   if (cpf.length !== 11) return cpf;
 
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
+function formatarCEP(cep) {
+  cep = somenteNumeros(cep);
+
+  if (cep.length !== 8) return cep;
+
+  return cep.replace(/(\d{5})(\d{3})/, "$1-$2");
 }
 
 function normalizarTelefone(valor) {
@@ -819,10 +1082,11 @@ function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio
 
   const dados = sheet.getDataRange().getValues();
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
+  const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
   const registros = [];
 
   for (let i = 1; i < dados.length; i++) {
-    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento));
+    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
   }
 
   const filtrosPreparados = prepararFiltrosRelatorio(filtros);
@@ -836,11 +1100,278 @@ function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio
     filtrosAplicados: filtros,
     resumo: montarResumoRelatorio(filtrados),
     distribuicoes: montarDistribuicoesRelatorio(filtrados),
+    dadosIndividuais: montarDadosIndividuaisRelatorio(filtros, filtrados, registros, ss),
     registros: montarDetalhesRelatorio(filtrados, limiteDetalhes),
     totalRegistros: filtrados.length,
     limiteDetalhes: limiteDetalhes,
     opcoes: montarOpcoesRelatorio(registros, vinculosPorAtendimento)
   };
+}
+
+function obterDadosDashboard(filtros, idToken) {
+  validarAdministradorPorToken(idToken);
+
+  const filtrosDashboard = normalizarFiltrosDashboard(filtros || {});
+  const estrutura = configurarEstruturaPlanilha();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = estrutura.sheetDados;
+  const dados = sheet.getDataRange().getValues();
+  const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
+  const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
+  const registros = [];
+
+  for (let i = 1; i < dados.length; i++) {
+    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
+  }
+
+  const filtrosPreparados = prepararFiltrosRelatorio(filtrosDashboard);
+  const filtrados = registros.filter(function(registro) {
+    return registroPassaFiltrosRelatorio(registro, filtrosPreparados);
+  });
+
+  return {
+    filtrosAplicados: filtrosDashboard,
+    periodo: montarPeriodoDashboard(filtrosDashboard),
+    resumo: montarResumoDashboard(filtrados, filtrosDashboard),
+    graficos: montarGraficosDashboard(filtrados, filtrosDashboard),
+    rankings: montarRankingsDashboard(filtrados),
+    ultimosAtendimentos: montarUltimosAtendimentosDashboard(filtrados, 8),
+    opcoes: montarOpcoesRelatorio(registros, vinculosPorAtendimento),
+    totalRegistros: filtrados.length
+  };
+}
+
+function normalizarFiltrosDashboard(filtros) {
+  const hoje = new Date();
+  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+  return {
+    dataInicial: filtros.dataInicial || formatarDataParaInput(primeiroDiaMes),
+    dataFinal: filtros.dataFinal || formatarDataParaInput(ultimoDiaMes),
+    tipoAtendimento: filtros.tipoAtendimento || "",
+    motivo: filtros.motivo || "",
+    opmAtual: filtros.opmAtual || "",
+    situacaoStatus: filtros.situacaoStatus || "",
+    sexo: filtros.sexo || "",
+    responsavel: filtros.responsavel || "",
+    faixaEtaria: filtros.faixaEtaria || ""
+  };
+}
+
+function montarPeriodoDashboard(filtros) {
+  return {
+    dataInicial: filtros.dataInicial,
+    dataFinal: filtros.dataFinal,
+    rotulo: formatarDataBrasil(filtros.dataInicial) + " a " + formatarDataBrasil(filtros.dataFinal)
+  };
+}
+
+function montarResumoDashboard(registros, filtros) {
+  const resumoRelatorio = montarResumoRelatorio(registros);
+  const opms = {};
+  const diasComAtendimento = {};
+  let atendimentosEmergenciais = 0;
+  let atendimentosIndividuais = 0;
+
+  registros.forEach(function(registro) {
+    const tipo = normalizar(registro.tipoAtendimento);
+    const opm = String(registro.opmAtual || "").trim();
+    const dataIso = registro.dataCadastroIso || "";
+
+    if (tipo.includes("emergencial")) atendimentosEmergenciais++;
+    if (tipo.includes("individual")) atendimentosIndividuais++;
+    if (opm) opms[opm] = true;
+    if (dataIso) diasComAtendimento[dataIso] = true;
+  });
+
+  const diasPeriodo = calcularDiasPeriodoDashboard(filtros);
+  const mediaDiaria = diasPeriodo > 0
+    ? Math.round((registros.length / diasPeriodo) * 10) / 10
+    : 0;
+
+  return {
+    totalAtendimentos: resumoRelatorio.totalAtendimentos,
+    pessoasDistintas: resumoRelatorio.pessoasDistintas,
+    atendimentosEmergenciais: atendimentosEmergenciais,
+    atendimentosIndividuais: atendimentosIndividuais,
+    atendimentosFamiliaresOuGrupo: resumoRelatorio.atendimentosFamiliaresOuGrupo,
+    atendimentosComVinculos: resumoRelatorio.atendimentosComVinculos,
+    totalVinculos: resumoRelatorio.totalVinculos,
+    retornos: resumoRelatorio.retornos,
+    opmsDistintas: Object.keys(opms).length,
+    diasComAtendimento: Object.keys(diasComAtendimento).length,
+    mediaDiaria: mediaDiaria
+  };
+}
+
+function calcularDiasPeriodoDashboard(filtros) {
+  const inicio = obterDataInicio(filtros.dataInicial);
+  const fim = obterDataFim(filtros.dataFinal);
+
+  if (!inicio || !fim || fim < inicio) return 0;
+
+  return Math.floor((fim.getTime() - inicio.getTime()) / 86400000) + 1;
+}
+
+function montarGraficosDashboard(registros, filtros) {
+  return {
+    porTipo: topDistribuicaoDashboard(contarPorCampo(registros, "tipoAtendimento"), 8),
+    porMotivo: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 10),
+    porOPM: topDistribuicaoDashboard(contarPorCampo(registros, "opmAtual"), 10),
+    porSituacao: topDistribuicaoDashboard(contarPorCampo(registros, "situacaoStatus"), 8),
+    porSexo: topDistribuicaoDashboard(contarPorCampo(registros, "sexo"), 8),
+    porFaixaEtaria: ordenarFaixaEtariaDashboard(contarPorCampo(registros, "faixaEtaria")),
+    evolucao: montarEvolucaoDashboard(registros, filtros)
+  };
+}
+
+function montarRankingsDashboard(registros) {
+  return {
+    motivos: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 10),
+    opms: topDistribuicaoDashboard(contarPorCampo(registros, "opmAtual"), 10),
+    responsaveis: topDistribuicaoDashboard(contarPorCampo(registros, "responsavel"), 10)
+  };
+}
+
+function topDistribuicaoDashboard(contagem, limite) {
+  return Object.keys(contagem)
+    .map(function(chave) {
+      return {
+        rotulo: chave || "nao informado",
+        valor: contagem[chave]
+      };
+    })
+    .sort(function(a, b) {
+      if (b.valor !== a.valor) return b.valor - a.valor;
+      return normalizar(a.rotulo).localeCompare(normalizar(b.rotulo));
+    })
+    .slice(0, limite);
+}
+
+function ordenarFaixaEtariaDashboard(contagem) {
+  const ordem = [
+    "ate 17 anos",
+    "18 a 29 anos",
+    "30 a 39 anos",
+    "40 a 49 anos",
+    "50 a 59 anos",
+    "60 anos ou mais",
+    "nao informado"
+  ];
+
+  return ordem
+    .filter(function(faixa) {
+      return contagem[faixa];
+    })
+    .map(function(faixa) {
+      return {
+        rotulo: faixa,
+        valor: contagem[faixa]
+      };
+    });
+}
+
+function montarEvolucaoDashboard(registros, filtros) {
+  const inicio = obterDataInicio(filtros.dataInicial);
+  const fim = obterDataFim(filtros.dataFinal);
+  const diasPeriodo = calcularDiasPeriodoDashboard(filtros);
+  const agruparPorMes = diasPeriodo > 92;
+  const contagem = {};
+
+  registros.forEach(function(registro) {
+    const data = registro.dataCadastroData;
+    if (!data) return;
+
+    const chave = agruparPorMes ? obterMesAno(data) : formatarDataParaInput(data);
+    contagem[chave] = (contagem[chave] || 0) + 1;
+  });
+
+  if (!inicio || !fim || fim < inicio) {
+    return {
+      titulo: "Evolucao",
+      agrupamento: agruparPorMes ? "mes" : "dia",
+      pontos: []
+    };
+  }
+
+  return {
+    titulo: agruparPorMes ? "Evolucao por mes" : "Evolucao diaria",
+    agrupamento: agruparPorMes ? "mes" : "dia",
+    pontos: agruparPorMes
+      ? montarPontosMensaisDashboard(inicio, fim, contagem)
+      : montarPontosDiariosDashboard(inicio, fim, contagem)
+  };
+}
+
+function montarPontosDiariosDashboard(inicio, fim, contagem) {
+  const pontos = [];
+  const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
+  const limite = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+
+  while (cursor <= limite) {
+    const chave = formatarDataParaInput(cursor);
+
+    pontos.push({
+      rotulo: formatarDiaMesDashboard(cursor),
+      chave: chave,
+      valor: contagem[chave] || 0
+    });
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return pontos;
+}
+
+function montarPontosMensaisDashboard(inicio, fim, contagem) {
+  const pontos = [];
+  const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  const limite = new Date(fim.getFullYear(), fim.getMonth(), 1);
+
+  while (cursor <= limite) {
+    const chave = obterMesAno(cursor);
+
+    pontos.push({
+      rotulo: formatarMesAnoDashboard(cursor),
+      chave: chave,
+      valor: contagem[chave] || 0
+    });
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return pontos;
+}
+
+function formatarDiaMesDashboard(data) {
+  return String(data.getDate()).padStart(2, "0") + "/" +
+    String(data.getMonth() + 1).padStart(2, "0");
+}
+
+function formatarMesAnoDashboard(data) {
+  return String(data.getMonth() + 1).padStart(2, "0") + "/" + data.getFullYear();
+}
+
+function montarUltimosAtendimentosDashboard(registros, limite) {
+  return registros
+    .slice()
+    .sort(function(a, b) {
+      return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
+    })
+    .slice(0, limite)
+    .map(function(registro) {
+      return {
+        dataCadastro: registro.dataCadastro,
+        nome: registro.nome || "sem nome",
+        postoGraduacao: registro.postoGraduacao,
+        re: registro.re,
+        tipoAtendimento: registro.tipoAtendimento,
+        motivo: registro.motivo,
+        opmAtual: registro.opmAtual,
+        responsavel: registro.responsavel
+      };
+    });
 }
 
 function normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio) {
@@ -973,8 +1504,29 @@ function carregarVinculosPorAtendimento(ss) {
   return mapa;
 }
 
-function montarRegistroRelatorio(linha, vinculosPorAtendimento) {
+function carregarUsuariosSistemaPorEmail(ss) {
+  const sheet = obterOuCriarAba(ss || SpreadsheetApp.getActiveSpreadsheet(), ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesUsuariosSistema(sheet);
+  const mapa = {};
+
+  for (let i = 1; i < dados.length; i++) {
+    const usuario = lerDadosUsuarioSistema(dados[i], indices);
+
+    if (usuario.email) {
+      mapa[usuario.email] = usuario;
+    }
+  }
+
+  return mapa;
+}
+
+function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail) {
   const id = linha[0] || "";
+  const emailCadastro = String(linha[1] || "").toLowerCase().trim();
+  const usuarioCadastro = usuariosPorEmail && usuariosPorEmail[emailCadastro]
+    ? usuariosPorEmail[emailCadastro]
+    : {};
   const dataCadastroData = obterData(linha[26]);
   const dataNascimentoData = obterData(linha[10]);
   const dataIngressoData = obterData(linha[9]);
@@ -985,7 +1537,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento) {
   return {
     id: id,
     emailCadastro: linha[1] || "",
-    naps: linha[1] || "",
+    naps: usuarioCadastro.naps || "nao informado",
     tipoAtendimento: linha[2] || "",
     motivo: linha[3] || "",
     re: linha[4] || "",
@@ -1086,6 +1638,290 @@ function montarDistribuicoesRelatorio(registros) {
     porTempoServico: contarPorCampo(registros, "tempoServico"),
     porParentesco: contarPorVinculo(registros, "parentesco")
   };
+}
+
+function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss) {
+  const termo = String(filtros.buscaLivre || "").trim();
+
+  if (!termo) {
+    return {
+      status: "sem_busca",
+      mensagem: "Use a Busca Individual para visualizar estes dados."
+    };
+  }
+
+  if (!filtrados || filtrados.length === 0) {
+    return {
+      status: "sem_resultado",
+      mensagem: "Nenhum cadastro localizado para a Busca Individual."
+    };
+  }
+
+  const grupos = agruparRegistrosPorPessoa(filtrados);
+  const chaves = Object.keys(grupos);
+
+  if (chaves.length > 1) {
+    return {
+      status: "multiplos",
+      mensagem: "Mais de uma pessoa foi localizada. Refine a busca por CPF completo ou R.E.",
+      candidatos: chaves.map(function(chave) {
+        const referencia = obterRegistroMaisRecente(grupos[chave]);
+
+        return {
+          nome: referencia.nome || "",
+          re: referencia.re || "",
+          cpf: referencia.cpf || "",
+          unidade: referencia.opmAtual || "",
+          totalAtendimentos: contarAtendimentosPessoa(todosRegistros, chave)
+        };
+      }).slice(0, 10)
+    };
+  }
+
+  const chavePessoa = chaves[0];
+  const registrosPessoa = grupos[chavePessoa];
+  const referencia = obterRegistroMaisRecente(registrosPessoa);
+  const usuarioNaps = obterDadosUsuarioSistemaParaRelatorio(referencia.emailCadastro);
+  const distancia = calcularDistanciaResidenciaNaps(referencia.cep, usuarioNaps.cepNaps, ss);
+
+  return {
+    status: "ok",
+    nome: referencia.nome || "",
+    re: referencia.re || "",
+    cpf: referencia.cpf || "",
+    unidade: referencia.opmAtual || "",
+    naps: usuarioNaps.naps || "nao informado",
+    totalAtendimentos: contarAtendimentosPessoa(todosRegistros, chavePessoa),
+    distanciaKm: distancia.distanciaKm,
+    distanciaTexto: distancia.texto,
+    distanciaDisponivel: distancia.disponivel,
+    dataReferencia: referencia.dataCadastro || "",
+    mensagemDistancia: distancia.mensagem || ""
+  };
+}
+
+function agruparRegistrosPorPessoa(registros) {
+  const grupos = {};
+
+  registros.forEach(function(registro) {
+    const chave = obterChavePessoa(registro);
+
+    if (!grupos[chave]) grupos[chave] = [];
+    grupos[chave].push(registro);
+  });
+
+  return grupos;
+}
+
+function obterRegistroMaisRecente(registros) {
+  return registros.slice().sort(function(a, b) {
+    return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
+  })[0];
+}
+
+function contarAtendimentosPessoa(registros, chavePessoa) {
+  let total = 0;
+
+  registros.forEach(function(registro) {
+    if (obterChavePessoa(registro) === chavePessoa) {
+      total++;
+    }
+  });
+
+  return total;
+}
+
+function obterDadosUsuarioSistemaParaRelatorio(email) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const emailNormalizado = String(email || "").toLowerCase().trim();
+
+  if (!emailNormalizado) {
+    return {
+      email: "",
+      nome: "",
+      naps: "",
+      cepNaps: ""
+    };
+  }
+
+  const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesUsuariosSistema(sheet);
+
+  for (let i = 1; i < dados.length; i++) {
+    const usuarioLinha = lerDadosUsuarioSistema(dados[i], indices);
+
+    if (usuarioLinha.email === emailNormalizado) {
+      return {
+        email: emailNormalizado,
+        nome: usuarioLinha.nome,
+        naps: usuarioLinha.naps,
+        cepNaps: usuarioLinha.cepNaps
+      };
+    }
+  }
+
+  return {
+    email: emailNormalizado,
+    nome: "",
+    naps: "",
+    cepNaps: ""
+  };
+}
+
+function calcularDistanciaResidenciaNaps(cepResidencia, cepNaps, ss) {
+  const cepOrigem = somenteNumeros(cepResidencia);
+  const cepDestino = somenteNumeros(cepNaps);
+
+  if (cepOrigem.length !== 8 && cepDestino.length !== 8) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: "CEP da residencia e CEP do NAPS nao informados."
+    };
+  }
+
+  if (cepOrigem.length !== 8) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: "CEP da residencia nao informado."
+    };
+  }
+
+  if (cepDestino.length !== 8) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: "CEP do NAPS nao informado."
+    };
+  }
+
+  if (cepOrigem === cepDestino) {
+    return {
+      disponivel: true,
+      distanciaKm: 0,
+      texto: "0 km",
+      mensagem: ""
+    };
+  }
+
+  try {
+    const origem = obterCoordenadasPorCEP(cepOrigem, ss);
+    const destino = obterCoordenadasPorCEP(cepDestino, ss);
+
+    if (!origem || !destino) {
+      return {
+        disponivel: false,
+        distanciaKm: null,
+        texto: "nao disponivel",
+        mensagem: "Nao foi possivel localizar coordenadas para um dos CEPs."
+      };
+    }
+
+    const distanciaKm = arredondarUmaCasa(calcularDistanciaHaversineKm(
+      origem.latitude,
+      origem.longitude,
+      destino.latitude,
+      destino.longitude
+    ));
+
+    return {
+      disponivel: true,
+      distanciaKm: distanciaKm,
+      texto: String(distanciaKm).replace(".", ",") + " km",
+      mensagem: ""
+    };
+  } catch (erro) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: erro.message || "Erro ao calcular distancia."
+    };
+  }
+}
+
+function obterCoordenadasPorCEP(cep, ss) {
+  const cepNormalizado = somenteNumeros(cep);
+
+  if (cepNormalizado.length !== 8) return null;
+
+  const sheet = obterOuCriarAba(ss || SpreadsheetApp.getActiveSpreadsheet(), ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+  const dados = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    const cepCache = somenteNumeros(dados[i][0]);
+
+    if (cepCache === cepNormalizado) {
+      const latitude = Number(String(dados[i][1] || "").replace(",", "."));
+      const longitude = Number(String(dados[i][2] || "").replace(",", "."));
+
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        return {
+          latitude: latitude,
+          longitude: longitude
+        };
+      }
+    }
+  }
+
+  const endereco = formatarCEP(cepNormalizado) + ", Brasil";
+  const resposta = Maps.newGeocoder()
+    .setRegion("br")
+    .geocode(endereco);
+
+  if (!resposta || resposta.status !== "OK" || !resposta.results || resposta.results.length === 0) {
+    return null;
+  }
+
+  const localizacao = resposta.results[0].geometry && resposta.results[0].geometry.location;
+
+  if (!localizacao) return null;
+
+  const coordenadas = {
+    latitude: Number(localizacao.lat),
+    longitude: Number(localizacao.lng)
+  };
+
+  if (isNaN(coordenadas.latitude) || isNaN(coordenadas.longitude)) {
+    return null;
+  }
+
+  sheet.appendRow([
+    formatarCEP(cepNormalizado),
+    coordenadas.latitude,
+    coordenadas.longitude,
+    resposta.results[0].formatted_address || endereco,
+    new Date()
+  ]);
+
+  return coordenadas;
+}
+
+function calcularDistanciaHaversineKm(lat1, lon1, lat2, lon2) {
+  const raioTerraKm = 6371;
+  const dLat = grausParaRadianos(lat2 - lat1);
+  const dLon = grausParaRadianos(lon2 - lon1);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(grausParaRadianos(lat1)) *
+    Math.cos(grausParaRadianos(lat2)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return raioTerraKm * c;
+}
+
+function grausParaRadianos(graus) {
+  return graus * Math.PI / 180;
+}
+
+function arredondarUmaCasa(valor) {
+  return Math.round(Number(valor || 0) * 10) / 10;
 }
 
 function montarDetalhesRelatorio(registros, limite) {
