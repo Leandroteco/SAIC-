@@ -363,6 +363,37 @@
       padding: 4px 8px;
     }
 
+    .individual-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .individual-card {
+      background: var(--surface-soft);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      min-height: 88px;
+      padding: 14px;
+    }
+
+    .individual-card span {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+    }
+
+    .individual-card strong {
+      color: var(--text);
+      display: block;
+      font-size: 18px;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
     @media (max-width: 1100px) {
       .filters-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -387,7 +418,8 @@
 
       .filters-grid,
       .tab-grid,
-      .metrics-grid {
+      .metrics-grid,
+      .individual-grid {
         grid-template-columns: 1fr;
       }
 
@@ -489,8 +521,8 @@
         </div>
 
         <div class="field">
-          <label>Busca livre</label>
-          <input id="buscaLivre" placeholder="Posto/Graduação, Nome, CPF, R.E., OPM, cidade">
+          <label>Busca Individual</label>
+          <input id="buscaLivre" placeholder="CPF completo, R.E. ou nome da pessoa atendida">
         </div>
 
         <div class="field">
@@ -504,7 +536,7 @@
         </div>
 
         <div class="field">
-          <label>Email de cadastro</label>
+          <label>NAPS</label>
           <select id="naps"></select>
         </div>
 
@@ -611,6 +643,7 @@
         <button class="tab-button" data-tab="localidade" onclick="trocarAba('localidade')">OPM / Localidade</button>
         <button class="tab-button" data-tab="vinculos" onclick="trocarAba('vinculos')">Vínculos</button>
         <button class="tab-button" data-tab="detalhado" onclick="trocarAba('detalhado')">Relatório Individual</button>
+        <button class="tab-button" data-tab="outrosDados" onclick="trocarAba('outrosDados')">Outros Dados</button>
       </nav>
 
       <div id="conteudoAba"></div>
@@ -855,6 +888,10 @@ function formatarDataInput(data) {
     function montarConteudoAba() {
       const d = relatorioAtual.distribuicoes || {};
 
+      if (abaAtual === "outrosDados") {
+        return montarOutrosDadosIndividuais();
+      }
+
       if ((relatorioAtual.totalRegistros || 0) === 0) {
         return `<div class="empty-state">Nenhum registro encontrado para os filtros selecionados.</div>`;
       }
@@ -900,7 +937,7 @@ function formatarDataInput(data) {
             ${montarGraficoBarras("Cidade", d.porCidade, { limite: 15 })}
             ${montarGraficoBarras("Bairro", d.porBairro, { limite: 15 })}
             ${montarGraficoBarras("UF", d.porUF, { limite: 10 })}
-            ${montarGraficoBarras("Email de cadastro", d.porNAPS, { limite: 10, classe: "wide" })}
+            ${montarGraficoBarras("NAPS", d.porNAPS, { limite: 10, classe: "wide" })}
           </div>
         `;
       }
@@ -915,6 +952,110 @@ function formatarDataInput(data) {
 }
 
       return montarTabelaDetalhada();
+    }
+
+    function montarOutrosDadosIndividuais() {
+      const dados = relatorioAtual.dadosIndividuais || {};
+
+      if (dados.status === "sem_busca" || !dados.status) {
+        return `
+          <section class="table-box wide">
+            <h3>Outros Dados</h3>
+            <div class="empty-state">Use a Busca Individual para visualizar nome, R.E., CPF, unidade, NAPS, quantidade de atendimentos e distância aproximada.</div>
+          </section>
+        `;
+      }
+
+      if (dados.status === "sem_resultado") {
+        return `
+          <section class="table-box wide">
+            <h3>Outros Dados</h3>
+            <div class="empty-state">${escaparHtml(dados.mensagem || "Nenhum cadastro localizado.")}</div>
+          </section>
+        `;
+      }
+
+      if (dados.status === "multiplos") {
+        return montarCandidatosBuscaIndividual(dados);
+      }
+
+      const distancia = dados.distanciaDisponivel
+        ? dados.distanciaTexto
+        : (dados.distanciaTexto || "não disponível");
+
+      return `
+        <section class="table-box wide">
+          <h3>Outros Dados</h3>
+          <div class="individual-grid">
+            ${montarCardIndividual("Nome", formatarTexto(dados.nome))}
+            ${montarCardIndividual("R.E.", dados.re || "-")}
+            ${montarCardIndividual("CPF", dados.cpf || "-")}
+            ${montarCardIndividual("Unidade", formatarTexto(dados.unidade, "opmAtual"))}
+            ${montarCardIndividual("NAPS", formatarTexto(dados.naps))}
+            ${montarCardIndividual("Total de atendimentos", dados.totalAtendimentos)}
+            ${montarCardIndividual("Distância da residência até o atendimento", distancia)}
+            ${montarCardIndividual("Atendimento de referência", dados.dataReferencia || "-")}
+          </div>
+          ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
+        </section>
+      `;
+    }
+
+    function montarCardIndividual(rotulo, valor) {
+      const texto = valor === 0 || valor ? String(valor) : "-";
+
+      return `
+        <article class="individual-card">
+          <span>${escaparHtml(rotulo)}</span>
+          <strong>${escaparHtml(texto)}</strong>
+        </article>
+      `;
+    }
+
+    function montarCandidatosBuscaIndividual(dados) {
+      const candidatos = dados.candidatos || [];
+
+      if (candidatos.length === 0) {
+        return `
+          <section class="table-box wide">
+            <h3>Outros Dados</h3>
+            <div class="empty-state">${escaparHtml(dados.mensagem || "Refine a Busca Individual.")}</div>
+          </section>
+        `;
+      }
+
+      const linhas = candidatos.map(function(item) {
+        return `
+          <tr>
+            <td>${escaparHtml(formatarTexto(item.nome))}</td>
+            <td>${escaparHtml(item.re || "-")}</td>
+            <td>${escaparHtml(item.cpf || "-")}</td>
+            <td>${escaparHtml(formatarTexto(item.unidade, "opmAtual"))}</td>
+            <td>${Number(item.totalAtendimentos || 0).toLocaleString("pt-BR")}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <section class="table-box wide">
+          <h3>Outros Dados</h3>
+          <div class="empty-state" style="margin-bottom:12px;">${escaparHtml(dados.mensagem || "Mais de uma pessoa localizada.")}</div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>R.E.</th>
+                  <th>CPF</th>
+                  <th>Unidade</th>
+                  <th>Total de atendimentos</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
     }
 
     function montarGraficoBarras(titulo, dados, config) {
@@ -1091,7 +1232,7 @@ function formatarDataInput(data) {
                   <th>CPF</th>
                   <th>Tipo</th>
                   <th>Motivo</th>
-                  <th>Email de cadastro</th>
+                  <th>NAPS</th>
                   <th>OPM</th>
                   <th>Status</th>
                   <th>Responsável</th>
@@ -1193,7 +1334,7 @@ function formatarDataInput(data) {
         "CPF",
         "Tipo",
         "Motivo",
-        "Email de cadastro",
+        "NAPS",
         "OPM",
         "Status",
         "Responsável",
