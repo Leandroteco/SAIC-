@@ -138,10 +138,55 @@
     .btn-success {
       background: #6ca88d;
       color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       width: 100%;
       font-size: 18px;
       font-weight: 600;
       margin-top: 25px;
+    }
+
+    .btn-success:disabled {
+      cursor: wait;
+      opacity: 0.78;
+    }
+
+    .spinner-salvar,
+    .spinner-mensagem {
+      border-radius: 50%;
+      display: inline-block;
+      flex: 0 0 auto;
+      animation: girar 0.8s linear infinite;
+    }
+
+    .spinner-salvar {
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.45);
+      border-top-color: #ffffff;
+    }
+
+    .spinner-mensagem {
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(71, 85, 105, 0.22);
+      border-top-color: #6ca88d;
+    }
+
+    .mensagem-processando {
+      align-items: center;
+      color: #475569;
+      display: inline-flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .vinculado {
@@ -226,6 +271,103 @@
   color: rgba(71, 85, 105, 0.35);
   font-weight: 400;
 }
+
+.recado-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.34);
+  display: none;
+  inset: 0;
+  justify-content: center;
+  padding: 22px;
+  position: fixed;
+  z-index: 100;
+}
+
+.recado-postit {
+  background: #fff3a3;
+  border: 1px solid rgba(161, 98, 7, 0.16);
+  border-radius: 8px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
+  color: #3f3a1b;
+  max-width: 460px;
+  min-height: 220px;
+  padding: 28px 26px 24px;
+  position: relative;
+  transform: rotate(-1deg);
+  width: min(460px, 92vw);
+}
+
+.recado-postit::before {
+  background: rgba(255, 255, 255, 0.38);
+  border-radius: 0 0 5px 5px;
+  content: "";
+  height: 28px;
+  left: 50%;
+  position: absolute;
+  top: -10px;
+  transform: translateX(-50%) rotate(2deg);
+  width: 116px;
+}
+
+.recado-postit.azul {
+  background: #dbeafe;
+  color: #1e3a5f;
+}
+
+.recado-postit.verde {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.recado-postit.rosa {
+  background: #ffe4e6;
+  color: #7f1d1d;
+}
+
+.recado-fechar {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  color: inherit;
+  display: flex;
+  font-size: 24px;
+  font-weight: 700;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  width: 34px;
+}
+
+.recado-fechar:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.recado-postit h2 {
+  border: 0;
+  color: inherit;
+  font-size: 24px;
+  margin: 4px 34px 16px 0;
+  padding: 0;
+}
+
+.recado-postit p {
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.recado-vigencia {
+  color: rgba(63, 58, 27, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 18px;
+}
   </style>
 </head>
 <div id="telaLogin" style="max-width:480px;margin:60px auto;background:white;border:1px solid #d8e2ea;border-radius:12px;padding:28px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;">
@@ -254,6 +396,15 @@
 <div id="conteudoSistema" style="display:none;">
 
 <body>
+
+<div id="recadoOverlay" class="recado-overlay">
+  <article id="recadoPostit" class="recado-postit" role="dialog" aria-modal="true" aria-labelledby="recadoTitulo">
+    <button type="button" class="recado-fechar" onclick="fecharRecado()" aria-label="Fechar recado">&times;</button>
+    <h2 id="recadoTitulo">Recado</h2>
+    <p id="recadoMensagem"></p>
+    <div id="recadoVigencia" class="recado-vigencia"></div>
+  </article>
+</div>
 
 <header>
   <div>
@@ -377,7 +528,7 @@
 
     <div>
       <label>Data de Nascimento</label>
-      <input id="dataNascimento" type="date">
+      <input id="dataNascimento" type="date" max="9999-12-31" oninput="validarAnoDataCampo(this)" onblur="validarAnoDataCampo(this)">
     </div>
   </div>
 
@@ -677,12 +828,12 @@
 
     <div>
       <label>Data de Ingresso</label>
-      <input id="dataIngresso" type="date">
+      <input id="dataIngresso" type="date" max="9999-12-31" oninput="validarAnoDataCampo(this)" onblur="validarAnoDataCampo(this)">
     </div>
 
     <div>
       <label>Data de Inatividade</label>
-      <input id="dataInatividade" type="date" disabled>
+      <input id="dataInatividade" type="date" max="9999-12-31" oninput="validarAnoDataCampo(this)" onblur="validarAnoDataCampo(this)" disabled>
     </div>
   </div>
 
@@ -773,7 +924,7 @@
   placeholder="EX: NOME COMPLETO"
   oninput="converterMaiusculas(this); this.style.border='1px solid #d8e2ea';">
 
-  <button class="btn-success" onclick="salvar()">
+  <button id="btnSalvar" class="btn-success" onclick="salvar()">
     Salvar Atendimento
   </button>
 
@@ -798,6 +949,10 @@ window.addEventListener("load", function() {
 
   document.getElementById("telaLogin").style.display = autorizado ? "none" : "block";
   document.getElementById("conteudoSistema").style.display = autorizado ? "block" : "none";
+
+  if (autorizado) {
+    carregarRecadoAtivo();
+  }
 });
 
   function verificarTipoAtendimento() {
@@ -923,12 +1078,64 @@ function limparErroCampo(campo) {
   document.getElementById("mensagem").innerText = "";
 }
 
+function limparErroVisualCampo(campo) {
+  campo.style.border = "1px solid #d8e2ea";
+}
+
 function reValido(valor) {
   return /^\d{6}-[\dA]$/i.test(String(valor || "").trim());
 }
 
 function cpfValido(valor) {
   return String(valor || "").replace(/\D/g, "").length === 11;
+}
+
+function dataCampoValida(campo) {
+  if (campo.disabled || campo.value === "") return true;
+
+  if (campo.validity && (campo.validity.badInput || campo.validity.rangeOverflow)) {
+    return false;
+  }
+
+  return /^\d{4}-\d{2}-\d{2}$/.test(campo.value);
+}
+
+function validarAnoDataCampo(campo) {
+  if (dataCampoValida(campo)) {
+    limparErroVisualCampo(campo);
+    return true;
+  }
+
+  marcarCampoObrigatorio(campo);
+  return false;
+}
+
+function validarDatasAtendimento() {
+  const campos = [
+    document.getElementById("dataNascimento"),
+    document.getElementById("dataIngresso"),
+    document.getElementById("dataInatividade")
+  ];
+  const camposComErro = [];
+
+  campos.forEach(function(campo) {
+    if (!validarAnoDataCampo(campo)) {
+      camposComErro.push(campo);
+    }
+  });
+
+  return camposComErro;
+}
+
+function definirEstadoSalvamento(salvando) {
+  const botao = document.getElementById("btnSalvar");
+
+  if (!botao) return;
+
+  botao.disabled = salvando;
+  botao.innerHTML = salvando
+    ? '<span class="spinner-salvar"></span><span>Salvando...</span>'
+    : 'Salvar Atendimento';
 }
 
 
@@ -959,14 +1166,23 @@ function salvar() {
     camposComErro.push(campoResponsavel);
   }
 
+  const camposDataComErro = validarDatasAtendimento();
+  camposDataComErro.forEach(function(campo) {
+    camposComErro.push(campo);
+  });
+
   if (camposComErro.length > 0) {
     mensagem.style.color = "#b42318";
-    mensagem.innerText = "Preencha corretamente os campos obrigatórios: R.E., CPF e responsável.";
+    mensagem.innerText = camposDataComErro.length > 0
+      ? "Preencha corretamente os campos destacados. As datas devem ter ano com 4 dígitos."
+      : "Preencha corretamente os campos obrigatórios: R.E., CPF e responsável.";
     camposComErro[0].focus();
     return;
   }
 
-  mensagem.style.color = "#4f9d69";
+  definirEstadoSalvamento(true);
+  mensagem.style.color = "#475569";
+  mensagem.innerHTML = '<span class="mensagem-processando"><span class="spinner-mensagem"></span><span>Salvando atendimento...</span></span>';
 
   const dados = {
     naps: "teste_naps",
@@ -1000,10 +1216,13 @@ function salvar() {
 
   google.script.run
     .withSuccessHandler(function(resposta) {
+      definirEstadoSalvamento(false);
+      mensagem.style.color = "#4f9d69";
       mensagem.innerText = resposta;
       limparFormulario();
     })
     .withFailureHandler(function(erro) {
+      definirEstadoSalvamento(false);
       mensagem.style.color = "#b42318";
       mensagem.innerText = "Erro: " + erro.message;
     })
@@ -1349,8 +1568,53 @@ function fecharMenu() {
   document.getElementById("menuOpcoes").style.display = "none";
 }
 
+function carregarRecadoAtivo() {
+  google.script.run
+    .withSuccessHandler(function(recado) {
+      if (recado && recado.encontrado) {
+        mostrarRecado(recado);
+      }
+    })
+    .withFailureHandler(function() {})
+    .obterRecadoAtivo(tokenGoogle);
+}
+
+function mostrarRecado(recado) {
+  const overlay = document.getElementById("recadoOverlay");
+  const postit = document.getElementById("recadoPostit");
+  const titulo = document.getElementById("recadoTitulo");
+  const mensagem = document.getElementById("recadoMensagem");
+  const vigencia = document.getElementById("recadoVigencia");
+  const cor = recado.cor || "amarelo";
+
+  postit.className = "recado-postit " + cor;
+  titulo.innerText = recado.titulo || "Recado";
+  mensagem.innerText = recado.mensagem || "";
+
+  if (recado.dataInicio || recado.dataFim) {
+    vigencia.innerText = "Vigência: " +
+      (recado.dataInicio || "sem início") +
+      " a " +
+      (recado.dataFim || "sem fim");
+  } else {
+    vigencia.innerText = "";
+  }
+
+  overlay.style.display = "flex";
+}
+
+function fecharRecado() {
+  document.getElementById("recadoOverlay").style.display = "none";
+}
+
 function abrirDashboard() {
-  alert("Dashboard Estatístico será implementado na próxima etapa.");
+  fecharMenu();
+
+  google.script.run
+    .withSuccessHandler(function(url) {
+      window.open(url + "?pagina=dashboard", "_blank");
+    })
+    .obterUrlApp();
 }
 
 function abrirIA() {
