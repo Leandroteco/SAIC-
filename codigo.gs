@@ -641,11 +641,16 @@ function salvarAtendimento(dados, idToken) {
     const dataIngresso = validarDataFormulario(dados.dataIngresso, "Data de Ingresso");
     const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
     const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
+    const tipoAtendimento = normalizar(dados.tipoAtendimento);
+
+    if (!tipoAtendimento) {
+      throw new Error("Tipo de atendimento e obrigatorio.");
+    }
 
     sheet.appendRow([
       idAtendimento,
       usuario.email,
-      normalizar(dados.tipoAtendimento),
+      tipoAtendimento,
       normalizar(dados.motivo),
       normalizar(dados.re),
       normalizar(dados.nome),
