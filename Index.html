@@ -242,6 +242,16 @@
       background: #f1f5f9;
     }
 
+    .menu-opcoes button:disabled {
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .menu-opcoes button:disabled:hover {
+      background: #f8fafc;
+    }
+
         @media (max-width: 900px) {
       .grid,
 .grid-2,
@@ -370,7 +380,7 @@
 }
   </style>
 </head>
-<div id="telaLogin" style="max-width:480px;margin:60px auto;background:white;border:1px solid #d8e2ea;border-radius:12px;padding:28px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;">
+<div id="telaLogin" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>max-width:480px;margin:60px auto;background:white;border:1px solid #d8e2ea;border-radius:12px;padding:28px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;">
   <h2 style="color:#3b82a0;margin-top:0;">SAIC</h2>
   <p style="color:#64748b;">Entre com sua Conta Google para acessar o sistema.</p>
   <div id="g_id_onload"
@@ -393,7 +403,7 @@
   <div id="mensagemLogin" style="margin-top:16px;color:#b42318;font-weight:600;"><?= mensagemLoginInicial ?></div>
 </div>
 
-<div id="conteudoSistema" style="display:none;">
+<div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
 
 <body>
 
@@ -415,9 +425,9 @@
   <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
 
 <div id="menuOpcoes" class="menu-opcoes" onmouseleave="fecharMenu()">
-  <button onclick="abrirRelatorios()">Relatórios Gerenciais</button>
-  <button onclick="abrirDashboard()">Dashboard Estatístico</button>
-  <button onclick="abrirIA()">Consulta por IA</button>
+  <button id="btnMenuRelatorios" onclick="abrirRelatorios()">Relatórios Gerenciais</button>
+  <button id="btnMenuDashboard" onclick="abrirDashboard()">Dashboard Estatístico</button>
+  <button id="btnMenuIA" onclick="abrirIA()">Consulta por IA</button>
 </div>
 
 </header>
@@ -841,7 +851,7 @@
    <div class="grid-2">
     <div>
       <label>Tipo de Atendimento</label>
-      <select id="tipoAtendimento" onchange="verificarTipoAtendimento()">
+      <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento()" required>
         <option value="">Selecione</option>
         <option>atendimento psicológico individual</option>
         <option>atendimento familiar</option>
@@ -942,15 +952,17 @@
 
 <script>
 let tokenGoogle = "<?= tokenGoogleInicial ?>";
+let webAppUrl = "<?= webAppUrl ?>";
 let usuarioLogado = <?!= usuarioInicialJson ?>;
 
-window.addEventListener("load", function() {
+document.addEventListener("DOMContentLoaded", function() {
   const autorizado = tokenGoogle && usuarioLogado && usuarioLogado.autorizado;
 
   document.getElementById("telaLogin").style.display = autorizado ? "none" : "block";
   document.getElementById("conteudoSistema").style.display = autorizado ? "block" : "none";
 
   if (autorizado) {
+    configurarMenuPorPerfil();
     carregarRecadoAtivo();
   }
 });
@@ -1143,12 +1155,14 @@ function definirEstadoSalvamento(salvando) {
 function salvar() {
   const campoRE = document.getElementById("re");
   const campoCPF = document.getElementById("cpf");
+  const campoTipoAtendimento = document.getElementById("tipoAtendimento");
   const campoResponsavel = document.getElementById("responsavel");
   const mensagem = document.getElementById("mensagem");
   const camposComErro = [];
 
   limparErroCampo(campoRE);
   limparErroCampo(campoCPF);
+  limparErroCampo(campoTipoAtendimento);
   limparErroCampo(campoResponsavel);
 
   if (!reValido(campoRE.value)) {
@@ -1166,6 +1180,11 @@ function salvar() {
     camposComErro.push(campoResponsavel);
   }
 
+  if (campoTipoAtendimento.value.trim() === "") {
+    marcarCampoObrigatorio(campoTipoAtendimento);
+    camposComErro.push(campoTipoAtendimento);
+  }
+
   const camposDataComErro = validarDatasAtendimento();
   camposDataComErro.forEach(function(campo) {
     camposComErro.push(campo);
@@ -1175,7 +1194,7 @@ function salvar() {
     mensagem.style.color = "#b42318";
     mensagem.innerText = camposDataComErro.length > 0
       ? "Preencha corretamente os campos destacados. As datas devem ter ano com 4 dígitos."
-      : "Preencha corretamente os campos obrigatórios: R.E., CPF e responsável.";
+      : "Preencha corretamente os campos obrigatórios: R.E., CPF, responsável e tipo de atendimento.";
     camposComErro[0].focus();
     return;
   }
@@ -1295,6 +1314,13 @@ function mascaraTelefone(campo) {
   }
 
   campo.value = valor;
+}
+
+function preencherTelefoneFormatado(valor) {
+  const campoTelefone = document.getElementById("telefone");
+
+  campoTelefone.value = valor || "";
+  mascaraTelefone(campoTelefone);
 }
 
 function mascaraCEP(campo) {
@@ -1452,7 +1478,7 @@ function preencherFormulario(r) {
   // Preenche com os dados do cadastro selecionado
   document.getElementById("re").value = converterMaiusculas(r.re || "");
   document.getElementById("cpf").value = r.cpf || "";
-  document.getElementById("telefone").value = r.telefone || "";
+  preencherTelefoneFormatado(r.telefone || "");
   document.getElementById("postoGraduacao").value = r.postoGraduacao || "";
   document.getElementById("nome").value = converterMaiusculas(r.nome || "");
   document.getElementById("sexo").value = r.sexo || "";
@@ -1568,6 +1594,84 @@ function fecharMenu() {
   document.getElementById("menuOpcoes").style.display = "none";
 }
 
+function usuarioAdministrador() {
+  return usuarioLogado &&
+    (usuarioLogado.administrador === true || usuarioLogado.perfil === "administrador");
+}
+
+function configurarMenuPorPerfil() {
+  const admin = usuarioAdministrador();
+  const idsRestritos = [
+    "btnMenuRelatorios",
+    "btnMenuDashboard",
+    "btnMenuIA"
+  ];
+
+  idsRestritos.forEach(function(id) {
+    const botao = document.getElementById(id);
+
+    if (!botao) return;
+
+    botao.disabled = !admin;
+    botao.title = admin
+      ? ""
+      : "Disponível somente para administradores";
+  });
+}
+
+function bloquearAcessoAdministrativoMenu() {
+  if (usuarioAdministrador()) return false;
+
+  fecharMenu();
+  const mensagem = document.getElementById("mensagem");
+
+  if (mensagem) {
+    mensagem.style.color = "#b42318";
+    mensagem.innerText = "Recurso disponível somente para administradores.";
+  }
+
+  return true;
+}
+
+function abrirPaginaAdministrativa(pagina) {
+  if (bloquearAcessoAdministrativoMenu()) return;
+
+  if (!tokenGoogle || !webAppUrl) {
+    const mensagem = document.getElementById("mensagem");
+
+    if (mensagem) {
+      mensagem.style.color = "#b42318";
+      mensagem.innerText = "Sessão expirada. Faça login novamente.";
+    }
+
+    return;
+  }
+
+  fecharMenu();
+
+  const form = document.createElement("form");
+  form.method = "post";
+  form.action = webAppUrl;
+  form.target = "_blank";
+  form.style.display = "none";
+
+  const campoToken = document.createElement("input");
+  campoToken.type = "hidden";
+  campoToken.name = "credential";
+  campoToken.value = tokenGoogle;
+
+  const campoDestino = document.createElement("input");
+  campoDestino.type = "hidden";
+  campoDestino.name = "state";
+  campoDestino.value = pagina;
+
+  form.appendChild(campoToken);
+  form.appendChild(campoDestino);
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
+}
+
 function carregarRecadoAtivo() {
   google.script.run
     .withSuccessHandler(function(recado) {
@@ -1608,27 +1712,17 @@ function fecharRecado() {
 }
 
 function abrirDashboard() {
-  fecharMenu();
-
-  google.script.run
-    .withSuccessHandler(function(url) {
-      window.open(url + "?pagina=dashboard", "_blank");
-    })
-    .obterUrlApp();
+  abrirPaginaAdministrativa("dashboard");
 }
 
 function abrirIA() {
+  if (bloquearAcessoAdministrativoMenu()) return;
+
   alert("IA para Consulta será implementada na próxima etapa.");
 }
 
 function abrirRelatorios() {
-  fecharMenu();
-
-  google.script.run
-    .withSuccessHandler(function(url) {
-      window.open(url + "?pagina=relatorios", "_blank");
-    })
-    .obterUrlApp();
+  abrirPaginaAdministrativa("relatorios");
 }
 
 function limparAvisosBusca() {
