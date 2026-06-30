@@ -373,7 +373,7 @@
 </head>
 
 <body>
-  <div id="telaLogin" class="login-box">
+  <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
     <h2>SAIC</h2>
     <p>Entre com sua Conta Google para acessar o dashboard.</p>
     <div id="g_id_onload"
@@ -399,7 +399,7 @@
     </div>
   </div>
 
-  <div id="conteudoSistema" style="display:none;">
+  <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
     <header class="topbar">
       <div>
         <h1>Dashboard Estatístico</h1>
@@ -556,8 +556,11 @@
     const graficos = {};
     const cores = ["#3b82a0", "#166534", "#a16207", "#b42318", "#2563eb", "#6d5bd0", "#0f766e", "#be123c", "#4b5563", "#9333ea"];
 
-    window.addEventListener("load", function() {
-      const autorizado = tokenGoogle && usuarioLogado && usuarioLogado.autorizado;
+    document.addEventListener("DOMContentLoaded", function() {
+      const autorizado = tokenGoogle &&
+        usuarioLogado &&
+        usuarioLogado.autorizado &&
+        usuarioLogado.perfil === "administrador";
 
       document.getElementById("telaLogin").style.display = autorizado ? "none" : "block";
       document.getElementById("conteudoSistema").style.display = autorizado ? "block" : "none";
