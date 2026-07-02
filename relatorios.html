@@ -11,17 +11,22 @@
       --surface: #ffffff;
       --surface-soft: #f8fbfd;
       --line: #d8e2ea;
-      --line-soft: #e8eef3;
+      --line-soft: #edf3f7;
       --text: #334155;
       --muted: #64748b;
       --primary: #3b82a0;
       --primary-dark: #2f6f89;
-      --success: #166534;
+      --primary-soft: #7fb6cc;
+      --sidebar: #6f97ad;
+      --sidebar-soft: #7fb6cc;
+      --success: #6ca88d;
       --success-soft: #e8f5ee;
       --warning: #a16207;
       --warning-soft: #fff7df;
       --danger: #b42318;
       --danger-soft: #fff1f0;
+      --purple: #6f97ad;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
     }
 
     * {
@@ -29,27 +34,171 @@
     }
 
     body {
-      margin: 0;
       background: var(--bg);
       color: var(--text);
       font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin: 60px auto;
+      max-width: 480px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .login-box h2 {
+      color: var(--primary);
+      margin: 0 0 10px;
+    }
+
+    .login-box p {
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+
+    #conteudoRelatorios {
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-soft) 100%);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      min-height: 100vh;
+      padding: 26px 20px;
+      position: sticky;
+      top: 0;
+    }
+
+    .brand {
+      align-items: center;
+      display: flex;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 8px;
+      display: flex;
+      font-size: 20px;
+      font-weight: 900;
+      height: 46px;
+      justify-content: center;
+      width: 46px;
+    }
+
+    .brand-title {
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .brand-subtitle {
+      color: rgba(255, 255, 255, 0.72);
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-nav a {
+      align-items: center;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.82);
+      display: flex;
+      font-size: 14px;
+      font-weight: 800;
+      gap: 10px;
+      min-height: 42px;
+      padding: 10px 12px;
+      text-decoration: none;
+    }
+
+    .side-nav a:hover,
+    .side-nav a.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .nav-dot {
+      background: #eef4f7;
+      border-radius: 999px;
+      height: 8px;
+      width: 8px;
+    }
+
+    .sidebar-footer {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      margin-top: auto;
+      padding: 14px;
+    }
+
+    .sidebar-footer span {
+      color: rgba(255, 255, 255, 0.68);
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-footer strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .reports-content {
+      min-width: 0;
     }
 
     .topbar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--line);
+      align-items: center;
+      background: transparent;
       display: flex;
+      gap: 16px;
       justify-content: space-between;
-      gap: 18px;
-      padding: 22px 30px;
-      position: sticky;
-      top: 0;
-      z-index: 5;
+      padding: 30px 34px 18px;
+    }
+
+    .eyebrow {
+      color: var(--success);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-transform: uppercase;
     }
 
     h1 {
       color: var(--primary);
-      font-size: 26px;
+      font-size: 28px;
+      font-weight: 900;
       margin: 0 0 4px;
     }
 
@@ -60,9 +209,9 @@
     }
 
     main {
-      max-width: 1280px;
       margin: 0 auto;
-      padding: 24px;
+      max-width: 1440px;
+      padding: 0 34px 34px;
     }
 
     .actions {
@@ -78,7 +227,7 @@
       border-radius: 8px;
       cursor: pointer;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 800;
       min-height: 40px;
       padding: 10px 14px;
       transition: background 0.15s ease, color 0.15s ease;
@@ -90,16 +239,17 @@
     }
 
     .btn-primary {
-      background: var(--primary);
+      background: var(--primary-soft);
+      box-shadow: 0 10px 22px rgba(127, 182, 204, 0.22);
       color: #ffffff;
     }
 
     .btn-primary:hover {
-      background: var(--primary-dark);
+      background: var(--sidebar);
     }
 
     .btn-secondary {
-      background: #e2e8f0;
+      background: #e8eef3;
       color: var(--text);
     }
 
@@ -118,6 +268,7 @@
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 8px;
+      box-shadow: var(--shadow);
       padding: 20px;
     }
 
@@ -136,12 +287,14 @@
     .section-title h2 {
       color: var(--primary);
       font-size: 18px;
+      font-weight: 900;
       margin: 0;
     }
 
     .section-title span {
       color: var(--muted);
       font-size: 13px;
+      font-weight: 700;
     }
 
     .filters-grid {
@@ -154,13 +307,13 @@
       color: #475569;
       display: block;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 6px;
     }
 
     input,
     select {
-      background: #fcfdff;
+      background: #f8fafc;
       border: 1px solid var(--line);
       border-radius: 8px;
       color: var(--text);
@@ -180,8 +333,8 @@
 
     .metrics-grid {
       display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       margin-bottom: 18px;
     }
 
@@ -190,14 +343,29 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       min-height: 96px;
-      padding: 15px;
+      overflow: hidden;
+      padding: 16px;
+      position: relative;
     }
+
+    .metric::before {
+      content: "";
+      height: 100%;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 5px;
+    }
+
+    .metric:nth-child(1)::before { background: var(--success); }
+    .metric:nth-child(2)::before { background: var(--primary); }
+    .metric:nth-child(3)::before { background: var(--warning); }
 
     .metric span {
       color: var(--muted);
       display: block;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0;
       margin-bottom: 8px;
       text-transform: uppercase;
@@ -206,30 +374,37 @@
     .metric strong {
       color: var(--success);
       display: block;
-      font-size: 30px;
+      font-size: 32px;
+      font-weight: 900;
       line-height: 1;
     }
 
+    .metric:nth-child(2) strong { color: var(--primary); }
+    .metric:nth-child(3) strong { color: var(--warning); }
+
     .tabs {
-      border-bottom: 1px solid var(--line);
+      background: #eef4f7;
+      border-radius: 8px;
       display: flex;
-      gap: 4px;
+      gap: 6px;
       margin-bottom: 18px;
       overflow-x: auto;
+      padding: 6px;
     }
 
     .tab-button {
       background: transparent;
-      border-radius: 8px 8px 0 0;
+      border-radius: 8px;
       color: var(--muted);
       flex: 0 0 auto;
-      min-height: 42px;
-      padding: 10px 14px;
+      min-height: 40px;
+      padding: 9px 13px;
     }
 
     .tab-button.active {
-      background: var(--primary);
-      color: #ffffff;
+      background: var(--surface);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      color: var(--primary-dark);
     }
 
     .tab-grid {
@@ -250,6 +425,7 @@
     .table-box h3 {
       color: var(--primary);
       font-size: 16px;
+      font-weight: 900;
       margin: 0 0 14px;
     }
 
@@ -277,7 +453,7 @@
     }
 
     .bar-fill {
-      background: linear-gradient(90deg, #3b82a0, #6ca88d);
+      background: linear-gradient(90deg, var(--primary), var(--success));
       border-radius: 999px;
       height: 100%;
       min-width: 3px;
@@ -286,7 +462,7 @@
     .bar-total {
       color: var(--text);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       text-align: right;
     }
 
@@ -301,13 +477,14 @@
     .loading,
     .error {
       border-radius: 8px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 16px;
     }
 
     .loading {
       background: var(--surface);
       border: 1px solid var(--line);
+      box-shadow: var(--shadow);
       color: var(--muted);
     }
 
@@ -335,6 +512,7 @@
       background: #edf3f7;
       color: #475569;
       font-size: 12px;
+      font-weight: 900;
       text-transform: uppercase;
     }
 
@@ -345,6 +523,7 @@
     .status-line {
       color: var(--muted);
       font-size: 13px;
+      font-weight: 700;
       margin-top: 12px;
       text-align: right;
     }
@@ -359,7 +538,7 @@
       color: var(--success);
       display: inline-block;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 4px 8px;
     }
 
@@ -381,7 +560,7 @@
       color: var(--muted);
       display: block;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 7px;
       text-transform: uppercase;
     }
@@ -394,12 +573,21 @@
       word-break: break-word;
     }
 
-    @media (max-width: 1100px) {
-      .filters-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    @media (max-width: 1180px) {
+      .app-shell {
+        grid-template-columns: 1fr;
       }
 
-      .metrics-grid {
+      .sidebar {
+        min-height: auto;
+        position: static;
+      }
+
+      .side-nav {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .filters-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
@@ -408,12 +596,19 @@
       .topbar {
         align-items: flex-start;
         flex-direction: column;
-        padding: 18px;
-        position: static;
+        padding: 22px 14px 16px;
       }
 
       main {
-        padding: 14px;
+        padding: 0 14px 18px;
+      }
+
+      .sidebar {
+        padding: 18px 14px;
+      }
+
+      .side-nav {
+        grid-template-columns: 1fr 1fr;
       }
 
       .filters-grid,
@@ -446,6 +641,7 @@
 
     @media print {
       .topbar,
+      .sidebar,
       .filters-panel,
       .tabs,
       .actions,
@@ -455,6 +651,10 @@
 
       body {
         background: #ffffff;
+      }
+
+      .app-shell {
+        display: block;
       }
 
       main {
@@ -474,9 +674,9 @@
 </head>
 
 <body>
-<div id="telaLogin" style="max-width:480px;margin:60px auto;background:white;border:1px solid #d8e2ea;border-radius:12px;padding:28px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;">
-  <h2 style="color:#3b82a0;margin-top:0;">Relatórios Gerenciais</h2>
-  <p style="color:#64748b;">Entre com sua Conta Google de administrador.</p>
+<div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
+  <h2>Relatórios Gerenciais</h2>
+  <p>Entre com sua Conta Google de administrador.</p>
 
   <div id="g_id_onload"
        data-client_id="<?= googleClientId ?>"
@@ -499,11 +699,45 @@
   <div id="mensagemLogin" style="margin-top:16px;color:#b42318;font-weight:600;"><?= mensagemLoginInicial ?></div>
 </div>
 
-<div id="conteudoRelatorios" style="display:none;">
-  </header>
+<div id="conteudoRelatorios" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação dos relatórios">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <span class="brand-title">SAIC</span>
+          <span class="brand-subtitle">Relatórios</span>
+        </div>
+      </div>
 
-  <main>
-    <section class="filters-panel">
+      <nav class="side-nav">
+        <a class="active" href="#filtros"><span class="nav-dot"></span>Filtros</a>
+        <a href="#metricas"><span class="nav-dot"></span>Indicadores</a>
+        <a href="#abasRelatorio"><span class="nav-dot"></span>Análises</a>
+        <a href="#conteudoAba"><span class="nav-dot"></span>Detalhes</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span>Acesso</span>
+        <strong>Administrador</strong>
+      </div>
+    </aside>
+
+    <div class="reports-content">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Painel gerencial</span>
+          <h1>Relatórios Gerenciais</h1>
+          <p class="subtitle">Consultas, indicadores e detalhamento dos atendimentos</p>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn-primary" onclick="carregarRelatorio()">Atualizar</button>
+        </div>
+      </header>
+
+      <main>
+    <section id="filtros" class="filters-panel">
       <div class="section-title">
         <h2>Filtros</h2>
         <span id="statusFiltros">Todos os registros</span>
@@ -636,7 +870,7 @@
     <section id="painelResultado" class="content-panel" style="display:none;">
       <div id="metricas" class="metrics-grid"></div>
 
-      <nav class="tabs">
+      <nav id="abasRelatorio" class="tabs">
         <button class="tab-button active" data-tab="resumo" onclick="trocarAba('resumo')">Resumo</button>
         <button class="tab-button" data-tab="atendimentos" onclick="trocarAba('atendimentos')">Atendimentos</button>
         <button class="tab-button" data-tab="perfil" onclick="trocarAba('perfil')">Perfil</button>
@@ -649,7 +883,10 @@
       <div id="conteudoAba"></div>
       <div id="rodapeResultado" class="status-line"></div>
     </section>
-  </main>
+      </main>
+    </div>
+  </div>
+</div>
 
   <script>
 let tokenGoogle = "<?= tokenGoogleInicial ?>";
@@ -993,8 +1230,8 @@ function formatarDataInput(data) {
             ${montarCardIndividual("Unidade", formatarTexto(dados.unidade, "opmAtual"))}
             ${montarCardIndividual("NAPS", formatarTexto(dados.naps))}
             ${montarCardIndividual("Total de atendimentos", dados.totalAtendimentos)}
-            ${montarCardIndividual("Distância da residência até o atendimento", distancia)}
-            ${montarCardIndividual("Atendimento de referência", dados.dataReferencia || "-")}
+            ${montarCardIndividual("Distância aproximada", distancia)}
+            ${montarCardIndividual("Último atendimento", dados.dataReferencia || "-")}
           </div>
           ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
         </section>
