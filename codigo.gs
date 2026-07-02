@@ -314,12 +314,13 @@ function obterPaginaSolicitada(valor) {
 
   if (pagina === "relatorios") return "relatorios";
   if (pagina === "dashboard") return "dashboard";
+  if (pagina === "mapa_de_calor") return "mapa_de_calor";
 
   return "Index";
 }
 
 function paginaExigeAdministrador(pagina) {
-  return pagina === "relatorios" || pagina === "dashboard";
+  return pagina === "relatorios" || pagina === "dashboard" || pagina === "mapa_de_calor";
 }
 
 function obterConfigLoginGoogle() {
@@ -641,7 +642,7 @@ function salvarAtendimento(dados, idToken) {
     const dataIngresso = validarDataFormulario(dados.dataIngresso, "Data de Ingresso");
     const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
     const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
-    const tipoAtendimento = normalizar(dados.tipoAtendimento);
+    const tipoAtendimento = normalizarTipoAtendimento(dados.tipoAtendimento);
 
     if (!tipoAtendimento) {
       throw new Error("Tipo de atendimento e obrigatorio.");
@@ -834,6 +835,15 @@ function normalizar(texto) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+}
+
+function normalizarTipoAtendimento(valor) {
+  const tipo = normalizar(valor);
+
+  if (tipo === "alta") return "ALTA";
+  if (tipo === "falta") return "FALTA";
+
+  return tipo;
 }
 
 function somenteNumeros(valor) {
