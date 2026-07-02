@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    :root {
+      --bg: #f4f8fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbfd;
+      --line: #d8e2ea;
+      --line-soft: #edf3f7;
+      --text: #334155;
+      --muted: #64748b;
+      --primary: #3b82a0;
+      --primary-dark: #2f6f89;
+      --primary-soft: #7fb6cc;
+      --sidebar: #6f97ad;
+      --sidebar-soft: #7fb6cc;
+      --success: #6ca88d;
+      --warning: #a16207;
+      --danger: #b42318;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin: 60px auto;
+      max-width: 480px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .login-box h2 {
+      color: var(--primary);
+      margin: 0 0 10px;
+    }
+
+    .login-box p {
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+
+    #conteudoSistema {
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-soft) 100%);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      min-height: 100vh;
+      padding: 26px 20px;
+      position: sticky;
+      top: 0;
+    }
+
+    .brand {
+      align-items: center;
+      display: flex;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 8px;
+      display: flex;
+      font-size: 20px;
+      font-weight: 900;
+      height: 46px;
+      justify-content: center;
+      width: 46px;
+    }
+
+    .brand-title {
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .brand-subtitle {
+      color: rgba(255, 255, 255, 0.72);
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-item {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 8px;
+      color: #ffffff;
+      display: flex;
+      font-size: 14px;
+      font-weight: 800;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+
+    .nav-dot {
+      background: #ffffff;
+      border-radius: 999px;
+      height: 8px;
+      opacity: 0.9;
+      width: 8px;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.74);
+      display: grid;
+      gap: 4px;
+      margin-top: auto;
+      padding-top: 18px;
+    }
+
+    .sidebar-footer strong {
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .page-content {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .topbar {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 0 auto 22px;
+      max-width: 1180px;
+    }
+
+    .topbar h1 {
+      color: var(--text);
+      font-size: 28px;
+      margin: 0 0 6px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    main {
+      display: grid;
+      gap: 18px;
+      margin: 0 auto;
+      max-width: 1180px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .section-title h2 {
+      color: var(--text);
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+    }
+
+    .map-card {
+      background:
+        linear-gradient(90deg, rgba(216, 226, 234, 0.58) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(216, 226, 234, 0.58) 1px, transparent 1px),
+        var(--surface-soft);
+      background-size: 34px 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 420px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .map-card::before {
+      background: rgba(59, 130, 160, 0.09);
+      border: 1px solid rgba(59, 130, 160, 0.2);
+      border-radius: 44% 56% 45% 55%;
+      content: "";
+      height: 58%;
+      left: 20%;
+      position: absolute;
+      top: 18%;
+      transform: rotate(-8deg);
+      width: 54%;
+    }
+
+    .heat-point {
+      border-radius: 999px;
+      filter: blur(1px);
+      position: absolute;
+      transform: translate(-50%, -50%);
+    }
+
+    .heat-point.high {
+      background: rgba(180, 35, 24, 0.48);
+      box-shadow: 0 0 38px 18px rgba(180, 35, 24, 0.24);
+      height: 96px;
+      width: 96px;
+    }
+
+    .heat-point.medium {
+      background: rgba(161, 98, 7, 0.42);
+      box-shadow: 0 0 32px 14px rgba(161, 98, 7, 0.20);
+      height: 78px;
+      width: 78px;
+    }
+
+    .heat-point.low {
+      background: rgba(108, 168, 141, 0.44);
+      box-shadow: 0 0 28px 12px rgba(108, 168, 141, 0.18);
+      height: 62px;
+      width: 62px;
+    }
+
+    .map-label {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+      left: 22px;
+      padding: 10px 12px;
+      position: absolute;
+      top: 22px;
+    }
+
+    .status-card {
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .status-card h3 {
+      color: var(--primary-dark);
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .status-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .metric-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric-item {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 14px;
+    }
+
+    .metric-item span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .metric-item strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .legend span {
+      align-items: center;
+      color: var(--muted);
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 800;
+      gap: 6px;
+    }
+
+    .legend i {
+      border-radius: 999px;
+      display: inline-block;
+      height: 10px;
+      width: 10px;
+    }
+
+    @media (max-width: 920px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        min-height: auto;
+        position: relative;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-content {
+        padding: 18px 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .section-title {
+        flex-direction: column;
+      }
+
+      .map-card {
+        min-height: 320px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
+    <h2>Mapa de Calor</h2>
+    <p>Entre com sua Conta Google de administrador.</p>
+    <div id="g_id_onload"
+      data-client_id="<?= googleClientId ?>"
+      data-login_uri="<?= webAppUrl ?>"
+      data-ux_mode="redirect"
+      data-auto_prompt="false"
+      data-state="mapa_de_calor">
+    </div>
+
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="signin_with"
+      data-shape="rectangular"
+      data-logo_alignment="left"
+      style="display:flex;justify-content:center;margin-top:18px;">
+    </div>
+
+    <div id="mensagemLogin" style="margin-top:16px;color:#b42318;font-weight:700;">
+      <?= mensagemLoginInicial ?>
+    </div>
+  </div>
+
+  <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Mapa de Calor">
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <div>
+            <span class="brand-title">SAIC</span>
+            <span class="brand-subtitle">Mapa de Calor</span>
+          </div>
+        </div>
+
+        <nav class="side-nav">
+          <span class="nav-item"><span class="nav-dot"></span>Mapa de Calor</span>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span>Módulo</span>
+          <strong>Em desenvolvimento</strong>
+        </div>
+      </aside>
+
+      <div class="page-content">
+        <header class="topbar">
+          <div>
+            <h1>Mapa de Calor</h1>
+            <p class="subtitle">Análise territorial dos atendimentos</p>
+          </div>
+        </header>
+
+        <main>
+          <section class="panel">
+            <div class="section-title">
+              <h2>Distribuição territorial</h2>
+              <span>Base visual reservada</span>
+            </div>
+
+            <div class="hero-grid">
+              <div>
+                <div class="map-card" aria-label="Prévia visual do mapa de calor">
+                  <span class="map-label">Mapa de Calor</span>
+                  <span class="heat-point high" style="left:58%;top:43%;"></span>
+                  <span class="heat-point medium" style="left:39%;top:56%;"></span>
+                  <span class="heat-point medium" style="left:67%;top:66%;"></span>
+                  <span class="heat-point low" style="left:32%;top:34%;"></span>
+                  <span class="heat-point low" style="left:76%;top:31%;"></span>
+                </div>
+
+                <div class="legend" aria-label="Legenda do mapa">
+                  <span><i style="background:#b42318;"></i>Maior concentração</span>
+                  <span><i style="background:#a16207;"></i>Média concentração</span>
+                  <span><i style="background:#6ca88d;"></i>Menor concentração</span>
+                </div>
+              </div>
+
+              <aside class="status-card">
+                <h3>Próxima etapa</h3>
+                <p>Esta tela substitui o relatório inteligente e fica preparada para receber o mapa por período, NAPS, OPM ou região.</p>
+
+                <div class="metric-list">
+                  <div class="metric-item">
+                    <span>Fonte dos dados</span>
+                    <strong>Atendimentos</strong>
+                  </div>
+                  <div class="metric-item">
+                    <span>Filtro principal</span>
+                    <strong>Data inicial e final</strong>
+                  </div>
+                  <div class="metric-item">
+                    <span>Acesso</span>
+                    <strong>Administrador</strong>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let tokenGoogle = "<?= tokenGoogleInicial ?>";
+    let usuarioLogado = <?!= usuarioInicialJson ?>;
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const administrador = tokenGoogle &&
+        usuarioLogado &&
+        usuarioLogado.autorizado &&
+        usuarioLogado.perfil === "administrador";
+
+      document.getElementById("telaLogin").style.display = administrador ? "none" : "block";
+      document.getElementById("conteudoSistema").style.display = administrador ? "block" : "none";
+    });
+  </script>
+</body>
+</html>
