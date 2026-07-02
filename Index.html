@@ -378,11 +378,410 @@
   font-weight: 700;
   margin-top: 18px;
 }
+
+:root {
+  --bg: #f4f8fb;
+  --surface: #ffffff;
+  --surface-soft: #f8fbfd;
+  --line: #d8e2ea;
+  --line-soft: #edf3f7;
+  --text: #334155;
+  --muted: #64748b;
+  --primary: #3b82a0;
+  --primary-dark: #2f6f89;
+  --primary-soft: #7fb6cc;
+  --sidebar: #6f97ad;
+  --sidebar-soft: #7fb6cc;
+  --success: #6ca88d;
+  --success-dark: #4f9d69;
+  --warning: #a16207;
+  --danger: #be123c;
+  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  margin: 60px auto;
+  max-width: 480px;
+  padding: 28px;
+  text-align: center;
+}
+
+.login-box h2 {
+  border: 0;
+  color: var(--primary);
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.login-box p {
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+
+#conteudoSistema {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-soft) 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-height: 100vh;
+  padding: 26px 20px;
+  position: sticky;
+  top: 0;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-mark {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 8px;
+  display: flex;
+  font-size: 20px;
+  font-weight: 900;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.brand-title {
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  color: rgba(255, 255, 255, 0.72);
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.side-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.side-nav .nav-item {
+  align-items: center;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  display: flex;
+  font-size: 14px;
+  font-weight: 800;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.side-nav .nav-item.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.nav-dot {
+  background: #eef4f7;
+  border-radius: 999px;
+  height: 8px;
+  width: 8px;
+}
+
+.sidebar-footer {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  margin-top: auto;
+  padding: 14px;
+}
+
+.sidebar-footer span {
+  color: rgba(255, 255, 255, 0.68);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.sidebar-footer strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.form-content {
+  min-width: 0;
+}
+
+header {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 30px 34px 18px;
+  position: relative;
+}
+
+header h1 {
+  color: var(--primary);
+  font-size: 28px;
+  font-weight: 900;
+  margin: 0 0 4px;
+}
+
+header span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.eyebrow {
+  color: var(--success);
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.menu {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--primary);
+  display: flex;
+  font-size: 24px;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.menu-opcoes {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  right: 34px;
+  top: 82px;
+}
+
+.menu-opcoes button {
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  margin: 0 auto 34px;
+  max-width: 1140px;
+  padding: 24px;
+  width: calc(100% - 68px);
+}
+
+h2 {
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 900;
+  margin: 30px 0 16px;
+  padding-bottom: 10px;
+}
+
+.titulo-centralizado {
+  margin-top: 0;
+  text-align: left;
+}
+
+label {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  min-height: 42px;
+  padding: 10px;
+}
+
+select option.opcao-alerta-atendimento,
+select.tipo-atendimento-alerta {
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 109, 133, 0.12);
+  outline: none;
+}
+
+.grid,
+.grid-2,
+.grid-posto-nome,
+.grid-endereco-1,
+.grid-endereco-2 {
+  gap: 14px;
+}
+
+button {
+  border-radius: 8px;
+  font-weight: 800;
+  min-height: 42px;
+}
+
+.btn-primary {
+  background: var(--primary-soft);
+  box-shadow: 0 10px 22px rgba(127, 182, 204, 0.22);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--sidebar);
+}
+
+.btn-secondary {
+  background: #e8eef3;
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: #cbd5e1;
+}
+
+.btn-success {
+  background: var(--success);
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+  font-weight: 900;
+}
+
+.btn-success:hover {
+  background: var(--success-dark);
+}
+
+.vinculado {
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+}
+
+#resultadoBusca {
+  margin-top: 12px;
+}
+
+#areaVinculados {
+  margin-top: 20px;
+}
+
+#mensagem {
+  color: var(--success);
+  font-weight: 900;
+}
+
+.copyright {
+  border-top: 1px solid var(--line-soft);
+  color: rgba(71, 85, 105, 0.48);
+  margin-top: 28px;
+  padding-top: 18px;
+}
+
+@media (max-width: 1180px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    min-height: auto;
+    position: static;
+  }
+
+  .side-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  header {
+    align-items: flex-start;
+    padding: 22px 14px 16px;
+  }
+
+  .sidebar {
+    padding: 18px 14px;
+  }
+
+  .side-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .container {
+    margin: 0 14px 18px;
+    padding: 20px;
+    width: auto;
+  }
+
+  .menu-opcoes {
+    right: 14px;
+    top: 82px;
+  }
+}
   </style>
 </head>
-<div id="telaLogin" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>max-width:480px;margin:60px auto;background:white;border:1px solid #d8e2ea;border-radius:12px;padding:28px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;">
-  <h2 style="color:#3b82a0;margin-top:0;">SAIC</h2>
-  <p style="color:#64748b;">Entre com sua Conta Google para acessar o sistema.</p>
+<body>
+<div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
+  <h2>SAIC</h2>
+  <p>Entre com sua Conta Google para acessar o sistema.</p>
   <div id="g_id_onload"
      data-client_id="<?= googleClientId ?>"
      data-login_uri="<?= webAppUrl ?>"
@@ -404,8 +803,27 @@
 </div>
 
 <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação do cadastro">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <span class="brand-title">SAIC</span>
+          <span class="brand-subtitle">Atendimento</span>
+        </div>
+      </div>
 
-<body>
+      <nav class="side-nav">
+        <span class="nav-item active"><span class="nav-dot"></span>Atendimento</span>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span>Sistema</span>
+        <strong>CAPS/NAPS</strong>
+      </div>
+    </aside>
+
+    <div class="form-content">
 
 <div id="recadoOverlay" class="recado-overlay">
   <article id="recadoPostit" class="recado-postit" role="dialog" aria-modal="true" aria-labelledby="recadoTitulo">
@@ -427,7 +845,7 @@
 <div id="menuOpcoes" class="menu-opcoes" onmouseleave="fecharMenu()">
   <button id="btnMenuRelatorios" onclick="abrirRelatorios()">Relatórios Gerenciais</button>
   <button id="btnMenuDashboard" onclick="abrirDashboard()">Dashboard Estatístico</button>
-  <button id="btnMenuIA" onclick="abrirIA()">Consulta por IA</button>
+  <button id="btnMenuMapaCalor" onclick="abrirMapaDeCalor()">Mapa de Calor</button>
 </div>
 
 </header>
@@ -853,6 +1271,8 @@
       <label>Tipo de Atendimento</label>
       <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento()" required>
         <option value="">Selecione</option>
+        <option class="opcao-alerta-atendimento" value="ALTA">ALTA</option>
+        <option class="opcao-alerta-atendimento" value="FALTA">FALTA</option>
         <option>atendimento psicológico individual</option>
         <option>atendimento familiar</option>
         <option>atendimento grupo</option>
@@ -950,6 +1370,8 @@
 
 </div>
 
+</div>
+
 <script>
 let tokenGoogle = "<?= tokenGoogleInicial ?>";
 let webAppUrl = "<?= webAppUrl ?>";
@@ -964,12 +1386,24 @@ document.addEventListener("DOMContentLoaded", function() {
   if (autorizado) {
     configurarMenuPorPerfil();
     carregarRecadoAtivo();
+    aplicarEstiloTipoAtendimento();
   }
 });
+
+  function aplicarEstiloTipoAtendimento() {
+    const campo = document.getElementById("tipoAtendimento");
+
+    if (!campo) return;
+
+    const tipo = String(campo.value || "").toUpperCase();
+    campo.classList.toggle("tipo-atendimento-alerta", tipo === "ALTA" || tipo === "FALTA");
+  }
 
   function verificarTipoAtendimento() {
     const tipo = document.getElementById("tipoAtendimento").value;
     const area = document.getElementById("areaVinculados");
+
+    aplicarEstiloTipoAtendimento();
 
     if (tipo === "atendimento familiar" || tipo === "atendimento grupo") {
       area.style.display = "block";
@@ -1257,6 +1691,7 @@ function limparFormulario() {
   document.getElementById("listaVinculados").innerHTML = "";
   document.getElementById("areaVinculados").style.display = "none";
   atualizarCampoDataInatividade();
+  aplicarEstiloTipoAtendimento();
 }
 
 function mascaraRE(campo) {
@@ -1604,7 +2039,7 @@ function configurarMenuPorPerfil() {
   const idsRestritos = [
     "btnMenuRelatorios",
     "btnMenuDashboard",
-    "btnMenuIA"
+    "btnMenuMapaCalor"
   ];
 
   idsRestritos.forEach(function(id) {
@@ -1715,10 +2150,8 @@ function abrirDashboard() {
   abrirPaginaAdministrativa("dashboard");
 }
 
-function abrirIA() {
-  if (bloquearAcessoAdministrativoMenu()) return;
-
-  alert("IA para Consulta será implementada na próxima etapa.");
+function abrirMapaDeCalor() {
+  abrirPaginaAdministrativa("mapa_de_calor");
 }
 
 function abrirRelatorios() {
@@ -1738,6 +2171,5 @@ document.addEventListener("input", function(event) {
 
 
 </script>
-</div>
 </body>
 </html>
