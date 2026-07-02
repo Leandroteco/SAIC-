@@ -11,16 +11,20 @@
       --surface: #ffffff;
       --surface-soft: #f8fbfd;
       --line: #d8e2ea;
-      --line-soft: #e8eef3;
+      --line-soft: #edf3f7;
       --text: #334155;
       --muted: #64748b;
       --primary: #3b82a0;
       --primary-dark: #2f6f89;
-      --green: #166534;
-      --blue: #2563eb;
+      --primary-soft: #7fb6cc;
+      --sidebar: #6f97ad;
+      --sidebar-soft: #7fb6cc;
+      --green: #6ca88d;
+      --blue: #7fb6cc;
       --amber: #a16207;
       --rose: #b42318;
-      --purple: #6d5bd0;
+      --purple: #6f97ad;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
     }
 
     * {
@@ -32,6 +36,7 @@
       color: var(--text);
       font-family: "Segoe UI", Arial, sans-serif;
       margin: 0;
+      min-height: 100vh;
     }
 
     .login-box {
@@ -54,22 +59,143 @@
       margin: 0 0 18px;
     }
 
+    #conteudoSistema {
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-soft) 100%);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      min-height: 100vh;
+      padding: 26px 20px;
+      position: sticky;
+      top: 0;
+    }
+
+    .brand {
+      align-items: center;
+      display: flex;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 8px;
+      display: flex;
+      font-size: 20px;
+      font-weight: 900;
+      height: 46px;
+      justify-content: center;
+      width: 46px;
+    }
+
+    .brand-title {
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .brand-subtitle {
+      color: rgba(255, 255, 255, 0.72);
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-nav a {
+      align-items: center;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.82);
+      display: flex;
+      font-size: 14px;
+      font-weight: 800;
+      gap: 10px;
+      min-height: 42px;
+      padding: 10px 12px;
+      text-decoration: none;
+    }
+
+    .side-nav a:hover,
+    .side-nav a.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .nav-dot {
+      background: #eef4f7;
+      border-radius: 999px;
+      height: 8px;
+      width: 8px;
+    }
+
+    .sidebar-footer {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      margin-top: auto;
+      padding: 14px;
+    }
+
+    .sidebar-footer span {
+      color: rgba(255, 255, 255, 0.68);
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-footer strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .dashboard-content {
+      min-width: 0;
+    }
+
     .topbar {
       align-items: center;
-      background: var(--surface);
-      border-bottom: 1px solid var(--line);
+      background: transparent;
       display: flex;
       gap: 16px;
       justify-content: space-between;
-      padding: 18px 28px;
-      position: sticky;
-      top: 0;
-      z-index: 5;
+      padding: 30px 34px 18px;
+    }
+
+    .eyebrow {
+      color: var(--green);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-transform: uppercase;
     }
 
     h1 {
       color: var(--primary);
-      font-size: 25px;
+      font-size: 28px;
+      font-weight: 900;
       margin: 0 0 4px;
     }
 
@@ -102,16 +228,17 @@
     }
 
     .btn-primary {
-      background: var(--primary);
+      background: var(--primary-soft);
+      box-shadow: 0 10px 22px rgba(127, 182, 204, 0.22);
       color: #ffffff;
     }
 
     .btn-primary:hover {
-      background: var(--primary-dark);
+      background: var(--sidebar);
     }
 
     .btn-secondary {
-      background: #e2e8f0;
+      background: #e8eef3;
       color: var(--text);
     }
 
@@ -121,19 +248,20 @@
 
     main {
       margin: 0 auto;
-      max-width: 1320px;
-      padding: 22px;
+      max-width: 1440px;
+      padding: 0 34px 34px;
     }
 
     .panel {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 8px;
+      box-shadow: var(--shadow);
       padding: 18px;
     }
 
     .filters {
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .section-head {
@@ -147,6 +275,7 @@
     .section-head h2 {
       color: var(--primary);
       font-size: 18px;
+      font-weight: 900;
       margin: 0;
     }
 
@@ -171,7 +300,7 @@
 
     input,
     select {
-      background: #fcfdff;
+      background: #f8fafc;
       border: 1px solid var(--line);
       border-radius: 8px;
       color: var(--text);
@@ -192,7 +321,7 @@
     .status {
       color: var(--muted);
       font-size: 13px;
-      margin: 0 0 14px;
+      margin: 0 0 16px;
       min-height: 18px;
     }
 
@@ -203,17 +332,29 @@
 
     .metrics-grid {
       display: grid;
-      gap: 12px;
+      gap: 14px;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .metric {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 8px;
+      box-shadow: var(--shadow);
       min-height: 98px;
-      padding: 14px;
+      overflow: hidden;
+      padding: 16px 16px 14px;
+      position: relative;
+    }
+
+    .metric::before {
+      content: "";
+      height: 100%;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 5px;
     }
 
     .metric span {
@@ -228,7 +369,8 @@
 
     .metric strong {
       display: block;
-      font-size: 30px;
+      font-size: 32px;
+      font-weight: 900;
       line-height: 1;
     }
 
@@ -237,15 +379,31 @@
     .metric:nth-child(3) strong { color: var(--rose); }
     .metric:nth-child(4) strong { color: var(--amber); }
     .metric:nth-child(5) strong { color: var(--purple); }
-    .metric:nth-child(6) strong { color: var(--primary-dark); }
+    .metric:nth-child(1)::before { background: var(--green); }
+    .metric:nth-child(2)::before { background: var(--blue); }
+    .metric:nth-child(3)::before { background: var(--rose); }
+    .metric:nth-child(4)::before { background: var(--amber); }
+    .metric:nth-child(5)::before { background: var(--purple); }
 
     .dashboard-grid {
       display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
     }
 
-    .wide {
+    .chart-box.wide {
+      grid-column: span 8;
+    }
+
+    .chart-box:not(.wide) {
+      grid-column: span 4;
+    }
+
+    .ranking-box {
+      grid-column: span 6;
+    }
+
+    .table-box.wide {
       grid-column: 1 / -1;
     }
 
@@ -255,7 +413,8 @@
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 16px;
+      box-shadow: var(--shadow);
+      padding: 18px;
     }
 
     .chart-box h3,
@@ -263,11 +422,12 @@
     .table-box h3 {
       color: var(--primary);
       font-size: 16px;
+      font-weight: 900;
       margin: 0 0 12px;
     }
 
     .chart-wrap {
-      height: 300px;
+      height: 286px;
       position: relative;
     }
 
@@ -292,14 +452,14 @@
     }
 
     .ranking-bar {
-      background: #e8eef3;
+      background: #edf2f6;
       border-radius: 999px;
       height: 10px;
       overflow: hidden;
     }
 
     .ranking-fill {
-      background: var(--primary);
+      background: linear-gradient(90deg, var(--primary), var(--green));
       height: 100%;
       min-width: 2px;
     }
@@ -328,6 +488,7 @@
     th {
       color: #475569;
       font-size: 12px;
+      font-weight: 900;
       text-transform: uppercase;
     }
 
@@ -337,10 +498,29 @@
       margin: 12px 0 0;
     }
 
-    @media (max-width: 1120px) {
+    @media (max-width: 1180px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        min-height: auto;
+        position: static;
+      }
+
+      .side-nav {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
       .filters-grid,
       .metrics-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .chart-box.wide,
+      .chart-box:not(.wide),
+      .ranking-box {
+        grid-column: span 6;
       }
     }
 
@@ -351,13 +531,35 @@
       }
 
       main {
-        padding: 12px;
+        padding: 0 14px 18px;
+      }
+
+      .sidebar {
+        padding: 18px 14px;
+      }
+
+      .side-nav {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .topbar {
+        padding: 22px 14px 16px;
       }
 
       .filters-grid,
-      .metrics-grid,
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
       .dashboard-grid {
         grid-template-columns: 1fr;
+      }
+
+      .chart-box.wide,
+      .chart-box:not(.wide),
+      .ranking-box,
+      .table-box.wide {
+        grid-column: 1 / -1;
       }
 
       .chart-wrap,
@@ -400,19 +602,44 @@
   </div>
 
   <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
-    <header class="topbar">
-      <div>
-        <h1>Dashboard Estatístico</h1>
-        <p class="subtitle">Sistema de Atendimento Integrado do CAPS/NAPS</p>
-      </div>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação do dashboard">
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <div>
+            <span class="brand-title">SAIC</span>
+            <span class="brand-subtitle">CAPS/NAPS</span>
+          </div>
+        </div>
 
-      <div class="actions">
-        <button type="button" class="btn-primary" onclick="carregarDashboard()">Atualizar</button>
-      </div>
-    </header>
+        <nav class="side-nav">
+          <a class="active" href="#indicadores"><span class="nav-dot"></span>Indicadores</a>
+          <a href="#graficos"><span class="nav-dot"></span>Gráficos</a>
+          <a href="#rankingMotivos"><span class="nav-dot"></span>Rankings</a>
+          <a href="#ultimosAtendimentos"><span class="nav-dot"></span>Registros</a>
+        </nav>
 
-    <main>
-      <section class="panel filters">
+        <div class="sidebar-footer">
+          <span>Acesso</span>
+          <strong>Administrador</strong>
+        </div>
+      </aside>
+
+      <div class="dashboard-content">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">Painel gerencial</span>
+            <h1>Dashboard Estatístico</h1>
+            <p class="subtitle">Sistema de Atendimento Integrado do CAPS/NAPS</p>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn-primary" onclick="carregarDashboard()">Atualizar</button>
+          </div>
+        </header>
+
+        <main>
+      <section id="filtros" class="panel filters">
         <div class="section-head">
           <h2>Filtros</h2>
           <span id="periodoAtual">Mês atual</span>
@@ -469,7 +696,7 @@
 
       <p id="status" class="status"></p>
 
-      <section class="metrics-grid">
+      <section id="indicadores" class="metrics-grid">
         <div class="metric">
           <span>Total no período</span>
           <strong id="metricTotal">0</strong>
@@ -492,7 +719,7 @@
         </div>
       </section>
 
-      <section class="dashboard-grid">
+      <section id="graficos" class="dashboard-grid">
         <div class="chart-box wide">
           <h3 id="tituloEvolucao">Evolução</h3>
           <div class="chart-wrap short">
@@ -547,14 +774,16 @@
           <div id="ultimosAtendimentos"></div>
         </div>
       </section>
-    </main>
+        </main>
+      </div>
+    </div>
   </div>
 
   <script>
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
     const graficos = {};
-    const cores = ["#3b82a0", "#166534", "#a16207", "#b42318", "#2563eb", "#6d5bd0", "#0f766e", "#be123c", "#4b5563", "#9333ea"];
+    const cores = ["#7fb6cc", "#6ca88d", "#6f97ad", "#3b82a0", "#a16207", "#b42318", "#2f6f89", "#4f9d69", "#94a3b8", "#cbd5e1"];
 
     document.addEventListener("DOMContentLoaded", function() {
       const autorizado = tokenGoogle &&
