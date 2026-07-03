@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <base target="_top">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -395,7 +396,11 @@
       grid-column: span 8;
     }
 
-    .chart-box:not(.wide) {
+    .chart-box.full {
+      grid-column: 1 / -1;
+    }
+
+    .chart-box:not(.wide):not(.full) {
       grid-column: span 4;
     }
 
@@ -616,7 +621,6 @@
           <a class="active" href="#indicadores"><span class="nav-dot"></span>Indicadores</a>
           <a href="#graficos"><span class="nav-dot"></span>Gráficos</a>
           <a href="#rankingMotivos"><span class="nav-dot"></span>Rankings</a>
-          <a href="#ultimosAtendimentos"><span class="nav-dot"></span>Registros</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -655,34 +659,6 @@
             <label>Data final</label>
             <input id="dataFinal" type="date" max="9999-12-31">
           </div>
-
-          <div class="field">
-            <label>Tipo</label>
-            <select id="tipoAtendimento">
-              <option value="">Todos</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>OPM</label>
-            <select id="opmAtual">
-              <option value="">Todas</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Situação</label>
-            <select id="situacaoStatus">
-              <option value="">Todas</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Sexo</label>
-            <select id="sexo">
-              <option value="">Todos</option>
-            </select>
-          </div>
         </div>
 
         <div class="filter-actions">
@@ -698,20 +674,20 @@
 
       <section id="indicadores" class="metrics-grid">
         <div class="metric">
-          <span>Total no período</span>
+          <span>Atendimentos</span>
           <strong id="metricTotal">0</strong>
         </div>
         <div class="metric">
-          <span>Emergenciais</span>
-          <strong id="metricEmergenciais">0</strong>
+          <span>Pessoas</span>
+          <strong id="metricPessoas">0</strong>
         </div>
         <div class="metric">
-          <span>Familiar/Grupo</span>
-          <strong id="metricFamiliares">0</strong>
+          <span>Faltas</span>
+          <strong id="metricFaltas">0</strong>
         </div>
         <div class="metric">
-          <span>Pessoas vinculadas</span>
-          <strong id="metricVinculos">0</strong>
+          <span>Altas</span>
+          <strong id="metricAltas">0</strong>
         </div>
         <div class="metric">
           <span>Média diária</span>
@@ -725,6 +701,14 @@
           <div class="chart-wrap short">
             <canvas id="graficoEvolucao"></canvas>
           </div>
+        </div>
+
+        <div class="chart-box full">
+          <h3>Atendimentos, faltas e altas por NAPS</h3>
+          <div class="chart-wrap">
+            <canvas id="graficoNAPSComparativo"></canvas>
+          </div>
+          <p id="vazioNAPSComparativo" class="empty"></p>
         </div>
 
         <div class="chart-box">
@@ -760,18 +744,13 @@
         </div>
 
         <div class="ranking-box">
-          <h3>Top motivos</h3>
+          <h3>Motivos mais frequentes</h3>
           <div id="rankingMotivos"></div>
         </div>
 
         <div class="ranking-box">
-          <h3>Top OPMs</h3>
+          <h3>OPMs mais frequentes</h3>
           <div id="rankingOPMs"></div>
-        </div>
-
-        <div class="table-box wide">
-          <h3>Últimos atendimentos no período</h3>
-          <div id="ultimosAtendimentos"></div>
         </div>
       </section>
         </main>
@@ -830,10 +809,6 @@
     }
 
     function limparFiltros() {
-      document.getElementById("tipoAtendimento").value = "";
-      document.getElementById("opmAtual").value = "";
-      document.getElementById("situacaoStatus").value = "";
-      document.getElementById("sexo").value = "";
       definirMesAtual();
     }
 
@@ -848,11 +823,7 @@
     function coletarFiltros() {
       return {
         dataInicial: document.getElementById("dataInicial").value,
-        dataFinal: document.getElementById("dataFinal").value,
-        tipoAtendimento: document.getElementById("tipoAtendimento").value,
-        opmAtual: document.getElementById("opmAtual").value,
-        situacaoStatus: document.getElementById("situacaoStatus").value,
-        sexo: document.getElementById("sexo").value
+        dataFinal: document.getElementById("dataFinal").value
       };
     }
 
@@ -878,45 +849,15 @@
     }
 
     function renderizarDashboard(dados) {
-      preencherOpcoes(dados.opcoes || {});
       atualizarPeriodo(dados.periodo);
       atualizarMetricas(dados.resumo || {});
       renderizarGraficos(dados.graficos || {});
       renderizarRanking("rankingMotivos", (dados.rankings && dados.rankings.motivos) || []);
       renderizarRanking("rankingOPMs", (dados.rankings && dados.rankings.opms) || []);
-      renderizarUltimosAtendimentos(dados.ultimosAtendimentos || []);
 
       const status = document.getElementById("status");
       status.className = "status";
       status.innerText = "Dashboard atualizado. Registros no período: " + (dados.totalRegistros || 0) + ".";
-    }
-
-    function preencherOpcoes(opcoes) {
-      preencherSelect("tipoAtendimento", opcoes.tipoAtendimento || [], "Todos");
-      preencherSelect("opmAtual", opcoes.opmAtual || [], "Todas");
-      preencherSelect("situacaoStatus", opcoes.situacaoStatus || [], "Todas");
-      preencherSelect("sexo", opcoes.sexo || [], "Todos");
-    }
-
-    function preencherSelect(id, lista, rotuloTodos) {
-      const select = document.getElementById(id);
-      const atual = select.value;
-
-      select.innerHTML = "";
-      select.appendChild(criarOption("", rotuloTodos));
-
-      lista.forEach(function(valor) {
-        select.appendChild(criarOption(valor, capitalizar(valor)));
-      });
-
-      select.value = lista.indexOf(atual) >= 0 ? atual : "";
-    }
-
-    function criarOption(valor, texto) {
-      const option = document.createElement("option");
-      option.value = valor;
-      option.textContent = texto;
-      return option;
     }
 
     function atualizarPeriodo(periodo) {
@@ -927,21 +868,158 @@
 
     function atualizarMetricas(resumo) {
       document.getElementById("metricTotal").innerText = formatarNumero(resumo.totalAtendimentos);
-      document.getElementById("metricEmergenciais").innerText = formatarNumero(resumo.atendimentosEmergenciais);
-      document.getElementById("metricFamiliares").innerText = formatarNumero(resumo.atendimentosFamiliaresOuGrupo);
-      document.getElementById("metricVinculos").innerText = formatarNumero(resumo.totalVinculos);
+      document.getElementById("metricPessoas").innerText = formatarNumero(resumo.pessoasDistintas);
+      document.getElementById("metricFaltas").innerText = formatarNumero(resumo.totalFaltas);
+      document.getElementById("metricAltas").innerText = formatarNumero(resumo.totalAltas);
       document.getElementById("metricMedia").innerText = String(resumo.mediaDiaria || 0).replace(".", ",");
     }
 
     function renderizarGraficos(graficosDados) {
       const evolucao = graficosDados.evolucao || { pontos: [] };
-      document.getElementById("tituloEvolucao").innerText = evolucao.titulo || "Evolução";
+      document.getElementById("tituloEvolucao").innerText = evolucao.titulo || "Evolução mensal";
       criarGraficoLinha("evolucao", "graficoEvolucao", evolucao.pontos || []);
 
-      criarGrafico("tipo", "graficoTipo", "doughnut", graficosDados.porTipo || [], "vazioTipo", "tipoAtendimento");
+      criarGraficoNAPSComparativo(graficosDados);
+      criarGrafico("tipo", "graficoTipo", "doughnut", graficosDados.porTipo || [], "vazioTipo", "");
       criarGrafico("motivo", "graficoMotivo", "bar", graficosDados.porMotivo || [], "vazioMotivo", "");
-      criarGrafico("opm", "graficoOPM", "bar", graficosDados.porOPM || [], "vazioOPM", "opmAtual");
+      criarGrafico("opm", "graficoOPM", "bar", graficosDados.porOPM || [], "vazioOPM", "");
       criarGraficoSituacaoSexo(graficosDados.porSituacao || [], graficosDados.porSexo || []);
+    }
+
+    function criarGraficoNAPSComparativo(graficosDados) {
+      const ctx = document.getElementById("graficoNAPSComparativo");
+      const vazio = document.getElementById("vazioNAPSComparativo");
+      const comparativo = graficosDados.comparativoNAPS || [];
+      const atendimentos = graficosDados.porNAPSAtendimentos || [];
+      const faltas = graficosDados.porNAPSFaltas || [];
+      const altas = graficosDados.porNAPSAltas || [];
+      const mapa = {};
+
+      if (comparativo.length > 0) {
+        comparativo.forEach(function(item) {
+          mapa[item.rotulo || "nao informado"] = {
+            atendimentos: Number(item.atendimentos || 0),
+            faltas: Number(item.faltas || 0),
+            altas: Number(item.altas || 0)
+          };
+        });
+      } else {
+        [atendimentos, faltas, altas].forEach(function(lista) {
+          lista.forEach(function(item) {
+            const chave = item.rotulo || "nao informado";
+            if (!mapa[chave]) {
+              mapa[chave] = {
+                atendimentos: 0,
+                faltas: 0,
+                altas: 0
+              };
+            }
+          });
+        });
+
+        atendimentos.forEach(function(item) {
+          mapa[item.rotulo || "nao informado"].atendimentos = item.valor || 0;
+        });
+
+        faltas.forEach(function(item) {
+          mapa[item.rotulo || "nao informado"].faltas = item.valor || 0;
+        });
+
+        altas.forEach(function(item) {
+          mapa[item.rotulo || "nao informado"].altas = item.valor || 0;
+        });
+      }
+
+      const labelsOriginais = Object.keys(mapa).sort(function(a, b) {
+        return String(a).localeCompare(String(b), "pt-BR", { sensitivity: "base" });
+      });
+      const labels = labelsOriginais.map(function(item) { return capitalizar(item); });
+      const container = ctx.parentElement;
+
+      vazio.innerText = labelsOriginais.length === 0 ? "Sem dados no período." : "";
+      if (container) {
+        container.style.height = Math.max(320, labelsOriginais.length * 34) + "px";
+      }
+      destruirGrafico("napsComparativo");
+
+      graficos.napsComparativo = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Atendimentos",
+              data: labelsOriginais.map(function(naps) { return mapa[naps].atendimentos; }),
+              backgroundColor: "#3b82a0",
+              borderColor: "#2f6f89",
+              borderWidth: 1
+            },
+            {
+              label: "Faltas",
+              data: labelsOriginais.map(function(naps) { return mapa[naps].faltas; }),
+              backgroundColor: "#b42318",
+              borderColor: "#8f1d14",
+              borderWidth: 1
+            },
+            {
+              label: "Altas",
+              data: labelsOriginais.map(function(naps) { return mapa[naps].altas; }),
+              backgroundColor: "#a16207",
+              borderColor: "#854d0e",
+              borderWidth: 1
+            }
+          ]
+        },
+        options: opcoesGrafico({
+          indexAxis: "y",
+          beginAtZero: true,
+          layout: {
+            padding: {
+              right: 52
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: "top"
+            }
+          }
+        }),
+        plugins: [pluginValoresNasBarras()]
+      });
+    }
+
+    function pluginValoresNasBarras() {
+      return {
+        id: "valoresNasBarras",
+        afterDatasetsDraw: function(chart) {
+          const ctx = chart.ctx;
+
+          ctx.save();
+          ctx.fillStyle = "#334155";
+          ctx.font = "700 11px Segoe UI, Arial, sans-serif";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+
+          chart.data.datasets.forEach(function(dataset, datasetIndex) {
+            const meta = chart.getDatasetMeta(datasetIndex);
+
+            meta.data.forEach(function(barra, indice) {
+              const valor = Number(dataset.data[indice] || 0);
+
+              if (!valor) return;
+
+              ctx.fillText(
+                valor.toLocaleString("pt-BR"),
+                barra.x + 6,
+                barra.y
+              );
+            });
+          });
+
+          ctx.restore();
+        }
+      };
     }
 
     function criarGraficoLinha(chave, canvasId, pontos) {
@@ -1101,39 +1179,6 @@
           "<div class='ranking-value'>" + item.valor + "</div>" +
           "</div>";
       }).join("");
-    }
-
-    function renderizarUltimosAtendimentos(lista) {
-      const div = document.getElementById("ultimosAtendimentos");
-
-      if (lista.length === 0) {
-        div.innerHTML = "<p class='empty'>Sem atendimentos no período.</p>";
-        return;
-      }
-
-      div.innerHTML = "<table>" +
-        "<thead><tr>" +
-        "<th>Data</th>" +
-        "<th>Nome</th>" +
-        "<th>R.E.</th>" +
-        "<th>Tipo</th>" +
-        "<th>Motivo</th>" +
-        "<th>OPM</th>" +
-        "<th>Responsável</th>" +
-        "</tr></thead>" +
-        "<tbody>" +
-        lista.map(function(item) {
-          return "<tr>" +
-            "<td>" + escaparHtml(item.dataCadastro || "") + "</td>" +
-            "<td>" + escaparHtml([item.postoGraduacao, item.nome].filter(Boolean).join(" ")) + "</td>" +
-            "<td>" + escaparHtml(item.re || "") + "</td>" +
-            "<td>" + escaparHtml(capitalizar(item.tipoAtendimento || "")) + "</td>" +
-            "<td>" + escaparHtml(capitalizar(item.motivo || "")) + "</td>" +
-            "<td>" + escaparHtml(item.opmAtual || "") + "</td>" +
-            "<td>" + escaparHtml(capitalizar(item.responsavel || "")) + "</td>" +
-            "</tr>";
-        }).join("") +
-        "</tbody></table>";
     }
 
     function formatarNumero(valor) {
