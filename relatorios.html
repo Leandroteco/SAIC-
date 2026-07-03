@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <base target="_top">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -334,7 +335,7 @@
     .metrics-grid {
       display: grid;
       gap: 14px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       margin-bottom: 18px;
     }
 
@@ -360,6 +361,7 @@
     .metric:nth-child(1)::before { background: var(--success); }
     .metric:nth-child(2)::before { background: var(--primary); }
     .metric:nth-child(3)::before { background: var(--warning); }
+    .metric:nth-child(4)::before { background: var(--danger); }
 
     .metric span {
       color: var(--muted);
@@ -381,6 +383,7 @@
 
     .metric:nth-child(2) strong { color: var(--primary); }
     .metric:nth-child(3) strong { color: var(--warning); }
+    .metric:nth-child(4) strong { color: var(--danger); }
 
     .tabs {
       background: #eef4f7;
@@ -1108,8 +1111,9 @@ function formatarDataInput(data) {
     function montarMetricas(resumo) {
       return [
         montarMetrica("Atendimentos", resumo.totalAtendimentos),
-        montarMetrica("Retornos", resumo.retornos),
-        montarMetrica("Familiar/grupo", resumo.atendimentosFamiliaresOuGrupo)
+        montarMetrica("Pessoas", resumo.pessoasDistintas),
+        montarMetrica("Faltas", resumo.totalFaltas),
+        montarMetrica("Altas", resumo.totalAltas)
       ].join("");
     }
 
@@ -1231,7 +1235,7 @@ function formatarDataInput(data) {
             ${montarCardIndividual("NAPS", formatarTexto(dados.naps))}
             ${montarCardIndividual("Total de atendimentos", dados.totalAtendimentos)}
             ${montarCardIndividual("Distância aproximada", distancia)}
-            ${montarCardIndividual("Último atendimento", dados.dataReferencia || "-")}
+            ${montarCardIndividual("Atendimento de referência", dados.dataReferencia || "-")}
           </div>
           ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
         </section>
