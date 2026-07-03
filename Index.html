@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <base target="_top">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -655,7 +656,6 @@ textarea {
 select option.opcao-alerta-atendimento,
 select.tipo-atendimento-alerta {
   font-weight: 900;
-  text-transform: uppercase;
 }
 
 input:focus,
@@ -994,6 +994,8 @@ button {
         <option value="">Selecione</option>
         <option>ativo administrativo</option>
         <option>ativo operacional</option>
+        <option>agregado</option>
+        <option>exonerado</option>
         <option>inativo</option>
         <option>inativo (falecido/a)</option>
       </select>
@@ -1271,18 +1273,18 @@ button {
       <label>Tipo de Atendimento</label>
       <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento()" required>
         <option value="">Selecione</option>
-        <option class="opcao-alerta-atendimento" value="ALTA">ALTA</option>
-        <option class="opcao-alerta-atendimento" value="FALTA">FALTA</option>
-        <option>atendimento psicológico individual</option>
-        <option>atendimento familiar</option>
-        <option>atendimento grupo</option>
-        <option>atendimento social</option>
-        <option>atendimento emergencial</option>
-        <option>atendimento luto</option>
-        <option>atendimento saúde</option>
-        <option>atendimento financeiro</option>
+        <option class="opcao-alerta-atendimento" value="alta">atendimento de Alta</option>
         <option>atendimento dependência química</option>
+        <option>atendimento emergencial</option>
+        <option>atendimento familiar</option>
+        <option>atendimento financeiro</option>
+        <option>atendimento grupo</option>
         <option>atendimento habitação</option>
+        <option>atendimento luto</option>
+        <option>atendimento psicológico individual</option>
+        <option>atendimento saúde</option>
+        <option>atendimento social</option>
+        <option class="opcao-alerta-atendimento" value="falta">registrar FALTA</option>
       </select>
     </div>
 
@@ -1397,6 +1399,29 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const tipo = String(campo.value || "").toUpperCase();
     campo.classList.toggle("tipo-atendimento-alerta", tipo === "ALTA" || tipo === "FALTA");
+    atualizarRotuloBotaoSalvar();
+  }
+
+  function obterRotuloBotaoSalvar() {
+    const campo = document.getElementById("tipoAtendimento");
+    const tipo = campo ? String(campo.value || "").toUpperCase() : "";
+
+    return tipo === "FALTA" ? "Salvar como Falta" : "Salvar Atendimento";
+  }
+
+  function obterMensagemProcessandoSalvar() {
+    const campo = document.getElementById("tipoAtendimento");
+    const tipo = campo ? String(campo.value || "").toUpperCase() : "";
+
+    return tipo === "FALTA" ? "Salvando a Falta..." : "Salvando atendimento...";
+  }
+
+  function atualizarRotuloBotaoSalvar() {
+    const botao = document.getElementById("btnSalvar");
+
+    if (botao && !botao.disabled) {
+      botao.innerText = obterRotuloBotaoSalvar();
+    }
   }
 
   function verificarTipoAtendimento() {
@@ -1580,8 +1605,8 @@ function definirEstadoSalvamento(salvando) {
 
   botao.disabled = salvando;
   botao.innerHTML = salvando
-    ? '<span class="spinner-salvar"></span><span>Salvando...</span>'
-    : 'Salvar Atendimento';
+    ? '<span class="spinner-salvar"></span><span>' + obterMensagemProcessandoSalvar() + '</span>'
+    : obterRotuloBotaoSalvar();
 }
 
 
@@ -1635,7 +1660,7 @@ function salvar() {
 
   definirEstadoSalvamento(true);
   mensagem.style.color = "#475569";
-  mensagem.innerHTML = '<span class="mensagem-processando"><span class="spinner-mensagem"></span><span>Salvando atendimento...</span></span>';
+  mensagem.innerHTML = '<span class="mensagem-processando"><span class="spinner-mensagem"></span><span>' + obterMensagemProcessandoSalvar() + '</span></span>';
 
   const dados = {
     naps: "teste_naps",
