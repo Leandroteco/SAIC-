@@ -708,7 +708,9 @@ function salvarAtendimento(dados, idToken) {
       gravarLinhasAbaixo(sheetVinculos, linhasVinculos, CABECALHOS_VINCULOS.length);
     }
 
-    return "Atendimento salvo com sucesso!";
+    return tipoAtendimento === "falta"
+      ? "Falta registrada com sucesso!"
+      : "Atendimento salvo com sucesso!";
   } finally {
     if (lockObtido) {
       lock.releaseLock();
@@ -840,8 +842,8 @@ function normalizar(texto) {
 function normalizarTipoAtendimento(valor) {
   const tipo = normalizar(valor);
 
-  if (tipo === "alta") return "ALTA";
-  if (tipo === "falta") return "FALTA";
+  if (tipo === "alta" || tipo === "atendimento de alta") return "alta";
+  if (tipo === "falta" || tipo === "registrar falta" || tipo.includes("no show")) return "falta";
 
   return tipo;
 }
@@ -1150,7 +1152,6 @@ function obterDadosDashboard(filtros, idToken) {
     resumo: montarResumoDashboard(filtrados, filtrosDashboard),
     graficos: montarGraficosDashboard(filtrados, filtrosDashboard),
     rankings: montarRankingsDashboard(filtrados),
-    ultimosAtendimentos: montarUltimosAtendimentosDashboard(filtrados, 8),
     opcoes: montarOpcoesRelatorio(registros, vinculosPorAtendimento),
     totalRegistros: filtrados.length
   };
@@ -1190,6 +1191,8 @@ function montarResumoDashboard(registros, filtros) {
   let atendimentosIndividuais = 0;
 
   registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+
     const tipo = normalizar(registro.tipoAtendimento);
     const opm = String(registro.opmAtual || "").trim();
     const dataIso = registro.dataCadastroIso || "";
@@ -1202,12 +1205,14 @@ function montarResumoDashboard(registros, filtros) {
 
   const diasPeriodo = calcularDiasPeriodoDashboard(filtros);
   const mediaDiaria = diasPeriodo > 0
-    ? Math.round((registros.length / diasPeriodo) * 10) / 10
+    ? Math.round((resumoRelatorio.totalAtendimentos / diasPeriodo) * 10) / 10
     : 0;
 
   return {
     totalAtendimentos: resumoRelatorio.totalAtendimentos,
     pessoasDistintas: resumoRelatorio.pessoasDistintas,
+    totalFaltas: resumoRelatorio.totalFaltas,
+    totalAltas: resumoRelatorio.totalAltas,
     atendimentosEmergenciais: atendimentosEmergenciais,
     atendimentosIndividuais: atendimentosIndividuais,
     atendimentosFamiliaresOuGrupo: resumoRelatorio.atendimentosFamiliaresOuGrupo,
@@ -1234,11 +1239,73 @@ function montarGraficosDashboard(registros, filtros) {
     porTipo: topDistribuicaoDashboard(contarPorCampo(registros, "tipoAtendimento"), 8),
     porMotivo: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 10),
     porOPM: topDistribuicaoDashboard(contarPorCampo(registros, "opmAtual"), 10),
+    porNAPS: topDistribuicaoDashboard(contarPorCampo(registros, "naps"), 60),
+    comparativoNAPS: montarComparativoNapsDashboard(registros),
+    porNAPSAtendimentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "atendimentos"), 60),
+    porNAPSFaltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "faltas"), 60),
+    porNAPSAltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "altas"), 60),
     porSituacao: topDistribuicaoDashboard(contarPorCampo(registros, "situacaoStatus"), 8),
     porSexo: topDistribuicaoDashboard(contarPorCampo(registros, "sexo"), 8),
     porFaixaEtaria: ordenarFaixaEtariaDashboard(contarPorCampo(registros, "faixaEtaria")),
     evolucao: montarEvolucaoDashboard(registros, filtros)
   };
+}
+
+function montarComparativoNapsDashboard(registros) {
+  const mapa = {};
+
+  registros.forEach(function(registro) {
+    const naps = String(registro.naps || "nao informado").trim() || "nao informado";
+
+    if (!mapa[naps]) {
+      mapa[naps] = {
+        rotulo: naps,
+        atendimentos: 0,
+        faltas: 0,
+        altas: 0,
+        total: 0
+      };
+    }
+
+    if (ehRegistroFalta(registro)) {
+      mapa[naps].faltas++;
+    } else {
+      mapa[naps].atendimentos++;
+    }
+
+    if (ehRegistroAlta(registro)) {
+      mapa[naps].altas++;
+    }
+
+    mapa[naps].total++;
+  });
+
+  return Object.keys(mapa)
+    .map(function(chave) {
+      return mapa[chave];
+    })
+    .sort(function(a, b) {
+      if (b.total !== a.total) return b.total - a.total;
+      return normalizar(a.rotulo).localeCompare(normalizar(b.rotulo));
+    });
+}
+
+function contarPorNapsDashboard(registros, tipoContagem) {
+  const contagem = {};
+
+  registros.forEach(function(registro) {
+    const falta = ehRegistroFalta(registro);
+    const alta = ehRegistroAlta(registro);
+
+    if (tipoContagem === "atendimentos" && falta) return;
+    if (tipoContagem === "faltas" && !falta) return;
+    if (tipoContagem === "altas" && !alta) return;
+
+    const naps = String(registro.naps || "nao informado").trim() || "nao informado";
+    contagem[naps] = (contagem[naps] || 0) + 1;
+  });
+
+  return contagem;
 }
 
 function montarRankingsDashboard(registros) {
@@ -1290,32 +1357,30 @@ function ordenarFaixaEtariaDashboard(contagem) {
 function montarEvolucaoDashboard(registros, filtros) {
   const inicio = obterDataInicio(filtros.dataInicial);
   const fim = obterDataFim(filtros.dataFinal);
-  const diasPeriodo = calcularDiasPeriodoDashboard(filtros);
-  const agruparPorMes = diasPeriodo > 92;
   const contagem = {};
 
   registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+
     const data = registro.dataCadastroData;
     if (!data) return;
 
-    const chave = agruparPorMes ? obterMesAno(data) : formatarDataParaInput(data);
+    const chave = obterMesAno(data);
     contagem[chave] = (contagem[chave] || 0) + 1;
   });
 
   if (!inicio || !fim || fim < inicio) {
     return {
-      titulo: "Evolucao",
-      agrupamento: agruparPorMes ? "mes" : "dia",
+      titulo: "Evolução mensal",
+      agrupamento: "mes",
       pontos: []
     };
   }
 
   return {
-    titulo: agruparPorMes ? "Evolucao por mes" : "Evolucao diaria",
-    agrupamento: agruparPorMes ? "mes" : "dia",
-    pontos: agruparPorMes
-      ? montarPontosMensaisDashboard(inicio, fim, contagem)
-      : montarPontosDiariosDashboard(inicio, fim, contagem)
+    titulo: "Evolução mensal",
+    agrupamento: "mes",
+    pontos: montarPontosMensaisDashboard(inicio, fim, contagem)
   };
 }
 
@@ -1366,27 +1431,6 @@ function formatarDiaMesDashboard(data) {
 
 function formatarMesAnoDashboard(data) {
   return String(data.getMonth() + 1).padStart(2, "0") + "/" + data.getFullYear();
-}
-
-function montarUltimosAtendimentosDashboard(registros, limite) {
-  return registros
-    .slice()
-    .sort(function(a, b) {
-      return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
-    })
-    .slice(0, limite)
-    .map(function(registro) {
-      return {
-        dataCadastro: registro.dataCadastro,
-        nome: registro.nome || "sem nome",
-        postoGraduacao: registro.postoGraduacao,
-        re: registro.re,
-        tipoAtendimento: registro.tipoAtendimento,
-        motivo: registro.motivo,
-        opmAtual: registro.opmAtual,
-        responsavel: registro.responsavel
-      };
-    });
 }
 
 function normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio) {
@@ -1598,8 +1642,22 @@ function montarResumoRelatorio(registros) {
   let totalVinculos = 0;
   let atendimentosComVinculos = 0;
   let atendimentosFamiliaresOuGrupo = 0;
+  let totalFaltas = 0;
+  let totalAltas = 0;
+  let totalAtendimentos = 0;
 
   registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) {
+      totalFaltas++;
+      return;
+    }
+
+    totalAtendimentos++;
+
+    if (ehRegistroAlta(registro)) {
+      totalAltas++;
+    }
+
     const chave = obterChavePessoa(registro);
     pessoas[chave] = true;
     atendimentosPorPessoa[chave] = (atendimentosPorPessoa[chave] || 0) + 1;
@@ -1624,8 +1682,11 @@ function montarResumoRelatorio(registros) {
   });
 
   return {
-    totalAtendimentos: registros.length,
+    totalRegistros: registros.length,
+    totalAtendimentos: totalAtendimentos,
     pessoasDistintas: Object.keys(pessoas).length,
+    totalFaltas: totalFaltas,
+    totalAltas: totalAltas,
     retornos: retornos,
     pessoasComRetorno: pessoasComRetorno,
     atendimentosComVinculos: atendimentosComVinculos,
@@ -1738,12 +1799,24 @@ function contarAtendimentosPessoa(registros, chavePessoa) {
   let total = 0;
 
   registros.forEach(function(registro) {
-    if (obterChavePessoa(registro) === chavePessoa) {
+    if (!ehRegistroFalta(registro) && obterChavePessoa(registro) === chavePessoa) {
       total++;
     }
   });
 
   return total;
+}
+
+function ehRegistroFalta(registro) {
+  const tipo = normalizar(registro && registro.tipoAtendimento);
+
+  return tipo === "falta" || tipo === "registrar falta" || tipo.includes("no show");
+}
+
+function ehRegistroAlta(registro) {
+  const tipo = normalizar(registro && registro.tipoAtendimento);
+
+  return tipo === "alta" || tipo === "atendimento de alta";
 }
 
 function obterDadosUsuarioSistemaParaRelatorio(email) {
