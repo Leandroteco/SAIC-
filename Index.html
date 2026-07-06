@@ -1984,26 +1984,31 @@ body {
    <div class="grid-2">
     <div>
       <label>Tipo de Atendimento</label>
-      <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento()" required>
+      <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento(); atualizarObrigatoriedadeObservacoes()" required>
         <option value="">Selecione</option>
-        <option class="opcao-alerta-atendimento" value="alta">atendimento de Alta</option>
-        <option>atendimento dependência química</option>
-        <option>atendimento emergencial</option>
-        <option>atendimento familiar</option>
-        <option>atendimento financeiro</option>
-        <option>atendimento grupo</option>
-        <option>atendimento habitação</option>
-        <option>atendimento luto</option>
-        <option>atendimento psicológico individual</option>
-        <option>atendimento saúde</option>
-        <option>atendimento social</option>
-        <option class="opcao-alerta-atendimento" value="falta">registrar FALTA</option>
+        <option>Plantão Psicológico</option>
+        <option>Psicoterapia - Individual</option>
+        <option>Psicoterapia - Casal</option>
+        <option>Psicoterapia - Trisal</option>
+        <option>Porte de Armas de Inativo</option>
+        <option>Entrevista de Saída</option>
+        <option>Visita Externa</option>
+        <option>Follow - Up</option>
+        <option>Entrevista Motivacional - PPAD</option>
+        <option>Entrevista Motivacional - PPMS</option>
+        <option>Avaliação Psicológica - PPMS</option>
+        <option>Avaliação Psicológica - PROSEN</option>
+        <option>Avaliação de Inclusão no Copom</option>
+        <option>Entrevista CTC</option>
+        <option>Triagem de Chegada</option>
+        <option>Exame Criminológico</option>
+        <option>Outros</option>
       </select>
     </div>
 
     <div>
       <label>Motivo</label>
-      <select id="motivo">
+      <select id="motivo" onchange="limparErroCampo(this); atualizarObrigatoriedadeObservacoes()">
         <option value="">Selecione</option>
         <option>Ansiedade</option>
         <option>Conflitos Interpessoais</option>
@@ -2020,6 +2025,7 @@ body {
         <option>Transtorno Mental</option>
         <option>Dificuldade de Concentração e Estudos</option>
         <option>Sexualidade e Identidade de Gênero</option>
+        <option>Outros</option>
       </select>
     </div>
   </div>
@@ -2076,7 +2082,7 @@ body {
   </div>
 
   <h2>Observações</h2>
-  <textarea id="observacoes" oninput="converterMaiusculas(this)"></textarea>
+  <textarea id="observacoes" oninput="converterMaiusculas(this); limparErroCampo(this)"></textarea>
 
   <h2>Responsável pelo Atendimento</h2>
 
@@ -2119,6 +2125,7 @@ document.addEventListener("DOMContentLoaded", function() {
     configurarMenuPorPerfil();
     carregarRecadoAtivo();
     aplicarEstiloTipoAtendimento();
+    atualizarObrigatoriedadeObservacoes();
   }
 });
 
@@ -2160,7 +2167,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     aplicarEstiloTipoAtendimento();
 
-    if (tipo === "atendimento familiar" || tipo === "atendimento grupo") {
+    if (tipo === "Psicoterapia - Casal" || tipo === "Psicoterapia - Trisal") {
       area.style.display = "block";
     } else {
       area.style.display = "none";
@@ -2325,6 +2332,32 @@ function statusExigeDataInatividade(valor) {
     status.includes("exonerado");
 }
 
+function valorIndicaOutros(valor) {
+  return String(valor || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .includes("outros");
+}
+
+function observacoesObrigatoriasPorOutros() {
+  const tipoAtendimento = document.getElementById("tipoAtendimento").value;
+  const motivo = document.getElementById("motivo").value;
+
+  return valorIndicaOutros(tipoAtendimento) || valorIndicaOutros(motivo);
+}
+
+function atualizarObrigatoriedadeObservacoes() {
+  const campoObservacoes = document.getElementById("observacoes");
+  const obrigatorio = observacoesObrigatoriasPorOutros();
+
+  campoObservacoes.required = obrigatorio;
+
+  if (!obrigatorio) {
+    limparErroVisualCampo(campoObservacoes);
+  }
+}
+
 function validarAnoDataCampo(campo) {
   if (dataCampoValida(campo)) {
     limparErroVisualCampo(campo);
@@ -2393,6 +2426,8 @@ function salvar() {
     return document.getElementById(id);
   });
   const campoTipoAtendimento = document.getElementById("tipoAtendimento");
+  const campoMotivo = document.getElementById("motivo");
+  const campoObservacoes = document.getElementById("observacoes");
   const campoResponsavel = document.getElementById("responsavel");
   const mensagem = document.getElementById("mensagem");
   const camposComErro = [];
@@ -2400,6 +2435,8 @@ function salvar() {
   camposDadosPessoaisObrigatorios.forEach(limparErroCampo);
   limparErroCampo(document.getElementById("dataInatividade"));
   limparErroCampo(campoTipoAtendimento);
+  limparErroCampo(campoMotivo);
+  limparErroCampo(campoObservacoes);
   limparErroCampo(campoResponsavel);
 
   camposDadosPessoaisObrigatorios.forEach(function(campo) {
@@ -2432,6 +2469,11 @@ function salvar() {
     camposComErro.push(campoTipoAtendimento);
   }
 
+  if (observacoesObrigatoriasPorOutros() && campoObservacoes.value.trim() === "") {
+    marcarCampoObrigatorio(campoObservacoes);
+    camposComErro.push(campoObservacoes);
+  }
+
   const camposDataComErro = validarDatasAtendimento();
   camposDataComErro.forEach(function(campo) {
     camposComErro.push(campo);
@@ -2439,7 +2481,9 @@ function salvar() {
 
   if (camposComErro.length > 0) {
     mensagem.style.color = "#b42318";
-    mensagem.innerText = camposDataComErro.length > 0
+    mensagem.innerText = observacoesObrigatoriasPorOutros() && campoObservacoes.value.trim() === ""
+      ? "Preencha o campo Observações para explicar a escolha de outros."
+      : camposDataComErro.length > 0
       ? "Preencha corretamente os campos destacados. As datas obrigatórias devem ter ano com 4 dígitos."
       : "Preencha os campos obrigatórios destacados. O e-mail é opcional.";
     camposComErro[0].focus();
@@ -2505,6 +2549,7 @@ function limparFormulario() {
   document.getElementById("areaVinculados").style.display = "none";
   atualizarCampoDataInatividade();
   aplicarEstiloTipoAtendimento();
+  atualizarObrigatoriedadeObservacoes();
 }
 
 function mascaraRE(campo) {
@@ -2748,6 +2793,7 @@ function preencherFormulario(r) {
   document.getElementById("estado").value = converterMaiusculas(r.estado || "");
   document.getElementById("complemento").value = converterMaiusculas(r.complemento || "");
   atualizarCampoDataInatividade();
+  atualizarObrigatoriedadeObservacoes();
 }
 
 
