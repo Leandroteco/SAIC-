@@ -719,10 +719,15 @@ function salvarAtendimento(dados, idToken) {
     const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
     const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
     const tipoAtendimento = normalizarTipoAtendimento(dados.tipoAtendimento);
+    const motivoAtendimento = normalizar(dados.motivo);
     const responsavelAtendimento = normalizar(usuario.nome || dados.responsavel);
 
     if (!tipoAtendimento) {
       throw new Error("Tipo de atendimento e obrigatorio.");
+    }
+
+    if (!motivoAtendimento) {
+      throw new Error("Motivo e obrigatorio.");
     }
 
     if (!responsavelAtendimento) {
@@ -733,7 +738,7 @@ function salvarAtendimento(dados, idToken) {
       idAtendimento,
       usuario.email,
       tipoAtendimento,
-      normalizar(dados.motivo),
+      motivoAtendimento,
       normalizar(dados.re),
       normalizar(dados.nome),
       formatarCPF(dados.cpf),
@@ -789,9 +794,15 @@ function salvarAtendimento(dados, idToken) {
       gravarLinhasAbaixo(sheetVinculos, linhasVinculos, CABECALHOS_VINCULOS.length);
     }
 
-    return tipoAtendimento === "falta"
+    const mensagemSalvamento = tipoAtendimento === "falta"
       ? "Falta registrada com sucesso!"
       : "Atendimento salvo com sucesso!";
+
+    return {
+      sucesso: true,
+      mensagem: mensagemSalvamento,
+      idAtendimento: idAtendimento
+    };
   } finally {
     if (lockObtido) {
       lock.releaseLock();
@@ -986,6 +997,135 @@ function montarRegistro(linha) {
     responsavel: linha[25],
     dataCadastro: linha[26],
     postoGraduacao: linha[27] || ""
+  };
+}
+
+function obterUltimosAtendimentosResponsavel(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaPlanilha();
+  const sheet = estrutura.sheetDados;
+
+  if (!sheet || sheet.getLastRow() < 2) return [];
+
+  const dados = sheet.getDataRange().getValues();
+  const emailUsuario = String(usuario.email || "").toLowerCase().trim();
+  const ultimos = [];
+
+  for (let i = dados.length - 1; i >= 1; i--) {
+    const linha = dados[i];
+    const emailCadastro = String(linha[1] || "").toLowerCase().trim();
+
+    if (emailCadastro !== emailUsuario) continue;
+
+    ultimos.push(montarResumoAtendimentoImpressao(linha));
+
+    if (ultimos.length >= 3) break;
+  }
+
+  return ultimos;
+}
+
+function obterFichaAtendimento(idAtendimento, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaPlanilha();
+  const sheet = estrutura.sheetDados;
+  const id = String(idAtendimento || "").trim();
+
+  if (!id) throw new Error("Atendimento nao informado para impressao.");
+  if (!sheet || sheet.getLastRow() < 2) throw new Error("A aba dados_cadastro nao possui atendimentos.");
+
+  const celula = sheet
+    .getRange(2, 1, sheet.getLastRow() - 1, 1)
+    .createTextFinder(id)
+    .matchEntireCell(true)
+    .findNext();
+
+  if (!celula) throw new Error("Atendimento nao localizado para impressao.");
+
+  const linha = sheet.getRange(celula.getRow(), 1, 1, CABECALHOS_DADOS.length).getValues()[0];
+  const emailCadastro = String(linha[1] || "").toLowerCase().trim();
+  const emailUsuario = String(usuario.email || "").toLowerCase().trim();
+
+  if (usuario.perfil !== PERFIL_ADMINISTRADOR && emailCadastro !== emailUsuario) {
+    throw new Error("Este atendimento pertence a outro usuario.");
+  }
+
+  return montarFichaAtendimentoImpressao(linha, carregarVinculosAtendimento(String(linha[0] || "")));
+}
+
+function carregarVinculosAtendimento(idAtendimento) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ABA_VINCULOS);
+  const vinculos = [];
+
+  if (!sheet || sheet.getLastRow() < 2) return vinculos;
+
+  const dados = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    const linha = dados[i];
+
+    if (String(linha[1] || "") !== idAtendimento) continue;
+
+    vinculos.push({
+      nome: linha[2] || "",
+      cpf: linha[3] || "",
+      tipoVinculo: linha[4] || "",
+      parentesco: linha[5] || "",
+      observacoes: linha[6] || ""
+    });
+  }
+
+  return vinculos;
+}
+
+function montarResumoAtendimentoImpressao(linha) {
+  return {
+    idAtendimento: linha[0] || "",
+    nome: linha[5] || "",
+    re: linha[4] || "",
+    tipoAtendimento: linha[2] || "",
+    dataCadastro: formatarDataBrasil(linha[26]),
+    horaCadastro: formatarHoraBrasil(linha[26]),
+    dataHoraCadastro: formatarDataHoraBrasil(linha[26])
+  };
+}
+
+function montarFichaAtendimentoImpressao(linha, vinculos) {
+  return {
+    idAtendimento: linha[0] || "",
+    dataCadastro: formatarDataBrasil(linha[26]),
+    horaCadastro: formatarHoraBrasil(linha[26]),
+    dataHoraCadastro: formatarDataHoraBrasil(linha[26]),
+    emailCadastro: linha[1] || "",
+    tipoAtendimento: linha[2] || "",
+    motivo: linha[3] || "",
+    re: linha[4] || "",
+    nome: linha[5] || "",
+    cpf: linha[6] || "",
+    telefone: formatarTelefoneBrasil(linha[7]),
+    email: linha[8] || "",
+    dataIngresso: formatarDataBrasil(linha[9]),
+    dataNascimento: formatarDataBrasil(linha[10]),
+    idade: calcularAnosAteHoje(obterData(linha[10])),
+    sexo: linha[11] || "",
+    opmAtual: linha[12] || "",
+    situacaoStatus: linha[13] || "",
+    dataInatividade: formatarDataBrasil(linha[14]),
+    estadoCivil: linha[15] || "",
+    numeroFilhos: linha[16] || "",
+    cep: formatarCEP(linha[17]),
+    rua: linha[18] || "",
+    bairro: linha[19] || "",
+    cidade: linha[20] || "",
+    estado: linha[21] || "",
+    numero: linha[22] || "",
+    complemento: linha[23] || "",
+    observacoes: linha[24] || "",
+    responsavel: linha[25] || "",
+    postoGraduacao: linha[27] || "",
+    endereco: montarEnderecoRelatorio(linha),
+    vinculos: vinculos || []
   };
 }
 
@@ -2789,6 +2929,39 @@ function formatarDataBrasil(valor) {
   return dia + "/" + mes + "/" + ano;
 }
 
+function formatarHoraBrasil(valor) {
+  const data = obterData(valor);
+
+  if (!data) return "";
+
+  const hora = String(data.getHours()).padStart(2, "0");
+  const minuto = String(data.getMinutes()).padStart(2, "0");
+
+  return hora + ":" + minuto;
+}
+
+function formatarDataHoraBrasil(valor) {
+  const data = obterData(valor);
+
+  if (!data) return valor ? String(valor) : "";
+
+  return formatarDataBrasil(data) + " " + formatarHoraBrasil(data);
+}
+
+function formatarTelefoneBrasil(valor) {
+  const numeros = somenteNumeros(valor);
+
+  if (numeros.length === 10) {
+    return numeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  if (numeros.length === 11) {
+    return numeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  }
+
+  return valor ? String(valor) : "";
+}
+
 function autorizarServicosSAIC() {
   UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo?id_token=teste", {
     muteHttpExceptions: true
@@ -2796,3 +2969,4 @@ function autorizarServicosSAIC() {
 
   SpreadsheetApp.getActiveSpreadsheet().getName();
 }
+
