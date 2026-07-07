@@ -67,7 +67,8 @@ const CABECALHOS_USUARIOS = [
   "ativo",
   "nome",
   "naps",
-  "cep_naps"
+  "cep_naps",
+  "vencimento"
 ];
 
 const CABECALHOS_CEPS_CACHE = [
@@ -137,7 +138,8 @@ function obterIndicesUsuariosSistema(sheet) {
     ativo: obterIndiceCabecalho(mapa, ["ativo", "status"], 2),
     nome: obterIndiceCabecalho(mapa, ["nome", "nomeusuario", "nome_usuario"], 3),
     naps: obterIndiceCabecalho(mapa, ["naps", "nap", "unidade", "unidadenaps", "nome_naps"], 4),
-    cepNaps: obterIndiceCabecalho(mapa, ["cep_naps", "cepnaps", "cepdonaps", "cep_do_naps", "cep"], 5)
+    cepNaps: obterIndiceCabecalho(mapa, ["cep_naps", "cepnaps", "cepdonaps", "cep_do_naps", "cep"], 5),
+    vencimento: obterIndiceCabecalho(mapa, ["vencimento", "validade", "data_vencimento", "datavencimento"], 6)
   };
 }
 
@@ -176,8 +178,51 @@ function lerDadosUsuarioSistema(linha, indices) {
     ativo: String(linha[indices.ativo] || "").toLowerCase().trim(),
     nome: String(linha[indices.nome] || "").trim(),
     naps: String(linha[indices.naps] || "").trim(),
-    cepNaps: formatarCEP(linha[indices.cepNaps] || "")
+    cepNaps: formatarCEP(linha[indices.cepNaps] || ""),
+    vencimento: linha[indices.vencimento] || ""
   };
+}
+
+function converterDataVencimentoUsuario(valor) {
+  if (!valor) return null;
+
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor.getTime())) {
+    return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
+  }
+
+  const texto = String(valor || "").trim();
+  if (!texto) return null;
+
+  let partes = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (partes) {
+    return new Date(Number(partes[3]), Number(partes[2]) - 1, Number(partes[1]));
+  }
+
+  partes = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (partes) {
+    return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+  }
+
+  return null;
+}
+
+function obterInicioHoje() {
+  const hoje = new Date();
+  return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+}
+
+function usuarioSistemaVencido(usuario) {
+  const vencimento = converterDataVencimentoUsuario(usuario.vencimento);
+  if (!vencimento) return false;
+
+  return vencimento < obterInicioHoje();
+}
+
+function formatarDataVencimentoUsuario(valor) {
+  const vencimento = converterDataVencimentoUsuario(valor);
+  if (!vencimento) return "";
+
+  return Utilities.formatDate(vencimento, Session.getScriptTimeZone(), "dd/MM/yyyy");
 }
 
 function obterEmailUsuarioGoogle() {
@@ -218,7 +263,21 @@ function obterUsuarioSistema() {
           nome: usuarioLinha.nome,
           naps: usuarioLinha.naps,
           cepNaps: usuarioLinha.cepNaps,
+          vencimento: usuarioLinha.vencimento,
           mensagem: "Usuario cadastrado, mas inativo."
+        };
+      }
+
+      if (usuarioSistemaVencido(usuarioLinha)) {
+        return {
+          autorizado: false,
+          email: email,
+          perfil: usuarioLinha.perfil,
+          nome: usuarioLinha.nome,
+          naps: usuarioLinha.naps,
+          cepNaps: usuarioLinha.cepNaps,
+          vencimento: usuarioLinha.vencimento,
+          mensagem: "Usuario com acesso vencido em " + formatarDataVencimentoUsuario(usuarioLinha.vencimento) + "."
         };
       }
 
@@ -229,6 +288,7 @@ function obterUsuarioSistema() {
         nome: usuarioLinha.nome,
         naps: usuarioLinha.naps,
         cepNaps: usuarioLinha.cepNaps,
+        vencimento: usuarioLinha.vencimento,
         mensagem: ""
       };
     }
@@ -371,6 +431,7 @@ function validarLoginGoogle(idToken) {
     perfil: usuario.perfil,
     nome: usuario.nome,
     naps: usuario.naps || "",
+    vencimento: usuario.vencimento || "",
     administrador: usuario.perfil === PERFIL_ADMINISTRADOR
   };
 }
@@ -470,7 +531,21 @@ function obterUsuarioSistemaPorEmail(email) {
           nome: usuarioLinha.nome,
           naps: usuarioLinha.naps,
           cepNaps: usuarioLinha.cepNaps,
+          vencimento: usuarioLinha.vencimento,
           mensagem: "Usuário cadastrado, mas inativo."
+        };
+      }
+
+      if (usuarioSistemaVencido(usuarioLinha)) {
+        return {
+          autorizado: false,
+          email: emailNormalizado,
+          perfil: usuarioLinha.perfil,
+          nome: usuarioLinha.nome,
+          naps: usuarioLinha.naps,
+          cepNaps: usuarioLinha.cepNaps,
+          vencimento: usuarioLinha.vencimento,
+          mensagem: "Usuário com acesso vencido em " + formatarDataVencimentoUsuario(usuarioLinha.vencimento) + "."
         };
       }
 
@@ -481,6 +556,7 @@ function obterUsuarioSistemaPorEmail(email) {
         nome: usuarioLinha.nome,
         naps: usuarioLinha.naps,
         cepNaps: usuarioLinha.cepNaps,
+        vencimento: usuarioLinha.vencimento,
         mensagem: ""
       };
     }
@@ -625,7 +701,7 @@ function salvarAtendimento(dados, idToken) {
   let lockObtido = false;
 
   try {
-    lock.waitLock(10000);
+    lock.waitLock(30000);
     lockObtido = true;
 
     const estrutura = configurarEstruturaPlanilha();
@@ -643,9 +719,14 @@ function salvarAtendimento(dados, idToken) {
     const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
     const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
     const tipoAtendimento = normalizarTipoAtendimento(dados.tipoAtendimento);
+    const responsavelAtendimento = normalizar(usuario.nome || dados.responsavel);
 
     if (!tipoAtendimento) {
       throw new Error("Tipo de atendimento e obrigatorio.");
+    }
+
+    if (!responsavelAtendimento) {
+      throw new Error("Nome do responsavel nao encontrado na aba usuarios_sistema.");
     }
 
     sheet.appendRow([
@@ -674,7 +755,7 @@ function salvarAtendimento(dados, idToken) {
       dados.numero || "",
       normalizar(dados.complemento),
       normalizar(dados.observacoes),
-      normalizar(dados.responsavel),
+      responsavelAtendimento,
       dataCadastro,
       dados.postoGraduacao || ""
     ]);
@@ -1157,6 +1238,134 @@ function obterDadosDashboard(filtros, idToken) {
   };
 }
 
+function obterDadosMapaCalor(filtros, idToken) {
+  validarAdministradorPorToken(idToken);
+
+  const filtrosMapa = normalizarFiltrosMapaCalor(filtros || {});
+  const estrutura = configurarEstruturaPlanilha();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = estrutura.sheetDados;
+  const dados = sheet.getDataRange().getValues();
+  const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
+  const registros = [];
+
+  for (let i = 1; i < dados.length; i++) {
+    registros.push(montarRegistroRelatorio(dados[i], {}, usuariosPorEmail));
+  }
+
+  const filtrosPreparados = prepararFiltrosRelatorio(filtrosMapa);
+  const filtrados = registros.filter(function(registro) {
+    return registroPassaFiltrosRelatorio(registro, filtrosPreparados) && !ehRegistroFalta(registro);
+  });
+
+  const napsReferencia = carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail);
+  const contextoCoordenadas = criarContextoCoordenadasMapa(ss);
+  const gruposRegiao = {};
+  const cargaNaps = {};
+  const pessoasDistintas = {};
+  const distanciaAlerta = Number(filtrosMapa.distanciaAlertaKm || 20);
+  let totalDistanciaAtual = 0;
+  let totalComDistancia = 0;
+  let cepsSemCadastro = 0;
+  let cepsSemCoordenada = 0;
+  let registrosSemNaps = 0;
+
+  filtrados.forEach(function(registro) {
+    const chavePessoa = obterChavePessoa(registro);
+    const cepResidencia = somenteNumeros(registro.cep);
+    const nomeNaps = String(registro.naps || "nao informado").trim() || "nao informado";
+    const chaveNaps = normalizar(nomeNaps);
+    const dadosNaps = napsReferencia[chaveNaps] || null;
+
+    pessoasDistintas[chavePessoa] = true;
+
+    if (cepResidencia.length !== 8) {
+      cepsSemCadastro++;
+      if (!dadosNaps || !dadosNaps.coordenadas) registrosSemNaps++;
+      atualizarNapsCargaMapa(cargaNaps, nomeNaps, dadosNaps, registro, null, distanciaAlerta);
+      return;
+    }
+
+    const coordenadasResidencia = obterCoordenadasCEPMapa(cepResidencia, contextoCoordenadas);
+
+    if (!coordenadasResidencia) {
+      cepsSemCoordenada++;
+      if (!dadosNaps || !dadosNaps.coordenadas) registrosSemNaps++;
+      atualizarNapsCargaMapa(cargaNaps, nomeNaps, dadosNaps, registro, null, distanciaAlerta);
+      return;
+    }
+
+    let distanciaAtual = null;
+
+    if (dadosNaps && dadosNaps.coordenadas) {
+      distanciaAtual = calcularDistanciaHaversineKm(
+        coordenadasResidencia.latitude,
+        coordenadasResidencia.longitude,
+        dadosNaps.coordenadas.latitude,
+        dadosNaps.coordenadas.longitude
+      );
+      totalDistanciaAtual += distanciaAtual;
+      totalComDistancia++;
+    } else {
+      registrosSemNaps++;
+    }
+
+    atualizarNapsCargaMapa(cargaNaps, nomeNaps, dadosNaps, registro, distanciaAtual, distanciaAlerta);
+
+    const cepBase = formatarCepBaseMapa(cepResidencia);
+    const chaveRegiao = cepBase || cepResidencia;
+
+    if (!gruposRegiao[chaveRegiao]) {
+      gruposRegiao[chaveRegiao] = criarGrupoRegiaoMapa(chaveRegiao, cepBase);
+    }
+
+    const grupo = gruposRegiao[chaveRegiao];
+    grupo.atendimentos++;
+    grupo.pessoas[chavePessoa] = true;
+    grupo.somaLat += coordenadasResidencia.latitude;
+    grupo.somaLng += coordenadasResidencia.longitude;
+    grupo.registros.push({
+      latitude: coordenadasResidencia.latitude,
+      longitude: coordenadasResidencia.longitude,
+      distanciaAtual: distanciaAtual
+    });
+  });
+
+  salvarNovasCoordenadasMapa(contextoCoordenadas);
+
+  const regioes = montarRegioesMapaCalor(gruposRegiao, filtrosMapa);
+  const naps = montarNapsMapaCalor(cargaNaps);
+  const resumo = montarResumoMapaCalor({
+    totalAtendimentos: filtrados.length,
+    pessoasDistintas: Object.keys(pessoasDistintas).length,
+    regioesMapeadas: regioes.length,
+    distanciaMediaAtualKm: mediaArredondadaMapa(totalDistanciaAtual, totalComDistancia),
+    melhorGanhoMedioKm: regioes.length ? regioes[0].ganhoMedioKm : 0,
+    cepsSemCadastro: cepsSemCadastro,
+    cepsSemCoordenada: cepsSemCoordenada,
+    registrosSemNaps: registrosSemNaps,
+    cepsGeocodificadosAgora: contextoCoordenadas.geocodificadosAgora,
+    limiteGeocodificacaoAtingido: contextoCoordenadas.limiteAtingido
+  });
+
+  return {
+    filtrosAplicados: filtrosMapa,
+    periodo: montarPeriodoDashboard(filtrosMapa),
+    resumo: resumo,
+    mapa: {
+      centro: { latitude: -22.25, longitude: -48.55, zoom: 7 },
+      calor: regioes.slice(0, 120),
+      naps: naps,
+      candidatos: regioes.slice(0, 8)
+    },
+    rankings: {
+      napsSobrecarga: naps.slice(0, 15),
+      regioesCandidatas: regioes.slice(0, 15)
+    },
+    avisos: montarAvisosMapaCalor(resumo)
+  };
+}
+
 function normalizarFiltrosDashboard(filtros) {
   const hoje = new Date();
   const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -1173,6 +1382,349 @@ function normalizarFiltrosDashboard(filtros) {
     responsavel: filtros.responsavel || "",
     faixaEtaria: filtros.faixaEtaria || ""
   };
+}
+
+function normalizarFiltrosMapaCalor(filtros) {
+  const base = normalizarFiltrosDashboard(filtros || {});
+  const minimo = Number(filtros.minAtendimentosRegiao || filtros.minAtendimentos || 3);
+  const distanciaAlertaKm = Number(filtros.distanciaAlertaKm || 20);
+
+  base.minAtendimentosRegiao = minimo > 0 ? minimo : 3;
+  base.distanciaAlertaKm = distanciaAlertaKm > 0 ? distanciaAlertaKm : 20;
+
+  return base;
+}
+
+function carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail) {
+  const mapa = {};
+
+  Object.keys(usuariosPorEmail || {}).forEach(function(email) {
+    const usuario = usuariosPorEmail[email];
+    adicionarNapsReferenciaMapa(mapa, usuario.naps, usuario.cepNaps, null);
+  });
+
+  const sheetNaps = ss.getSheetByName("naps");
+
+  if (sheetNaps && sheetNaps.getLastRow() > 1) {
+    const dados = sheetNaps.getDataRange().getValues();
+    const mapaCabecalhos = obterMapaCabecalhos(sheetNaps);
+    const indiceNaps = obterIndiceCabecalho(mapaCabecalhos, ["naps", "nap", "nome_naps", "unidade"], 0);
+    const indiceCep = obterIndiceCabecalho(mapaCabecalhos, ["cep_naps", "cepnaps", "cep", "cep_do_naps"], 1);
+
+    for (let i = 1; i < dados.length; i++) {
+      adicionarNapsReferenciaMapa(mapa, dados[i][indiceNaps], dados[i][indiceCep], null);
+    }
+  }
+
+  const contexto = criarContextoCoordenadasMapa(ss);
+
+  Object.keys(mapa).forEach(function(chave) {
+    const item = mapa[chave];
+    item.coordenadas = obterCoordenadasCEPMapa(item.cepNaps, contexto);
+
+    if (item.coordenadas) {
+      item.latitude = item.coordenadas.latitude;
+      item.longitude = item.coordenadas.longitude;
+    }
+  });
+
+  salvarNovasCoordenadasMapa(contexto);
+
+  return mapa;
+}
+
+function adicionarNapsReferenciaMapa(mapa, nomeNaps, cepNaps, coordenadas) {
+  const nome = String(nomeNaps || "").trim();
+  const cep = somenteNumeros(cepNaps);
+
+  if (!nome || nome === "nao informado" || cep.length !== 8) return;
+
+  const chave = normalizar(nome);
+
+  if (!mapa[chave]) {
+    mapa[chave] = {
+      naps: nome,
+      cepNaps: cep,
+      coordenadas: coordenadas || null,
+      latitude: null,
+      longitude: null
+    };
+  }
+}
+
+function criarContextoCoordenadasMapa(ss) {
+  const sheet = obterOuCriarAba(ss || SpreadsheetApp.getActiveSpreadsheet(), ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+  const dados = sheet.getDataRange().getValues();
+  const mapa = {};
+
+  for (let i = 1; i < dados.length; i++) {
+    const cep = somenteNumeros(dados[i][0]);
+    const latitude = Number(String(dados[i][1] || "").replace(",", "."));
+    const longitude = Number(String(dados[i][2] || "").replace(",", "."));
+
+    if (cep.length === 8 && !isNaN(latitude) && !isNaN(longitude)) {
+      mapa[cep] = {
+        latitude: latitude,
+        longitude: longitude
+      };
+    }
+  }
+
+  return {
+    sheet: sheet,
+    mapa: mapa,
+    novasLinhas: [],
+    geocodificadosAgora: 0,
+    limiteGeocodificacao: 120,
+    limiteAtingido: false
+  };
+}
+
+function obterCoordenadasCEPMapa(cep, contexto) {
+  const cepNormalizado = somenteNumeros(cep);
+
+  if (cepNormalizado.length !== 8) return null;
+  if (contexto.mapa[cepNormalizado]) return contexto.mapa[cepNormalizado];
+
+  if (contexto.geocodificadosAgora >= contexto.limiteGeocodificacao) {
+    contexto.limiteAtingido = true;
+    return null;
+  }
+
+  const coordenadas = geocodificarCEPMapa(cepNormalizado);
+
+  if (!coordenadas) return null;
+
+  contexto.mapa[cepNormalizado] = coordenadas;
+  contexto.geocodificadosAgora++;
+  contexto.novasLinhas.push([
+    formatarCEP(cepNormalizado),
+    coordenadas.latitude,
+    coordenadas.longitude,
+    coordenadas.endereco || formatarCEP(cepNormalizado) + ", Brasil",
+    new Date()
+  ]);
+
+  return coordenadas;
+}
+
+function geocodificarCEPMapa(cepNormalizado) {
+  const endereco = formatarCEP(cepNormalizado) + ", Brasil";
+  const resposta = Maps.newGeocoder()
+    .setRegion("br")
+    .geocode(endereco);
+
+  if (!resposta || resposta.status !== "OK" || !resposta.results || resposta.results.length === 0) {
+    return null;
+  }
+
+  const localizacao = resposta.results[0].geometry && resposta.results[0].geometry.location;
+
+  if (!localizacao) return null;
+
+  const latitude = Number(localizacao.lat);
+  const longitude = Number(localizacao.lng);
+
+  if (isNaN(latitude) || isNaN(longitude)) return null;
+
+  return {
+    latitude: latitude,
+    longitude: longitude,
+    endereco: resposta.results[0].formatted_address || endereco
+  };
+}
+
+function salvarNovasCoordenadasMapa(contexto) {
+  if (!contexto || !contexto.novasLinhas || contexto.novasLinhas.length === 0) return;
+
+  gravarLinhasAbaixo(contexto.sheet, contexto.novasLinhas, CABECALHOS_CEPS_CACHE.length);
+}
+
+function criarGrupoRegiaoMapa(chave, cepBase) {
+  return {
+    chave: chave,
+    cepBase: cepBase || chave,
+    atendimentos: 0,
+    pessoas: {},
+    somaLat: 0,
+    somaLng: 0,
+    registros: []
+  };
+}
+
+function formatarCepBaseMapa(cep) {
+  const numeros = somenteNumeros(cep);
+
+  if (numeros.length !== 8) return "";
+
+  return numeros.substring(0, 5) + "-000";
+}
+
+function atualizarNapsCargaMapa(mapa, nomeNaps, dadosNaps, registro, distanciaAtual, distanciaAlertaKm) {
+  const nome = String(nomeNaps || "nao informado").trim() || "nao informado";
+  const chave = normalizar(nome);
+
+  if (!mapa[chave]) {
+    mapa[chave] = {
+      naps: nome,
+      cepNaps: dadosNaps ? formatarCEP(dadosNaps.cepNaps) : "",
+      latitude: dadosNaps && dadosNaps.coordenadas ? dadosNaps.coordenadas.latitude : null,
+      longitude: dadosNaps && dadosNaps.coordenadas ? dadosNaps.coordenadas.longitude : null,
+      atendimentos: 0,
+      pessoas: {},
+      somaDistancia: 0,
+      totalComDistancia: 0,
+      distantes: 0
+    };
+  }
+
+  mapa[chave].atendimentos++;
+  mapa[chave].pessoas[obterChavePessoa(registro)] = true;
+
+  if (distanciaAtual !== null && distanciaAtual !== undefined && !isNaN(distanciaAtual)) {
+    mapa[chave].somaDistancia += distanciaAtual;
+    mapa[chave].totalComDistancia++;
+    if (distanciaAtual >= Number(distanciaAlertaKm || 20)) mapa[chave].distantes++;
+  }
+}
+
+function montarRegioesMapaCalor(gruposRegiao, filtros) {
+  const regioes = [];
+  const minimo = Number(filtros.minAtendimentosRegiao || 3);
+
+  Object.keys(gruposRegiao).forEach(function(chave) {
+    const grupo = gruposRegiao[chave];
+
+    if (!grupo.atendimentos || grupo.atendimentos < minimo) return;
+
+    const latitude = grupo.somaLat / grupo.atendimentos;
+    const longitude = grupo.somaLng / grupo.atendimentos;
+    let somaDistanciaAtual = 0;
+    let somaDistanciaNova = 0;
+    let somaGanho = 0;
+    let totalComparavel = 0;
+
+    grupo.registros.forEach(function(registro) {
+      if (registro.distanciaAtual === null || registro.distanciaAtual === undefined || isNaN(registro.distanciaAtual)) {
+        return;
+      }
+
+      const distanciaNova = calcularDistanciaHaversineKm(
+        registro.latitude,
+        registro.longitude,
+        latitude,
+        longitude
+      );
+
+      somaDistanciaAtual += registro.distanciaAtual;
+      somaDistanciaNova += distanciaNova;
+      somaGanho += Math.max(0, registro.distanciaAtual - distanciaNova);
+      totalComparavel++;
+    });
+
+    regioes.push({
+      regiao: grupo.cepBase,
+      latitude: arredondarCoordenadaMapa(latitude),
+      longitude: arredondarCoordenadaMapa(longitude),
+      atendimentos: grupo.atendimentos,
+      pessoasDistintas: Object.keys(grupo.pessoas).length,
+      peso: grupo.atendimentos,
+      distanciaAtualMediaKm: mediaArredondadaMapa(somaDistanciaAtual, totalComparavel),
+      distanciaNovaMediaKm: mediaArredondadaMapa(somaDistanciaNova, totalComparavel),
+      ganhoMedioKm: mediaArredondadaMapa(somaGanho, totalComparavel),
+      ganhoTotalKm: arredondarUmaCasa(somaGanho)
+    });
+  });
+
+  regioes.sort(function(a, b) {
+    if (b.ganhoTotalKm !== a.ganhoTotalKm) return b.ganhoTotalKm - a.ganhoTotalKm;
+    if (b.atendimentos !== a.atendimentos) return b.atendimentos - a.atendimentos;
+    return normalizar(a.regiao).localeCompare(normalizar(b.regiao));
+  });
+
+  const maiorPeso = regioes.reduce(function(maior, item) {
+    return Math.max(maior, item.peso || 0);
+  }, 1);
+
+  regioes.forEach(function(item) {
+    item.intensidade = Math.max(0.18, Math.min(1, item.peso / maiorPeso));
+  });
+
+  return regioes;
+}
+
+function montarNapsMapaCalor(cargaNaps) {
+  return Object.keys(cargaNaps)
+    .map(function(chave) {
+      const item = cargaNaps[chave];
+
+      return {
+        naps: item.naps,
+        cepNaps: item.cepNaps,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        atendimentos: item.atendimentos,
+        pessoasDistintas: Object.keys(item.pessoas).length,
+        distanciaMediaKm: mediaArredondadaMapa(item.somaDistancia, item.totalComDistancia),
+        atendimentosDistantes: item.distantes
+      };
+    })
+    .sort(function(a, b) {
+      if (b.atendimentos !== a.atendimentos) return b.atendimentos - a.atendimentos;
+      if (b.distanciaMediaKm !== a.distanciaMediaKm) return b.distanciaMediaKm - a.distanciaMediaKm;
+      return normalizar(a.naps).localeCompare(normalizar(b.naps));
+    });
+}
+
+function montarResumoMapaCalor(base) {
+  return {
+    totalAtendimentos: base.totalAtendimentos || 0,
+    pessoasDistintas: base.pessoasDistintas || 0,
+    regioesMapeadas: base.regioesMapeadas || 0,
+    distanciaMediaAtualKm: base.distanciaMediaAtualKm || 0,
+    melhorGanhoMedioKm: base.melhorGanhoMedioKm || 0,
+    cepsSemCadastro: base.cepsSemCadastro || 0,
+    cepsSemCoordenada: base.cepsSemCoordenada || 0,
+    registrosSemNaps: base.registrosSemNaps || 0,
+    cepsGeocodificadosAgora: base.cepsGeocodificadosAgora || 0,
+    limiteGeocodificacaoAtingido: !!base.limiteGeocodificacaoAtingido
+  };
+}
+
+function montarAvisosMapaCalor(resumo) {
+  const avisos = [];
+
+  if (resumo.cepsGeocodificadosAgora > 0) {
+    avisos.push("Foram adicionados " + resumo.cepsGeocodificadosAgora + " CEPs ao cache de coordenadas.");
+  }
+
+  if (resumo.limiteGeocodificacaoAtingido) {
+    avisos.push("Ha muitos CEPs novos. Atualize novamente para completar o cache sem travar a execucao.");
+  }
+
+  if (resumo.cepsSemCadastro > 0) {
+    avisos.push(resumo.cepsSemCadastro + " atendimento(s) sem CEP de residencia no periodo.");
+  }
+
+  if (resumo.cepsSemCoordenada > 0) {
+    avisos.push(resumo.cepsSemCoordenada + " atendimento(s) ainda sem coordenada calculada para o CEP.");
+  }
+
+  if (resumo.registrosSemNaps > 0) {
+    avisos.push(resumo.registrosSemNaps + " atendimento(s) sem CEP do NAPS para calcular distancia atual.");
+  }
+
+  return avisos;
+}
+
+function mediaArredondadaMapa(soma, total) {
+  if (!total) return 0;
+
+  return arredondarUmaCasa(soma / total);
+}
+
+function arredondarCoordenadaMapa(valor) {
+  return Math.round(Number(valor || 0) * 1000000) / 1000000;
 }
 
 function montarPeriodoDashboard(filtros) {
