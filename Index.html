@@ -2090,7 +2090,7 @@ body {
   <input
   id="responsavel"
   placeholder="EX: NOME COMPLETO"
-  oninput="converterMaiusculas(this); this.style.border='1px solid #d8e2ea';">
+  readonly>
 
   <button id="btnSalvar" class="btn-success" onclick="salvar()">
     Salvar Atendimento
@@ -2126,8 +2126,16 @@ document.addEventListener("DOMContentLoaded", function() {
     carregarRecadoAtivo();
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeObservacoes();
+    preencherResponsavelLogado();
   }
 });
+
+function preencherResponsavelLogado() {
+  const campoResponsavel = document.getElementById("responsavel");
+  const nomeResponsavel = usuarioLogado && usuarioLogado.nome ? usuarioLogado.nome : "";
+
+  campoResponsavel.value = converterMaiusculas(nomeResponsavel || "");
+}
 
   function aplicarEstiloTipoAtendimento() {
     const campo = document.getElementById("tipoAtendimento");
@@ -2550,6 +2558,7 @@ function limparFormulario() {
   atualizarCampoDataInatividade();
   aplicarEstiloTipoAtendimento();
   atualizarObrigatoriedadeObservacoes();
+  preencherResponsavelLogado();
 }
 
 function mascaraRE(campo) {
