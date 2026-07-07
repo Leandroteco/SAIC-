@@ -210,6 +210,175 @@
       color: #4f9d69;
     }
 
+    .titulo-responsavel-linha {
+      align-items: flex-end;
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+
+    .titulo-responsavel-linha h2 {
+      flex: 1;
+      margin: 0;
+    }
+
+    .responsavel-actions {
+      align-items: stretch;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      position: relative;
+    }
+
+    .responsavel-actions input {
+      min-width: 0;
+    }
+
+    .btn-imprimir-ficha,
+    .btn-ultimos-atendimentos {
+      align-items: center;
+      border-radius: 10px;
+      display: inline-flex;
+      font-weight: 800;
+      justify-content: center;
+      margin: 0;
+      min-height: 44px;
+      padding: 10px 14px;
+      white-space: nowrap;
+    }
+
+    .btn-imprimir-ficha {
+      background: #2f6f89;
+      color: #ffffff;
+      display: none;
+    }
+
+    .btn-imprimir-ficha:hover {
+      background: #24576c;
+    }
+
+    .ultimos-atendimentos-wrapper {
+      position: relative;
+    }
+
+    .btn-ultimos-atendimentos {
+      background: #ecefed;
+      color: #293033;
+      width: 46px;
+    }
+
+    .icone-relogio {
+      border: 2px solid #293033;
+      border-radius: 999px;
+      display: inline-block;
+      height: 18px;
+      position: relative;
+      width: 18px;
+    }
+
+    .icone-relogio::before,
+    .icone-relogio::after {
+      background: #293033;
+      border-radius: 999px;
+      content: "";
+      left: 8px;
+      position: absolute;
+      top: 4px;
+      transform-origin: bottom center;
+      width: 2px;
+    }
+
+    .icone-relogio::before {
+      height: 6px;
+    }
+
+    .icone-relogio::after {
+      height: 5px;
+      transform: rotate(90deg);
+    }
+
+    .ultimos-atendimentos-popover {
+      background: #ffffff;
+      border: 1px solid #d8e2ea;
+      border-radius: 10px;
+      box-shadow: 0 14px 32px rgba(41, 48, 51, 0.16);
+      display: none;
+      min-width: 290px;
+      padding: 10px;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      z-index: 50;
+    }
+
+    .ultimos-atendimentos-popover.ativo {
+      display: grid;
+      gap: 6px;
+    }
+
+    .ultimo-atendimento-item {
+      background: #f8fbfd;
+      border: 1px solid #edf3f7;
+      border-radius: 8px;
+      color: #334155;
+      display: block;
+      margin: 0;
+      padding: 10px 12px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .ultimo-atendimento-item:hover {
+      background: #eef6f9;
+    }
+
+    .ultimos-titulo {
+      color: #293033;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+      padding: 4px 8px 8px;
+    }
+
+    .ultimo-atendimento-item strong {
+      color: #293033;
+      display: block;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .ultimo-atendimento-item span {
+      color: #64748b;
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-top: 3px;
+    }
+
+    .ultimos-vazio {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      .titulo-responsavel-linha {
+        align-items: flex-start;
+      }
+
+      .responsavel-actions {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .btn-imprimir-ficha {
+        grid-column: 1 / -1;
+      }
+    }
+
     header {
       position: relative;
     }
@@ -1986,6 +2155,8 @@ body {
       <label>Tipo de Atendimento</label>
       <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento(); atualizarObrigatoriedadeObservacoes()" required>
         <option value="">Selecione</option>
+        <option class="opcao-alerta-atendimento" value="alta">Atendimento de ALTA</option>
+        <option class="opcao-alerta-atendimento" value="falta">Registrar como FALTA</option>
         <option>Plantão Psicológico</option>
         <option>Psicoterapia - Individual</option>
         <option>Psicoterapia - Casal</option>
@@ -2008,7 +2179,7 @@ body {
 
     <div>
       <label>Motivo</label>
-      <select id="motivo" onchange="limparErroCampo(this); atualizarObrigatoriedadeObservacoes()">
+      <select id="motivo" onchange="limparErroCampo(this); atualizarObrigatoriedadeObservacoes()" required>
         <option value="">Selecione</option>
         <option>Ansiedade</option>
         <option>Conflitos Interpessoais</option>
@@ -2084,13 +2255,30 @@ body {
   <h2>Observações</h2>
   <textarea id="observacoes" oninput="converterMaiusculas(this); limparErroCampo(this)"></textarea>
 
-  <h2>Responsável pelo Atendimento</h2>
+  <div class="titulo-responsavel-linha">
+    <h2>Responsável pelo Atendimento</h2>
+    <div class="ultimos-atendimentos-wrapper">
+      <button id="btnUltimosAtendimentos" type="button" class="btn-ultimos-atendimentos"
+        onclick="alternarUltimosAtendimentos(event)"
+        title="Últimos atendimentos"
+        aria-label="Últimos atendimentos">
+        <span class="icone-relogio" aria-hidden="true"></span>
+      </button>
+      <div id="painelUltimosAtendimentos" class="ultimos-atendimentos-popover"></div>
+    </div>
+  </div>
 
   <label>Nome do responsável</label>
-  <input
-  id="responsavel"
-  placeholder="EX: NOME COMPLETO"
-  readonly>
+  <div class="responsavel-actions">
+    <input
+    id="responsavel"
+    placeholder="EX: NOME COMPLETO"
+    readonly>
+
+    <button id="btnImprimirFicha" type="button" class="btn-imprimir-ficha" onclick="imprimirFichaSalva()">
+      Imprimir ficha
+    </button>
+  </div>
 
   <button id="btnSalvar" class="btn-success" onclick="salvar()">
     Salvar Atendimento
@@ -2114,6 +2302,9 @@ body {
 let tokenGoogle = "<?= tokenGoogleInicial ?>";
 let webAppUrl = "<?= webAppUrl ?>";
 let usuarioLogado = <?!= usuarioInicialJson ?>;
+let ultimoAtendimentoSalvoId = "";
+let ultimosAtendimentosCarregados = false;
+let ultimosAtendimentosCarregando = false;
 
 document.addEventListener("DOMContentLoaded", function() {
   const autorizado = tokenGoogle && usuarioLogado && usuarioLogado.autorizado;
@@ -2127,6 +2318,8 @@ document.addEventListener("DOMContentLoaded", function() {
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeObservacoes();
     preencherResponsavelLogado();
+    configurarOcultarImpressaoAoEditar();
+    configurarFechamentoUltimosAtendimentos();
   }
 });
 
@@ -2135,6 +2328,273 @@ function preencherResponsavelLogado() {
   const nomeResponsavel = usuarioLogado && usuarioLogado.nome ? usuarioLogado.nome : "";
 
   campoResponsavel.value = converterMaiusculas(nomeResponsavel || "");
+}
+
+function definirAtendimentoImpressao(idAtendimento) {
+  ultimoAtendimentoSalvoId = idAtendimento || "";
+
+  const botao = document.getElementById("btnImprimirFicha");
+  if (!botao) return;
+
+  botao.style.display = ultimoAtendimentoSalvoId ? "inline-flex" : "none";
+}
+
+function configurarOcultarImpressaoAoEditar() {
+  const container = document.querySelector(".container");
+  if (!container) return;
+
+  container.addEventListener("input", ocultarImpressaoPorAlteracao, true);
+  container.addEventListener("change", ocultarImpressaoPorAlteracao, true);
+}
+
+function ocultarImpressaoPorAlteracao(event) {
+  const alvo = event && event.target;
+  if (!alvo || !ultimoAtendimentoSalvoId) return;
+  if (alvo.id === "responsavel") return;
+  if (alvo.closest && alvo.closest(".responsavel-actions")) return;
+  if (alvo.closest && alvo.closest(".ultimos-atendimentos-wrapper")) return;
+
+  definirAtendimentoImpressao("");
+}
+
+function mostrarUltimosAtendimentos() {
+  const painel = document.getElementById("painelUltimosAtendimentos");
+  if (!painel) return;
+
+  painel.classList.add("ativo");
+  carregarUltimosAtendimentos(false);
+}
+
+function ocultarUltimosAtendimentos() {
+  const painel = document.getElementById("painelUltimosAtendimentos");
+  if (painel) painel.classList.remove("ativo");
+}
+
+function alternarUltimosAtendimentos(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  const painel = document.getElementById("painelUltimosAtendimentos");
+  if (!painel) return;
+
+  if (painel.classList.contains("ativo")) {
+    ocultarUltimosAtendimentos();
+  } else {
+    mostrarUltimosAtendimentos();
+  }
+}
+
+function configurarFechamentoUltimosAtendimentos() {
+  document.addEventListener("click", function(event) {
+    const painel = document.getElementById("painelUltimosAtendimentos");
+    const wrapper = document.querySelector(".ultimos-atendimentos-wrapper");
+
+    if (!painel || !painel.classList.contains("ativo")) return;
+    if (wrapper && wrapper.contains(event.target)) return;
+
+    ocultarUltimosAtendimentos();
+  });
+}
+
+function carregarUltimosAtendimentos(forcarAtualizacao) {
+  const painel = document.getElementById("painelUltimosAtendimentos");
+  if (!painel || ultimosAtendimentosCarregando) return;
+  if (ultimosAtendimentosCarregados && !forcarAtualizacao) return;
+
+  if (!window.google || !google.script || !google.script.run) {
+    painel.innerHTML = '<div class="ultimos-vazio">Abra pelo Apps Script para carregar a lista.</div>';
+    return;
+  }
+
+  ultimosAtendimentosCarregando = true;
+  painel.innerHTML = '<div class="ultimos-vazio">Carregando...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(lista) {
+      ultimosAtendimentosCarregando = false;
+      ultimosAtendimentosCarregados = true;
+      renderizarUltimosAtendimentos(lista || []);
+    })
+    .withFailureHandler(function(erro) {
+      ultimosAtendimentosCarregando = false;
+      painel.innerHTML = '<div class="ultimos-vazio">Erro ao carregar: ' + escaparHtml(erro.message || erro) + '</div>';
+    })
+    .obterUltimosAtendimentosResponsavel(tokenGoogle);
+}
+
+function renderizarUltimosAtendimentos(lista) {
+  const painel = document.getElementById("painelUltimosAtendimentos");
+
+  if (!painel) return;
+
+  if (!lista || lista.length === 0) {
+    painel.innerHTML = '<div class="ultimos-titulo">Últimos atendimentos</div>' +
+      '<div class="ultimos-vazio">Nenhum atendimento salvo por este usuário.</div>';
+    return;
+  }
+
+  painel.innerHTML = '<div class="ultimos-titulo">Últimos atendimentos</div>' + lista.map(function(item) {
+    return '<button type="button" class="ultimo-atendimento-item" data-id="' + escaparAttr(item.idAtendimento) + '">' +
+      '<strong>' + escaparHtml(converterMaiusculas(item.nome || "SEM NOME")) + '</strong>' +
+      '<span>' + escaparHtml(item.dataHoraCadastro || "") + '</span>' +
+    '</button>';
+  }).join("");
+
+  painel.querySelectorAll(".ultimo-atendimento-item").forEach(function(botao) {
+    botao.addEventListener("click", function() {
+      imprimirFichaPorId(this.getAttribute("data-id"), false);
+    });
+  });
+}
+
+function imprimirFichaSalva() {
+  if (!ultimoAtendimentoSalvoId) {
+    const mensagem = document.getElementById("mensagem");
+    mensagem.style.color = "#b42318";
+    mensagem.innerText = "Salve o atendimento antes de imprimir a ficha.";
+    return;
+  }
+
+  imprimirFichaPorId(ultimoAtendimentoSalvoId, true);
+}
+
+function imprimirFichaPorId(idAtendimento, ocultarBotaoDepois) {
+  const janela = window.open("", "_blank");
+
+  if (!janela) {
+    const mensagem = document.getElementById("mensagem");
+    mensagem.style.color = "#b42318";
+    mensagem.innerText = "O navegador bloqueou a janela de impressao. Libere pop-ups para o sistema.";
+    return;
+  }
+
+  janela.document.write("<p style='font-family:Arial;padding:24px;'>Carregando ficha para impressao...</p>");
+
+  google.script.run
+    .withSuccessHandler(function(ficha) {
+      janela.document.open();
+      janela.document.write(montarHtmlFichaAtendimento(ficha || {}));
+      janela.document.close();
+
+      setTimeout(function() {
+        janela.focus();
+        janela.print();
+      }, 350);
+
+      if (ocultarBotaoDepois) definirAtendimentoImpressao("");
+    })
+    .withFailureHandler(function(erro) {
+      janela.document.open();
+      janela.document.write("<p style='font-family:Arial;padding:24px;color:#b42318;'>Erro ao carregar ficha: " + escaparHtml(erro.message || erro) + "</p>");
+      janela.document.close();
+    })
+    .obterFichaAtendimento(idAtendimento, tokenGoogle);
+}
+
+function montarHtmlFichaAtendimento(ficha) {
+  const vinculos = ficha.vinculos || [];
+  const linhasVinculos = vinculos.length
+    ? vinculos.map(function(vinculo) {
+        return "<tr>" +
+          "<td>" + valorFicha(vinculo.nome) + "</td>" +
+          "<td>" + valorFicha(vinculo.cpf) + "</td>" +
+          "<td>" + valorFicha(vinculo.parentesco) + "</td>" +
+          "<td>" + valorFicha(vinculo.observacoes) + "</td>" +
+        "</tr>";
+      }).join("")
+    : "<tr><td colspan='4'>&nbsp;</td></tr>";
+
+  return "<!DOCTYPE html>" +
+    "<html><head><meta charset='UTF-8'><title>Ficha de Atendimento</title>" +
+    "<style>" +
+    "@page{size:A4;margin:12mm;}*{box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;margin:0;font-size:11px;}h1{font-size:16px;text-align:center;margin:0 0 4px;}h2{background:#eef2f7;border:1px solid #cbd5e1;font-size:12px;margin:12px 0 6px;padding:5px;text-transform:uppercase;}.cabecalho{text-align:center;border-bottom:2px solid #111827;padding-bottom:8px;margin-bottom:8px;}.cabecalho p{margin:2px 0;font-weight:bold;}.linha{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px;}.campo{border:1px solid #cbd5e1;min-height:34px;padding:4px;}.campo.duplo{grid-column:span 2;}.campo.triplo{grid-column:span 3;}.rotulo{color:#475569;display:block;font-size:9px;font-weight:bold;text-transform:uppercase;}.valor{display:block;font-size:11px;margin-top:4px;white-space:pre-wrap;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #cbd5e1;padding:5px;text-align:left;vertical-align:top;}th{background:#eef2f7;font-size:10px;text-transform:uppercase;}.assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:34px;}.assinatura{border-top:1px solid #111827;text-align:center;padding-top:5px;}@media print{button{display:none;}}" +
+    "</style></head><body>" +
+    "<div class='cabecalho'>" +
+      "<h1>POLICIA MILITAR DO ESTADO DE SAO PAULO</h1>" +
+      "<p>CENTRO DE ATENCAO PSICOLOGICA E SOCIAL - CAPS</p>" +
+      "<p>SISTEMA DE SAUDE MENTAL DA PMESP - SiSMen</p>" +
+      "<p>FICHA DE CADASTRO DE ATENDIMENTO CLINICO</p>" +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("Data", ficha.dataCadastro) +
+      campoFicha("Horario", ficha.horaCadastro) +
+      campoFicha("Responsavel", ficha.responsavel, "duplo") +
+    "</div>" +
+    "<h2>Cadastro do policial militar</h2>" +
+    "<div class='linha'>" +
+      campoFicha("Nome", ficha.nome, "duplo") +
+      campoFicha("Posto/Graduacao", ficha.postoGraduacao) +
+      campoFicha("R.E.", ficha.re) +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("CPF", ficha.cpf) +
+      campoFicha("Telefone", ficha.telefone) +
+      campoFicha("Email", ficha.email, "duplo") +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("OPM atual", ficha.opmAtual, "duplo") +
+      campoFicha("Situacao/status", ficha.situacaoStatus) +
+      campoFicha("Data de inatividade", ficha.dataInatividade) +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("Sexo", ficha.sexo) +
+      campoFicha("Data de nascimento", ficha.dataNascimento) +
+      campoFicha("Idade", ficha.idade) +
+      campoFicha("Estado civil", ficha.estadoCivil) +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("Data de ingresso", ficha.dataIngresso) +
+      campoFicha("Numero de filhos", ficha.numeroFilhos) +
+      campoFicha("CEP", ficha.cep) +
+      campoFicha("Cidade/UF", (ficha.cidade || "") + " / " + (ficha.estado || "")) +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("Endereco residencial", ficha.endereco, "triplo") +
+      campoFicha("Complemento", ficha.complemento) +
+    "</div>" +
+    "<h2>Atendimento</h2>" +
+    "<div class='linha'>" +
+      campoFicha("Tipo de atendimento", ficha.tipoAtendimento, "duplo") +
+      campoFicha("Motivo", ficha.motivo, "duplo") +
+    "</div>" +
+    "<div class='linha'>" +
+      campoFicha("Observacoes", ficha.observacoes, "triplo") +
+      campoFicha("ID atendimento", ficha.idAtendimento) +
+    "</div>" +
+    "<h2>Pessoas vinculadas</h2>" +
+    "<table><thead><tr><th>Nome</th><th>CPF</th><th>Parentesco</th><th>Observacoes</th></tr></thead><tbody>" + linhasVinculos + "</tbody></table>" +
+    "<h2>Registros complementares</h2>" +
+    "<table><thead><tr><th>Data</th><th>Horario</th><th>Modalidade</th><th>Profissional</th></tr></thead><tbody>" +
+      "<tr><td>" + valorFicha(ficha.dataCadastro) + "</td><td>" + valorFicha(ficha.horaCadastro) + "</td><td>" + valorFicha(ficha.tipoAtendimento) + "</td><td>" + valorFicha(ficha.responsavel) + "</td></tr>" +
+      "<tr><td>&nbsp;</td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td></tr>" +
+    "</tbody></table>" +
+    "<div class='assinaturas'><div class='assinatura'>Responsavel pelo atendimento</div><div class='assinatura'>Atendido</div></div>" +
+    "</body></html>";
+}
+
+function campoFicha(rotulo, valor, classe) {
+  return "<div class='campo " + (classe || "") + "'><span class='rotulo'>" + escaparHtml(rotulo) + "</span><span class='valor'>" + valorFicha(valor) + "</span></div>";
+}
+
+function valorFicha(valor) {
+  if (valor === null || valor === undefined || valor === "") return "&nbsp;";
+
+  return escaparHtml(String(valor).toUpperCase());
+}
+
+function escaparHtml(valor) {
+  return String(valor === null || valor === undefined ? "" : valor)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escaparAttr(valor) {
+  return escaparHtml(valor).replace(/`/g, "&#096;");
 }
 
   function aplicarEstiloTipoAtendimento() {
@@ -2477,6 +2937,11 @@ function salvar() {
     camposComErro.push(campoTipoAtendimento);
   }
 
+  if (campoMotivo.value.trim() === "") {
+    marcarCampoObrigatorio(campoMotivo);
+    camposComErro.push(campoMotivo);
+  }
+
   if (observacoesObrigatoriasPorOutros() && campoObservacoes.value.trim() === "") {
     marcarCampoObrigatorio(campoObservacoes);
     camposComErro.push(campoObservacoes);
@@ -2534,10 +2999,20 @@ function salvar() {
 
   google.script.run
     .withSuccessHandler(function(resposta) {
+      const mensagemSucesso = typeof resposta === "object" && resposta !== null
+        ? resposta.mensagem
+        : resposta;
+      const idAtendimentoSalvo = typeof resposta === "object" && resposta !== null
+        ? resposta.idAtendimento
+        : "";
+
       definirEstadoSalvamento(false);
       mensagem.style.color = "#4f9d69";
-      mensagem.innerText = resposta;
-      limparFormulario();
+      mensagem.innerText = mensagemSucesso || "Atendimento salvo com sucesso!";
+      limparFormulario({ preservarImpressao: true });
+      definirAtendimentoImpressao(idAtendimentoSalvo);
+      ultimosAtendimentosCarregados = false;
+      carregarUltimosAtendimentos(true);
     })
     .withFailureHandler(function(erro) {
       definirEstadoSalvamento(false);
@@ -2547,7 +3022,9 @@ function salvar() {
     .salvarAtendimento(dados, tokenGoogle);
 }
 
-function limparFormulario() {
+function limparFormulario(opcoes) {
+  const preservarImpressao = opcoes && opcoes.preservarImpressao;
+
   document.querySelectorAll("input, textarea, select").forEach(el => {
     el.value = "";
     el.style.border = "1px solid #d8e2ea";
@@ -2559,6 +3036,11 @@ function limparFormulario() {
   aplicarEstiloTipoAtendimento();
   atualizarObrigatoriedadeObservacoes();
   preencherResponsavelLogado();
+  ocultarUltimosAtendimentos();
+
+  if (!preservarImpressao) {
+    definirAtendimentoImpressao("");
+  }
 }
 
 function mascaraRE(campo) {
@@ -2655,6 +3137,8 @@ function atualizarCampoDataInatividade() {
 
 
 function buscarCadastroTela() {
+  definirAtendimentoImpressao("");
+
   const campoBusca = document.getElementById("campoBusca");
   const resultadoBusca = document.getElementById("resultadoBusca");
   const termo = campoBusca.value.trim();
@@ -2757,6 +3241,7 @@ function tratarResultadoBusca(resposta) {
 }
 
 function preencherFormulario(r) {
+  definirAtendimentoImpressao("");
   // Limpa os dados antigos antes de carregar o novo cadastro
   document.getElementById("re").value = "";
   document.getElementById("cpf").value = "";
@@ -3044,3 +3529,4 @@ document.addEventListener("input", function(event) {
 </script>
 </body>
 </html>
+
