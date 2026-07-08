@@ -1175,6 +1175,10 @@ function buscarCadastro(termo, idToken) {
 
   const pesquisouCPFCompleto = buscaNumeros.length === 11;
   const pesquisouRECompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
+  const pesquisouREBase = !pesquisouCPFCompleto &&
+    !pesquisouRECompleto &&
+    /^[0-9]{6}$/.test(buscaNumeros) &&
+    buscaTexto === buscaNumeros;
 
   const candidatos = localizarCadastrosNoIndice(
     sheetIndice,
@@ -1182,7 +1186,9 @@ function buscarCadastro(termo, idToken) {
     buscaNumeros,
     pesquisouCPFCompleto
   );
-  const resultados = montarResultadosBuscaPorIndice(sheet, candidatos);
+  const resultados = montarResultadosBuscaPorIndice(sheet, candidatos, {
+    preservarVariantesRE: pesquisouREBase
+  });
 
   if (resultados.length === 0) {
     return {
@@ -1253,16 +1259,22 @@ function localizarCadastrosNoIndice(sheetIndice, buscaTexto, buscaNumeros, pesqu
   return encontrados;
 }
 
-function montarResultadosBuscaPorIndice(sheetDados, candidatos) {
+function montarResultadosBuscaPorIndice(sheetDados, candidatos, opcoes) {
   const resultados = [];
   const chavesEncontradas = {};
+  const preservarVariantesRE = opcoes && opcoes.preservarVariantesRE;
 
   for (let i = 0; i < candidatos.length; i++) {
     const candidato = candidatos[i];
-    const chaveUnica = somenteNumeros(candidato.cpf) ||
-      normalizar(candidato.re) ||
-      normalizar(candidato.nome) ||
-      String(candidato.idAtendimento || "");
+    const chaveUnica = preservarVariantesRE
+      ? normalizar(candidato.re) ||
+        somenteNumeros(candidato.cpf) ||
+        normalizar(candidato.nome) ||
+        String(candidato.idAtendimento || "")
+      : somenteNumeros(candidato.cpf) ||
+        normalizar(candidato.re) ||
+        normalizar(candidato.nome) ||
+        String(candidato.idAtendimento || "");
 
     if (chavesEncontradas[chaveUnica]) continue;
     chavesEncontradas[chaveUnica] = true;
@@ -2969,4 +2981,3 @@ function autorizarServicosSAIC() {
 
   SpreadsheetApp.getActiveSpreadsheet().getName();
 }
-
