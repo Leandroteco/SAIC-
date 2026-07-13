@@ -388,12 +388,13 @@
 
     .dashboard-grid {
       display: grid;
-      gap: 18px;
+      gap: 16px;
+      grid-auto-flow: row dense;
       grid-template-columns: repeat(12, minmax(0, 1fr));
     }
 
     .chart-box.wide {
-      grid-column: span 8;
+      grid-column: 1 / -1;
     }
 
     .chart-box.full {
@@ -401,7 +402,7 @@
     }
 
     .chart-box:not(.wide):not(.full) {
-      grid-column: span 4;
+      grid-column: span 6;
     }
 
     .ranking-box {
@@ -438,6 +439,44 @@
 
     .chart-wrap.short {
       height: 250px;
+    }
+
+    .tipo-legend-list {
+      border-top: 1px solid var(--line-soft);
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+    }
+
+    .tipo-legend-item {
+      align-items: center;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 12px minmax(0, 1fr) auto;
+    }
+
+    .tipo-legend-color {
+      border-radius: 999px;
+      display: block;
+      height: 10px;
+      width: 10px;
+    }
+
+    .tipo-legend-label {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tipo-legend-value {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+      text-align: right;
     }
 
     .ranking-row {
@@ -522,10 +561,13 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
-      .chart-box.wide,
       .chart-box:not(.wide),
       .ranking-box {
         grid-column: span 6;
+      }
+
+      .chart-box.wide {
+        grid-column: 1 / -1;
       }
     }
 
@@ -1491,6 +1533,7 @@ h3,
           <div class="chart-wrap">
             <canvas id="graficoTipo"></canvas>
           </div>
+          <div id="legendaTipo" class="tipo-legend-list"></div>
           <p id="vazioTipo" class="empty"></p>
         </div>
 
@@ -1537,7 +1580,7 @@ h3,
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
     const graficos = {};
-    const cores = ["#3b82a0", "#6ca88d", "#64748b", "#7fb6cc", "#4f9d69", "#a16207", "#94a3b8", "#2f6f89", "#d6a94c", "#cbd5e1"];
+    const cores = ["#2563eb", "#16a34a", "#f59e0b", "#7c3aed", "#0891b2", "#4f46e5", "#65a30d", "#0f766e", "#a855f7", "#0284c7", "#ca8a04", "#475569"];
 
     document.addEventListener("DOMContentLoaded", function() {
       const autorizado = tokenGoogle &&
@@ -1738,22 +1781,22 @@ h3,
             {
               label: "Atendimentos",
               data: labelsOriginais.map(function(naps) { return mapa[naps].atendimentos; }),
-              backgroundColor: "#3b82a0",
-              borderColor: "#2f6f89",
+              backgroundColor: "#2563eb",
+              borderColor: "#1d4ed8",
               borderWidth: 1
             },
             {
               label: "Faltas",
               data: labelsOriginais.map(function(naps) { return mapa[naps].faltas; }),
-              backgroundColor: "#64748b",
-              borderColor: "#475569",
+              backgroundColor: "#f59e0b",
+              borderColor: "#d97706",
               borderWidth: 1
             },
             {
               label: "Altas",
               data: labelsOriginais.map(function(naps) { return mapa[naps].altas; }),
-              backgroundColor: "#6ca88d",
-              borderColor: "#4f9d69",
+              backgroundColor: "#16a34a",
+              borderColor: "#15803d",
               borderWidth: 1
             }
           ]
@@ -1810,6 +1853,75 @@ h3,
       };
     }
 
+    function pluginPercentuaisPizza() {
+      return {
+        id: "percentuaisPizza",
+        afterDatasetsDraw: function(chart) {
+          if (chart.config.type !== "doughnut") return;
+
+          const dataset = chart.data.datasets[0];
+          const total = dataset.data.reduce(function(soma, valor) {
+            return soma + Number(valor || 0);
+          }, 0);
+
+          if (!total) return;
+
+          const ctx = chart.ctx;
+          const meta = chart.getDatasetMeta(0);
+
+          ctx.save();
+          ctx.font = "900 12px Segoe UI, Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(15, 23, 42, 0.35)";
+          ctx.fillStyle = "#ffffff";
+
+          meta.data.forEach(function(arco, indice) {
+            const valor = Number(dataset.data[indice] || 0);
+            const percentual = total > 0 ? (valor / total) * 100 : 0;
+
+            if (percentual < 4) return;
+
+            const props = arco.getProps(["x", "y", "startAngle", "endAngle", "innerRadius", "outerRadius"], true);
+            const angulo = (props.startAngle + props.endAngle) / 2;
+            const raio = (props.innerRadius + props.outerRadius) / 2;
+            const x = props.x + Math.cos(angulo) * raio;
+            const y = props.y + Math.sin(angulo) * raio;
+            const texto = percentual >= 10
+              ? Math.round(percentual) + "%"
+              : percentual.toFixed(1).replace(".", ",") + "%";
+
+            ctx.strokeText(texto, x, y);
+            ctx.fillText(texto, x, y);
+          });
+
+          ctx.restore();
+        }
+      };
+    }
+
+    function renderizarLegendaTipo(lista) {
+      const div = document.getElementById("legendaTipo");
+
+      if (!div) return;
+
+      if (!lista.length) {
+        div.innerHTML = "";
+        return;
+      }
+
+      div.innerHTML = lista.map(function(item, indice) {
+        const cor = cores[indice % cores.length];
+
+        return "<div class='tipo-legend-item'>" +
+          "<span class='tipo-legend-color' style='background:" + cor + "'></span>" +
+          "<span class='tipo-legend-label' title='" + escaparHtml(item.rotulo) + "'>" + escaparHtml(capitalizar(item.rotulo)) + "</span>" +
+          "<span class='tipo-legend-value'>" + formatarNumero(item.valor) + "</span>" +
+          "</div>";
+      }).join("");
+    }
+
     function criarGraficoLinha(chave, canvasId, pontos) {
       const ctx = document.getElementById(canvasId);
 
@@ -1821,8 +1933,8 @@ h3,
           datasets: [{
             label: "Atendimentos",
             data: pontos.map(function(item) { return item.valor; }),
-            borderColor: "#3b82a0",
-            backgroundColor: "rgba(59, 130, 160, 0.15)",
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37, 99, 235, 0.14)",
             fill: true,
             tension: 0.25,
             pointRadius: 3
@@ -1839,6 +1951,9 @@ h3,
       const valores = lista.map(function(item) { return item.valor; });
 
       vazio.innerText = lista.length === 0 ? "Sem dados no período." : "";
+      if (chave === "tipo") {
+        renderizarLegendaTipo(lista);
+      }
       destruirGrafico(chave);
 
       graficos[chave] = new Chart(ctx, {
@@ -1856,6 +1971,16 @@ h3,
         options: opcoesGrafico({
           indexAxis: tipo === "bar" ? "y" : "x",
           beginAtZero: true,
+          layout: tipo === "bar" ? {
+            padding: {
+              right: 56
+            }
+          } : undefined,
+          plugins: tipo === "doughnut" ? {
+            legend: {
+              display: false
+            }
+          } : undefined,
           onClick: function(event, elementos) {
             if (!filtroAlvo || !elementos.length) return;
 
@@ -1863,7 +1988,8 @@ h3,
             document.getElementById(filtroAlvo).value = item.rotulo;
             carregarDashboard();
           }
-        })
+        }),
+        plugins: tipo === "bar" ? [pluginValoresNasBarras()] : tipo === "doughnut" ? [pluginPercentuaisPizza()] : []
       });
     }
 
@@ -1897,19 +2023,25 @@ h3,
             {
               label: "Situação",
               data: situacao,
-              backgroundColor: "#3b82a0"
+              backgroundColor: "#7c3aed"
             },
             {
               label: "Sexo",
               data: sexo,
-              backgroundColor: "#166534"
+              backgroundColor: "#0891b2"
             }
           ]
         },
         options: opcoesGrafico({
           indexAxis: "y",
-          beginAtZero: true
-        })
+          beginAtZero: true,
+          layout: {
+            padding: {
+              right: 56
+            }
+          }
+        }),
+        plugins: [pluginValoresNasBarras()]
       });
     }
 
@@ -1925,16 +2057,29 @@ h3,
         },
         scales: {
           x: {
-            beginAtZero: extra && extra.beginAtZero
+            beginAtZero: extra && extra.beginAtZero,
+            border: {
+              display: false
+            },
+            grid: {
+              display: false
+            }
           },
           y: {
-            beginAtZero: extra && extra.beginAtZero
+            beginAtZero: extra && extra.beginAtZero,
+            border: {
+              display: false
+            },
+            grid: {
+              display: false
+            }
           }
         }
       };
 
       if (extra) {
         Object.keys(extra).forEach(function(chave) {
+          if (extra[chave] === undefined) return;
           if (chave !== "beginAtZero") base[chave] = extra[chave];
         });
       }
