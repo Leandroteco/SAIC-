@@ -576,6 +576,30 @@
       word-break: break-word;
     }
 
+    .individual-report {
+      background: var(--surface);
+      border: 1px solid var(--line-soft);
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 18px;
+    }
+
+    .individual-report p {
+      margin: 0 0 10px;
+    }
+
+    .individual-report p:last-child {
+      margin-bottom: 0;
+    }
+
+    .individual-report strong {
+      color: var(--title-dark);
+      font-weight: 900;
+    }
+
     @media (max-width: 1180px) {
       .app-shell {
         grid-template-columns: 1fr;
@@ -1601,11 +1625,15 @@ h3,
           <select id="faixaEtaria">
             <option value="">Todas</option>
             <option value="ate 17 anos">Até 17 anos</option>
-            <option value="18 a 29 anos">18 a 29 anos</option>
-            <option value="30 a 39 anos">30 a 39 anos</option>
-            <option value="40 a 49 anos">40 a 49 anos</option>
-            <option value="50 a 59 anos">50 a 59 anos</option>
-            <option value="60 anos ou mais">60 anos ou mais</option>
+            <option value="18 a 25 anos">18 a 25 anos</option>
+            <option value="26 a 30 anos">26 a 30 anos</option>
+            <option value="31 a 35 anos">31 a 35 anos</option>
+            <option value="36 a 40 anos">36 a 40 anos</option>
+            <option value="41 a 45 anos">41 a 45 anos</option>
+            <option value="46 a 50 anos">46 a 50 anos</option>
+            <option value="51 a 55 anos">51 a 55 anos</option>
+            <option value="56 a 60 anos">56 a 60 anos</option>
+            <option value="mais de 60 anos">Mais de 60 anos</option>
             <option value="nao informado">Não informado</option>
           </select>
         </div>
@@ -1621,6 +1649,7 @@ h3,
             <option value="21 a 25 anos">21 a 25 anos</option>
             <option value="26 a 30 anos">26 a 30 anos</option>
             <option value="31 a 35 anos">31 a 35 anos</option>
+            <option value="mais de 35 anos">Mais de 35 anos</option>
             <option value="nao informado">Não informado</option>
           </select>
         </div>
@@ -1669,7 +1698,7 @@ h3,
 
       <nav id="abasRelatorio" class="tabs">
         <button class="tab-button active" data-tab="resumo" onclick="trocarAba('resumo')">Resumo</button>
-        <button class="tab-button" data-tab="atendimentos" onclick="trocarAba('atendimentos')">Atendimentos</button>
+        <button class="tab-button" data-tab="atendimentos" onclick="trocarAba('atendimentos')">Demandas</button>
         <button class="tab-button" data-tab="perfil" onclick="trocarAba('perfil')">Perfil</button>
         <button class="tab-button" data-tab="localidade" onclick="trocarAba('localidade')">OPM / Localidade</button>
         <button class="tab-button" data-tab="vinculos" onclick="trocarAba('vinculos')">Vínculos</button>
@@ -1929,6 +1958,138 @@ function formatarDataInput(data) {
       `;
     }
 
+    function montarResumoGerencialAlertas() {
+      const resumo = relatorioAtual.resumo || {};
+      const distribuicoes = relatorioAtual.distribuicoes || {};
+      const totalAtendimentos = Number(resumo.totalAtendimentos || 0);
+      const totalFaltas = Number(resumo.totalFaltas || 0);
+      const totalAltas = Number(resumo.totalAltas || 0);
+      const totalBase = totalAtendimentos + totalFaltas;
+      const taxaFaltas = totalBase > 0 ? (totalFaltas / totalBase) * 100 : 0;
+      const taxaAltas = totalAtendimentos > 0 ? (totalAltas / totalAtendimentos) * 100 : 0;
+      const variacao = montarLeituraVariacaoMensal(distribuicoes.porMes);
+      const concentracaoNaps = montarLeituraConcentracao(distribuicoes.porNAPS, "NAPS", "naps");
+      const concentracaoMotivo = montarLeituraConcentracao(distribuicoes.porMotivo, "motivo", "");
+      const concentracaoTipo = montarLeituraConcentracao(distribuicoes.porTipo, "tipo de atendimento", "");
+
+      const linhas = [
+        montarLinhaAlertaGerencial(
+          "Faltas",
+          taxaFaltas >= 15 ? "Ponto de atenção" : "Monitorado",
+          totalFaltas.toLocaleString("pt-BR") + " falta(s), " + formatarPercentualRelatorio(taxaFaltas) + " do total de registros do período."
+        ),
+        montarLinhaAlertaGerencial(
+          "Altas",
+          totalAltas > 0 ? "Monitorado" : "Sem registro",
+          totalAltas.toLocaleString("pt-BR") + " alta(s), " + formatarPercentualRelatorio(taxaAltas) + " do total de atendimentos do período."
+        ),
+        montarLinhaAlertaGerencial(
+          "Variação mensal",
+          variacao.destaque,
+          variacao.leitura
+        ),
+        montarLinhaAlertaGerencial(
+          "Concentração por NAPS",
+          concentracaoNaps.destaque,
+          concentracaoNaps.leitura
+        ),
+        montarLinhaAlertaGerencial(
+          "Concentração por motivo",
+          concentracaoMotivo.destaque,
+          concentracaoMotivo.leitura
+        ),
+        montarLinhaAlertaGerencial(
+          "Tipo de atendimento",
+          concentracaoTipo.destaque,
+          concentracaoTipo.leitura
+        )
+      ].join("");
+
+      return `
+        <section class="table-box wide">
+          <h3>Alertas gerenciais</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Sinal</th>
+                  <th>Leitura</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function montarLinhaAlertaGerencial(indicador, sinal, leitura) {
+      return `
+        <tr>
+          <td>${escaparHtml(indicador)}</td>
+          <td>${escaparHtml(sinal)}</td>
+          <td>${escaparHtml(leitura)}</td>
+        </tr>
+      `;
+    }
+
+    function montarLeituraVariacaoMensal(dadosPorMes) {
+      const meses = Object.keys(dadosPorMes || {}).sort();
+
+      if (meses.length < 2) {
+        return {
+          destaque: "Sem comparação",
+          leitura: "Há dados de apenas um mês no período filtrado."
+        };
+      }
+
+      const mesAnterior = meses[meses.length - 2];
+      const mesAtual = meses[meses.length - 1];
+      const valorAnterior = Number(dadosPorMes[mesAnterior] || 0);
+      const valorAtual = Number(dadosPorMes[mesAtual] || 0);
+      const diferenca = valorAtual - valorAnterior;
+
+      if (valorAnterior === 0) {
+        return {
+          destaque: valorAtual > 0 ? "Alta sem base anterior" : "Estável",
+          leitura: formatarMes(mesAtual) + " registrou " + valorAtual.toLocaleString("pt-BR") + " ocorrência(s), sem base comparável em " + formatarMes(mesAnterior) + "."
+        };
+      }
+
+      const percentual = (diferenca / valorAnterior) * 100;
+      const tendencia = diferenca > 0 ? "Alta" : (diferenca < 0 ? "Queda" : "Estável");
+
+      return {
+        destaque: tendencia + " de " + formatarPercentualRelatorio(Math.abs(percentual)),
+        leitura: formatarMes(mesAtual) + " teve " + valorAtual.toLocaleString("pt-BR") + " ocorrência(s), contra " + valorAnterior.toLocaleString("pt-BR") + " em " + formatarMes(mesAnterior) + "."
+      };
+    }
+
+    function montarLeituraConcentracao(dados, dimensao, contexto) {
+      const itens = ordenarItens(dados, {});
+      const total = itens.reduce(function(soma, item) {
+        return soma + Number(item.total || 0);
+      }, 0);
+
+      if (itens.length === 0 || total === 0) {
+        return {
+          destaque: "Sem dados",
+          leitura: "Não há registros suficientes para avaliar concentração por " + dimensao + "."
+        };
+      }
+
+      const principal = itens[0];
+      const percentual = (Number(principal.total || 0) / total) * 100;
+      const nome = formatarTexto(principal.nome, contexto);
+      const sinal = percentual >= 40 ? "Concentração elevada" : "Sem alerta relevante";
+
+      return {
+        destaque: sinal,
+        leitura: nome + " concentra " + principal.total.toLocaleString("pt-BR") + " ocorrência(s), " + formatarPercentualRelatorio(percentual) + " do total por " + dimensao + "."
+      };
+    }
+
     function montarConteudoAba() {
       const d = relatorioAtual.distribuicoes || {};
 
@@ -1943,10 +2104,7 @@ function formatarDataInput(data) {
       if (abaAtual === "resumo") {
         return `
           <div class="tab-grid">
-            ${montarGraficoBarras("Evolução mensal", d.porMes, { tipo: "mes", limite: 18 })}
-            ${montarGraficoBarras("Tipos de atendimento", d.porTipo, { limite: 10 })}
-            ${montarGraficoBarras("Situação/status", d.porSituacao, { limite: 8 })}
-            ${montarGraficoBarras("Responsáveis", d.porResponsavel, { limite: 10 })}
+            ${montarResumoGerencialAlertas()}
           </div>
         `;
       }
@@ -1954,10 +2112,9 @@ function formatarDataInput(data) {
       if (abaAtual === "atendimentos") {
         return `
           <div class="tab-grid">
-            ${montarGraficoBarras("Evolução mensal", d.porMes, { tipo: "mes", limite: 24 })}
             ${montarGraficoBarras("Tipo de atendimento", d.porTipo, { limite: 12 })}
-            ${montarGraficoBarras("Motivos mais frequentes", d.porMotivo, { limite: 15 })}
-            ${montarTabelaContagem("Tipos de atendimento", d.porTipo, "Tipo")}
+            ${montarGraficoBarras("Motivos", d.porMotivo, { limite: 15 })}
+            ${montarTabelaTipoMotivo()}
           </div>
         `;
       }
@@ -1966,10 +2123,12 @@ function formatarDataInput(data) {
   return `
     <div class="tab-grid">
       ${montarGraficoBarras("Posto/Graduação", d.porPostoGraduacao, { ordem: ordemPostoGraduacao() })}
+      ${montarGraficoBarras("Situação/status", d.porSituacao, { limite: 8 })}
       ${montarGraficoBarras("Sexo", d.porSexo, { limite: 8 })}
       ${montarGraficoBarras("Faixa etária", d.porFaixaEtaria, { ordem: ordemFaixaEtaria() })}
       ${montarGraficoBarras("Estado civil", d.porEstadoCivil, { limite: 8 })}
       ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico() })}
+      ${montarGraficoBarras("Responsável", d.porResponsavel, { limite: 10, classe: "wide" })}
     </div>
   `;
 }
@@ -1980,8 +2139,7 @@ function formatarDataInput(data) {
             ${montarGraficoBarras("OPM", d.porOPM, { limite: 15 })}
             ${montarGraficoBarras("Cidade", d.porCidade, { limite: 15 })}
             ${montarGraficoBarras("Bairro", d.porBairro, { limite: 15 })}
-            ${montarGraficoBarras("UF", d.porUF, { limite: 10 })}
-            ${montarGraficoBarras("NAPS", d.porNAPS, { limite: 10, classe: "wide" })}
+          ${montarGraficoBarras("NAPS", d.porNAPS, { limite: 10 })}
           </div>
         `;
       }
@@ -2005,7 +2163,7 @@ function formatarDataInput(data) {
         return `
           <section class="table-box wide">
             <h3>Outros Dados</h3>
-            <div class="empty-state">Use a Busca Individual para visualizar nome, R.E., CPF, unidade, NAPS, quantidade de atendimentos e distância aproximada.</div>
+            <div class="empty-state">Use a Busca Individual para visualizar nome, R.E., CPF, unidade, NAPS, atendimentos, faltas, altas e distância aproximada do NAPS que foi atendido.</div>
           </section>
         `;
       }
@@ -2030,19 +2188,53 @@ function formatarDataInput(data) {
       return `
         <section class="table-box wide">
           <h3>Outros Dados</h3>
-          <div class="individual-grid">
-            ${montarCardIndividual("Nome", formatarTexto(dados.nome))}
-            ${montarCardIndividual("R.E.", dados.re || "-")}
-            ${montarCardIndividual("CPF", dados.cpf || "-")}
-            ${montarCardIndividual("Unidade", formatarTexto(dados.unidade, "opmAtual"))}
-            ${montarCardIndividual("NAPS", formatarTexto(dados.naps))}
-            ${montarCardIndividual("Total de atendimentos", dados.totalAtendimentos)}
-            ${montarCardIndividual("Distância aproximada", distancia)}
-            ${montarCardIndividual("Atendimento de referência", dados.dataReferencia || "-")}
-          </div>
+          ${montarRelatorioIndividualOutrosDados(dados, distancia)}
           ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
         </section>
       `;
+    }
+
+    function montarRelatorioIndividualOutrosDados(dados, distancia) {
+      const nome = destacarRelatorio(formatarTexto(dados.nome));
+      const re = destacarRelatorio(dados.re || "-");
+      const cpf = destacarRelatorio(dados.cpf || "-");
+      const unidade = destacarRelatorio(formatarTexto(dados.unidade, "opmAtual"));
+      const naps = destacarRelatorio(formatarTexto(dados.naps, "naps"));
+      const atendimentos = destacarQuantidadeRelatorio(dados.totalAtendimentos, "atendimento", "atendimentos");
+      const faltas = destacarQuantidadeRelatorio(dados.totalFaltas, "falta", "faltas");
+      const altas = destacarQuantidadeRelatorio(dados.totalAltas, "alta", "altas");
+      const distanciaTexto = dados.distanciaDisponivel ? distancia : (distancia || "não disponível");
+      const distanciaDestacada = destacarRelatorio(distanciaTexto);
+      const motivoReferencia = destacarRelatorio(formatarTexto(dados.motivoReferencia));
+      const responsavelReferencia = destacarRelatorio(formatarTexto(dados.responsavelReferencia));
+      const ultimoAtendimento = dados.dataReferencia
+        ? `<p>O último atendimento considerado no filtro foi em ${destacarRelatorio(dados.dataReferencia)}, por ${motivoReferencia}, com responsável ${responsavelReferencia}.</p>`
+        : "";
+      const textoDistancia = dados.distanciaDisponivel
+        ? `Sua residência fica aproximadamente ${distanciaDestacada} do NAPS ${naps}.`
+        : `A distância da residência até o NAPS ${naps} está ${distanciaDestacada}.`;
+
+      return `
+        <div class="individual-report">
+          <p>O paciente ${nome}, identificado com R.E. ${re} e CPF ${cpf}, pertencente à unidade ${unidade}, teve ${atendimentos} no período selecionado.</p>
+          <p>Teve ${faltas} e obteve ${altas}.</p>
+          <p>${textoDistancia}</p>
+          ${ultimoAtendimento}
+        </div>
+      `;
+    }
+
+    function destacarQuantidadeRelatorio(valor, singular, plural) {
+      const numero = Number(valor || 0);
+      const texto = numero.toLocaleString("pt-BR") + " " + (numero === 1 ? singular : plural);
+
+      return destacarRelatorio(texto);
+    }
+
+    function destacarRelatorio(valor) {
+      const texto = valor === 0 || valor ? String(valor) : "-";
+
+      return `<strong>${escaparHtml(texto)}</strong>`;
     }
 
     function montarCardIndividual(rotulo, valor) {
@@ -2076,6 +2268,8 @@ function formatarDataInput(data) {
             <td>${escaparHtml(item.cpf || "-")}</td>
             <td>${escaparHtml(formatarTexto(item.unidade, "opmAtual"))}</td>
             <td>${Number(item.totalAtendimentos || 0).toLocaleString("pt-BR")}</td>
+            <td>${Number(item.totalFaltas || 0).toLocaleString("pt-BR")}</td>
+            <td>${Number(item.totalAltas || 0).toLocaleString("pt-BR")}</td>
           </tr>
         `;
       }).join("");
@@ -2092,7 +2286,9 @@ function formatarDataInput(data) {
                   <th>R.E.</th>
                   <th>CPF</th>
                   <th>Unidade</th>
-                  <th>Total de atendimentos</th>
+                  <th>Atendimentos</th>
+                  <th>Faltas</th>
+                  <th>Altas</th>
                 </tr>
               </thead>
               <tbody>${linhas}</tbody>
@@ -2180,6 +2376,115 @@ function formatarDataInput(data) {
       `;
     }
 
+    function montarTabelaTipoMotivo() {
+      const registros = (relatorioAtual.registros || []).filter(function(registro) {
+        return !ehFaltaRelatorio(registro);
+      });
+      const grupos = {};
+
+      registros.forEach(function(registro) {
+        const tipoChave = normalizarTexto(registro.tipoAtendimento || "nao informado") || "nao informado";
+        const motivoChave = normalizarTexto(registro.motivo || "nao informado") || "nao informado";
+
+        if (!grupos[tipoChave]) {
+          grupos[tipoChave] = {
+            tipo: registro.tipoAtendimento || "nao informado",
+            total: 0,
+            motivos: {}
+          };
+        }
+
+        grupos[tipoChave].total++;
+
+        if (!grupos[tipoChave].motivos[motivoChave]) {
+          grupos[tipoChave].motivos[motivoChave] = {
+            motivo: registro.motivo || "nao informado",
+            total: 0
+          };
+        }
+
+        grupos[tipoChave].motivos[motivoChave].total++;
+      });
+
+      const itens = Object.keys(grupos).map(function(chave) {
+        const grupo = grupos[chave];
+        const motivoPrincipal = Object.keys(grupo.motivos)
+          .map(function(motivoChave) {
+            return grupo.motivos[motivoChave];
+          })
+          .sort(function(a, b) {
+            return b.total - a.total || normalizarTexto(a.motivo).localeCompare(normalizarTexto(b.motivo));
+          })[0] || { motivo: "nao informado", total: 0 };
+
+        return {
+          tipo: grupo.tipo,
+          motivo: motivoPrincipal.motivo,
+          quantidade: motivoPrincipal.total,
+          totalTipo: grupo.total,
+          percentual: grupo.total > 0 ? (motivoPrincipal.total / grupo.total) * 100 : 0
+        };
+      }).sort(function(a, b) {
+        return b.totalTipo - a.totalTipo || normalizarTexto(a.tipo).localeCompare(normalizarTexto(b.tipo));
+      }).slice(0, 30);
+
+      if (itens.length === 0) {
+        return `
+          <section class="table-box wide">
+            <h3>Motivo mais frequente por tipo de atendimento</h3>
+            <div class="empty-state">Sem dados para exibir.</div>
+          </section>
+        `;
+      }
+
+      const linhas = itens.map(function(item) {
+        return `
+          <tr>
+            <td>${escaparHtml(formatarTexto(item.tipo))}</td>
+            <td>${escaparHtml(formatarTexto(item.motivo))}</td>
+            <td>${Number(item.quantidade).toLocaleString("pt-BR")}</td>
+            <td>${Number(item.totalTipo).toLocaleString("pt-BR")}</td>
+            <td>${formatarPercentualRelatorio(item.percentual)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <section class="table-box wide">
+          <h3>Motivo mais frequente por tipo de atendimento</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo de atendimento</th>
+                  <th>Motivo mais frequente</th>
+                  <th>Quantidade</th>
+                  <th>Total do tipo</th>
+                  <th>% no tipo</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function ehFaltaRelatorio(registro) {
+      const tipo = normalizarTexto(registro && registro.tipoAtendimento);
+
+      return tipo === "falta" ||
+        tipo === "registrar falta" ||
+        tipo === "registrar como falta" ||
+        tipo.indexOf("no show") >= 0;
+    }
+
+    function formatarPercentualRelatorio(valor) {
+      return Number(valor || 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      }) + "%";
+    }
+
     function montarTabelaVinculos() {
       const registros = (relatorioAtual.registros || []).filter(function(registro) {
         return registro.quantidadeVinculos > 0;
@@ -2188,7 +2493,7 @@ function formatarDataInput(data) {
       if (registros.length === 0) {
         return `
           <section class="table-box wide">
-            <h3>Atendimentos com vínculos</h3>
+            <h3>Registros com vínculos</h3>
             <div class="empty-state">Sem vínculos nos registros filtrados.</div>
           </section>
         `;
@@ -2216,7 +2521,7 @@ function formatarDataInput(data) {
 
       return `
         <section class="table-box wide">
-          <h3>Atendimentos com vínculos</h3>
+          <h3>Registros com vínculos</h3>
           <div class="table-scroll">
             <table>
               <thead>
@@ -2327,11 +2632,15 @@ function formatarDataInput(data) {
     function ordemFaixaEtaria() {
       return [
         "ate 17 anos",
-        "18 a 29 anos",
-        "30 a 39 anos",
-        "40 a 49 anos",
-        "50 a 59 anos",
-        "60 anos ou mais",
+        "18 a 25 anos",
+        "26 a 30 anos",
+        "31 a 35 anos",
+        "36 a 40 anos",
+        "41 a 45 anos",
+        "46 a 50 anos",
+        "51 a 55 anos",
+        "56 a 60 anos",
+        "mais de 60 anos",
         "nao informado"
       ];
     }
@@ -2340,9 +2649,12 @@ function formatarDataInput(data) {
       return [
         "ate 5 anos",
         "6 a 10 anos",
-        "11 a 20 anos",
-        "21 a 30 anos",
-        "31 anos ou mais",
+        "11 a 15 anos",
+        "16 a 20 anos",
+        "21 a 25 anos",
+        "26 a 30 anos",
+        "31 a 35 anos",
+        "mais de 35 anos",
         "nao informado"
       ];
     }
@@ -2448,11 +2760,55 @@ function formatarDataInput(data) {
         "sem data": "Sem data",
         "ate 17 anos": "Até 17 anos",
         "ate 5 anos": "Até 5 anos",
+        "mais de 35 anos": "Mais de 35 anos",
+        "mais de 60 anos": "Mais de 60 anos",
+        "plantao psicologico": "Plantão Psicológico",
+        "psicoterapia - individual": "Psicoterapia - Individual",
+        "psicoterapia - casal": "Psicoterapia - Casal",
+        "psicoterapia - trisal": "Psicoterapia - Trisal",
+        "porte de armas de inativo": "Porte de Armas de Inativo",
+        "entrevista de saida": "Entrevista de Saída",
+        "visita externa": "Visita Externa",
+        "follow - up": "Follow - Up",
+        "entrevista motivacional - ppad": "Entrevista Motivacional - PPAD",
+        "entrevista motivacional - ppms": "Entrevista Motivacional - PPMS",
+        "avaliacao psicologica - ppms": "Avaliação Psicológica - PPMS",
+        "avaliacao psicologica - prosen": "Avaliação Psicológica - PROSEN",
+        "avaliacao de inclusao no copom": "Avaliação de Inclusão no Copom",
+        "entrevista ctc": "Entrevista CTC",
+        "triagem de chegada": "Triagem de Chegada",
+        "exame criminologico": "Exame Criminológico",
+        "atendimento de alta": "Atendimento de Alta",
+        "registrar como falta": "Registrar como FALTA",
+        "falta": "FALTA",
+        "ansiedade": "Ansiedade",
+        "conflitos interpessoais": "Conflitos Interpessoais",
+        "conflito profissional": "Conflito Profissional",
+        "comportamento aditivo": "Comportamento Aditivo",
+        "crise existencial": "Crise Existencial",
+        "depressao": "Depressão",
+        "efeitos de tratamento": "Efeitos de Tratamento",
+        "ideacao ou comportamento suicida": "Ideação ou Comportamento Suicida",
+        "luto / perdas": "Luto / Perdas",
+        "uso abusivo de alcool/drogas": "Uso abusivo de álcool/drogas",
+        "estresse / sobrecarga": "Estresse / Sobrecarga",
+        "questoes financeiras": "Questões Financeiras",
+        "transtorno mental": "Transtorno Mental",
+        "dificuldade de concentracao e estudos": "Dificuldade de Concentração e Estudos",
+        "sexualidade e identidade de genero": "Sexualidade e Identidade de Gênero",
+        "ativo operacional": "Ativo Operacional",
+        "ativo administrativo": "Ativo Administrativo",
+        "inativo falecido": "Inativo Falecido",
+        "exonerado(a)": "Exonerado(a)",
+        "agregado(a)": "Agregado(a)",
         "viuvo": "Viúvo",
         "uniao estavel": "União estável",
         "conjuge": "Cônjuge",
         "irmao": "Irmão",
-        "mae": "Mãe"
+        "mae": "Mãe",
+        "pai": "Pai",
+        "filho": "Filho",
+        "filha": "Filha"
       };
 
       if (traducoes[chave]) return traducoes[chave];
@@ -2465,7 +2821,7 @@ function formatarDataInput(data) {
         return texto.toUpperCase();
       }
 
-      return texto
+      const formatado = texto
         .toLowerCase()
         .split(" ")
         .map(function(parte) {
@@ -2473,6 +2829,47 @@ function formatarDataInput(data) {
           return parte.charAt(0).toUpperCase() + parte.slice(1);
         })
         .join(" ");
+
+      return corrigirAcentosRelatorio(formatado);
+    }
+
+    function corrigirAcentosRelatorio(texto) {
+      const substituicoes = [
+        [/Psicologico/g, "Psicológico"],
+        [/Psicologica/g, "Psicológica"],
+        [/Avaliacao/g, "Avaliação"],
+        [/Inclusao/g, "Inclusão"],
+        [/Saida/g, "Saída"],
+        [/Criminologico/g, "Criminológico"],
+        [/Ideacao/g, "Ideação"],
+        [/Alcool/g, "Álcool"],
+        [/Questao/g, "Questão"],
+        [/Questoes/g, "Questões"],
+        [/Concentracao/g, "Concentração"],
+        [/Genero/g, "Gênero"],
+        [/Situacao/g, "Situação"],
+        [/Servico/g, "Serviço"],
+        [/Vinculo/g, "Vínculo"],
+        [/Vinculos/g, "Vínculos"],
+        [/Distancia/g, "Distância"],
+        [/Referencia/g, "Referência"],
+        [/Responsavel/g, "Responsável"],
+        [/Uniao/g, "União"],
+        [/Estavel/g, "Estável"],
+        [/Viuvo/g, "Viúvo"],
+        [/Conjuge/g, "Cônjuge"],
+        [/Irmao/g, "Irmão"],
+        [/Mae/g, "Mãe"],
+        [/\bPpad\b/g, "PPAD"],
+        [/\bPpms\b/g, "PPMS"],
+        [/\bProsen\b/g, "PROSEN"],
+        [/\bCtc\b/g, "CTC"],
+        [/\bCopom\b/g, "Copom"]
+      ];
+
+      return substituicoes.reduce(function(resultado, item) {
+        return resultado.replace(item[0], item[1]);
+      }, texto);
     }
 
     function normalizarTexto(valor) {
