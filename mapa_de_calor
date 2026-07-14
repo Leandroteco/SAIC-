@@ -1414,6 +1414,43 @@ body {
     min-height: 420px;
   }
 }
+
+/* Ajuste de alinhamento: a faixa institucional e o conteudo usam o mesmo eixo central. */
+.page-content {
+  padding: 28px 34px 34px;
+}
+
+.page-content > .topbar.preview-institutional-header,
+.page-content > main {
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1180px;
+  width: 100%;
+}
+
+.page-content > .topbar.preview-institutional-header {
+  margin-top: 24px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 0 !important;
+  }
+
+  .page-content > .topbar.preview-institutional-header {
+    margin: 12px !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  .page-content > main {
+    max-width: 100% !important;
+    padding: 0 12px 22px !important;
+    width: 100% !important;
+  }
+}
 </style>
 </head>
 
