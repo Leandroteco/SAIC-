@@ -933,6 +933,7 @@ textarea:focus {
 .btn-primary {
   background: #2f6f89;
   box-shadow: 0 10px 22px rgba(47, 111, 137, 0.20);
+  color: #ffffff;
 }
 
 .btn-primary:hover {
@@ -1418,7 +1419,7 @@ body {
       </div>
 
       <nav class="side-nav">
-        <span class="nav-item active"><span class="nav-dot"></span>Atendimento</span>
+        <span class="nav-item active"><span class="nav-dot"></span>SAIC</span>
       </nav>
 
       <div class="sidebar-footer">
@@ -1449,7 +1450,7 @@ body {
 
   <div class="preview-title-block">
     <h1>Atendimento</h1>
-    <span>Sistema de Atendimento Integrado do CAPS/NAPS</span>
+    <span>Sistema de Gestão dos Atendimentos do SiSMen</span>
   </div>
 
   <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
@@ -1565,7 +1566,7 @@ body {
 
     <div>
       <label>Email</label>
-      <input id="email" placeholder="EX: todosnos@gmail.com">
+      <input id="email" placeholder="EX: todosnos@gmail.com" oninput="limparErroCampo(this)">
     </div>
 
     <div>
@@ -1604,7 +1605,7 @@ body {
 
     <div>
       <label>Situação/Status</label>
-      <select id="situacaoStatus" onchange="limparErroCampo(this); atualizarCampoDataInatividade()" required>
+      <select id="situacaoStatus" onchange="limparErroCampo(this); atualizarCampoDataInatividade(); atualizarObrigatoriedadeEmail()" required>
         <option value="">Selecione</option>
         <option>agregado(a)</option>
         <option>ativo administrativo</option>
@@ -2055,6 +2056,7 @@ document.addEventListener("DOMContentLoaded", function() {
     configurarMenuPorPerfil();
     carregarRecadoAtivo();
     aplicarEstiloTipoAtendimento();
+    atualizarObrigatoriedadeEmail();
     atualizarObrigatoriedadeObservacoes();
     preencherResponsavelLogado();
     configurarOcultarImpressaoAoEditar();
@@ -2669,6 +2671,27 @@ function statusExigeDataInatividade(valor) {
     status.includes("exonerado");
 }
 
+function statusExigeEmail(valor) {
+  const status = normalizarStatusInatividade(valor);
+
+  return status === "ativo operacional" || status === "ativo administrativo";
+}
+
+function atualizarObrigatoriedadeEmail() {
+  const campoStatus = document.getElementById("situacaoStatus");
+  const campoEmail = document.getElementById("email");
+
+  if (!campoStatus || !campoEmail) return;
+
+  const obrigatorio = statusExigeEmail(campoStatus.value);
+
+  campoEmail.required = obrigatorio;
+
+  if (!obrigatorio) {
+    limparErroVisualCampo(campoEmail);
+  }
+}
+
 // Identifica a opcao "Outros" em listas que exigem explicacao.
 function valorIndicaOutros(valor) {
   return String(valor || "")
@@ -2769,6 +2792,7 @@ function salvar() {
   });
   const campoTipoAtendimento = document.getElementById("tipoAtendimento");
   const campoMotivo = document.getElementById("motivo");
+  const campoEmail = document.getElementById("email");
   const campoObservacoes = document.getElementById("observacoes");
   const campoResponsavel = document.getElementById("responsavel");
   const mensagem = document.getElementById("mensagem");
@@ -2778,6 +2802,7 @@ function salvar() {
   limparErroCampo(document.getElementById("dataInatividade"));
   limparErroCampo(campoTipoAtendimento);
   limparErroCampo(campoMotivo);
+  limparErroCampo(campoEmail);
   limparErroCampo(campoObservacoes);
   limparErroCampo(campoResponsavel);
 
@@ -2816,6 +2841,11 @@ function salvar() {
     camposComErro.push(campoMotivo);
   }
 
+  if (statusExigeEmail(document.getElementById("situacaoStatus").value) && !campoPreenchido(campoEmail)) {
+    marcarCampoObrigatorio(campoEmail);
+    camposComErro.push(campoEmail);
+  }
+
   if (observacoesObrigatoriasPorOutros() && campoObservacoes.value.trim() === "") {
     marcarCampoObrigatorio(campoObservacoes);
     camposComErro.push(campoObservacoes);
@@ -2832,6 +2862,8 @@ function salvar() {
       ? "Preencha o campo Observações para explicar a escolha de outros."
       : camposDataComErro.length > 0
       ? "Preencha corretamente os campos destacados. As datas obrigatórias devem ter ano com 4 dígitos."
+      : statusExigeEmail(document.getElementById("situacaoStatus").value)
+      ? "Preencha os campos obrigatórios destacados. O e-mail é obrigatório para ativo operacional e ativo administrativo."
       : "Preencha os campos obrigatórios destacados. O e-mail é opcional.";
     camposComErro[0].focus();
     return;
@@ -2908,6 +2940,7 @@ function limparFormulario(opcoes) {
   document.getElementById("listaVinculados").innerHTML = "";
   document.getElementById("areaVinculados").style.display = "none";
   atualizarCampoDataInatividade();
+  atualizarObrigatoriedadeEmail();
   aplicarEstiloTipoAtendimento();
   atualizarObrigatoriedadeObservacoes();
   preencherResponsavelLogado();
@@ -3169,6 +3202,7 @@ function preencherFormulario(r) {
   document.getElementById("estado").value = converterMaiusculas(r.estado || "");
   document.getElementById("complemento").value = converterMaiusculas(r.complemento || "");
   atualizarCampoDataInatividade();
+  atualizarObrigatoriedadeEmail();
   atualizarObrigatoriedadeObservacoes();
 }
 
