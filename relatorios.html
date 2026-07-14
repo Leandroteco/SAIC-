@@ -1515,8 +1515,8 @@ h3,
       </nav>
 
       <div class="sidebar-footer">
-        <span>Acesso</span>
-        <strong>Administrador</strong>
+        <span>Sistema</span>
+        <strong>CAPS/NAPS</strong>
       </div>
     </aside>
 
@@ -2128,7 +2128,7 @@ function formatarDataInput(data) {
       ${montarGraficoBarras("Faixa etária", d.porFaixaEtaria, { ordem: ordemFaixaEtaria() })}
       ${montarGraficoBarras("Estado civil", d.porEstadoCivil, { limite: 8 })}
       ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico() })}
-      ${montarGraficoBarras("Responsável", d.porResponsavel, { limite: 10, classe: "wide" })}
+      ${montarGraficoBarras("Responsável", d.porResponsavelNaps || d.porResponsavel, { limite: 10, classe: "wide" })}
     </div>
   `;
 }
@@ -2864,7 +2864,11 @@ function formatarDataInput(data) {
         [/\bPpms\b/g, "PPMS"],
         [/\bProsen\b/g, "PROSEN"],
         [/\bCtc\b/g, "CTC"],
-        [/\bCopom\b/g, "Copom"]
+        [/\bCopom\b/g, "Copom"],
+        [/\bPm\b/g, "PM"],
+        [/\bCpam\b/g, "CPAM"],
+        [/\bCaps\b/g, "CAPS"],
+        [/\bNaps\b/g, "NAPS"]
       ];
 
       return substituicoes.reduce(function(resultado, item) {
