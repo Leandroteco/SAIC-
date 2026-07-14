@@ -2752,6 +2752,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     complemento: linha[23] || "",
     observacoes: linha[24] || "",
     responsavel: linha[25] || "",
+    responsavelNaps: montarRotuloResponsavelNapsRelatorio(linha[25], usuarioCadastro.naps),
     dataCadastro: formatarDataBrasil(linha[26]),
     dataCadastroIso: formatarDataParaInput(linha[26]),
     dataCadastroData: dataCadastroData,
@@ -2762,6 +2763,17 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     vinculos: vinculos,
     quantidadeVinculos: vinculos.length
   };
+}
+
+function montarRotuloResponsavelNapsRelatorio(responsavel, naps) {
+  const nomeResponsavel = String(responsavel || "").trim() || "nao informado";
+  const nomeNaps = String(naps || "").trim();
+
+  if (!nomeNaps || normalizar(nomeNaps) === "nao informado") {
+    return nomeResponsavel + ", NAPS nao informado";
+  }
+
+  return nomeResponsavel + ", " + nomeNaps;
 }
 
 function montarResumoRelatorio(registros) {
@@ -2834,6 +2846,7 @@ function montarDistribuicoesRelatorio(registros) {
     porCidade: contarPorCampo(registros, "cidade"),
     porBairro: contarPorCampo(registros, "bairro"),
     porResponsavel: contarPorCampo(registros, "responsavel"),
+    porResponsavelNaps: contarPorCampo(registros, "responsavelNaps"),
     porSituacao: contarPorCampo(registros, "situacaoStatus"),
     porSexo: contarPorCampo(registros, "sexo"),
     porEstadoCivil: contarPorCampo(registros, "estadoCivil"),
