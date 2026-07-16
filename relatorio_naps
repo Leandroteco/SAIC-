@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório NAPS - SiSMen</title>
+  <style>
+    :root {
+      --bg: #eef4f7;
+      --surface: #ffffff;
+      --ink: #263033;
+      --muted: #66747c;
+      --line: #d8e4e8;
+      --red: #b31f2a;
+      --red-soft: #f4d7da;
+      --blue: #3b82a0;
+      --blue-soft: #dbeef5;
+      --green: #4f9d69;
+      --gold: #b0872f;
+      --slate: #64748b;
+      --shadow: 0 18px 38px rgba(31, 48, 56, 0.10);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .login-box {
+      width: min(420px, calc(100% - 32px));
+      margin: 10vh auto;
+      padding: 28px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .login-box h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      color: var(--ink);
+    }
+
+    .login-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      color: #ffffff;
+      overflow-y: auto;
+    }
+
+    .sidebar::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .brand-title strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .brand-title span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.76);
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 26px;
+    }
+
+    .side-nav a {
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      color: rgba(255, 255, 255, 0.84);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .side-nav a:hover,
+    .side-nav a.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .content {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .page-banner {
+      position: relative;
+      overflow: hidden;
+      min-height: 142px;
+      padding: 28px 30px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #ffffff 0%, #eef6f8 100%);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(216, 228, 232, 0.8);
+    }
+
+    .page-banner::before,
+    .page-banner::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 10px;
+      pointer-events: none;
+    }
+
+    .page-banner::before {
+      top: 0;
+      background: linear-gradient(100deg, var(--red) 0%, rgba(179, 31, 42, 0.7) 34%, transparent 86%);
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+    }
+
+    .page-banner::after {
+      bottom: 0;
+      background: linear-gradient(280deg, #75848a 0%, rgba(117, 132, 138, 0.62) 36%, transparent 88%);
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .banner-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .page-banner h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.08;
+      letter-spacing: 0;
+      color: var(--ink);
+    }
+
+    .page-banner span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .period-card {
+      min-width: 210px;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 22px rgba(31, 48, 56, 0.08);
+    }
+
+    .period-card small {
+      display: block;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .period-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .toolbar,
+    .card,
+    .chart-card,
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 20px;
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    select,
+    button {
+      min-height: 42px;
+      border-radius: var(--radius);
+      font: inherit;
+      font-weight: 700;
+    }
+
+    select {
+      min-width: 260px;
+      padding: 0 12px;
+      border: 1px solid #bfd1d7;
+      background: #f8fbfc;
+      color: var(--ink);
+    }
+
+    button {
+      border: 0;
+      padding: 0 18px;
+      background: var(--blue);
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(59, 130, 160, 0.22);
+    }
+
+    button:hover {
+      background: #2f6f89;
+    }
+
+    button:disabled {
+      opacity: 0.62;
+      cursor: wait;
+    }
+
+    .naps-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: var(--radius);
+      background: var(--blue-soft);
+      color: #1f5b6f;
+      font-weight: 800;
+    }
+
+    .status-line {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-line.erro {
+      color: #a51b24;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      padding: 18px;
+      min-height: 132px;
+    }
+
+    .card-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .card-value {
+      margin: 12px 0 8px;
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .card-note {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .card-note.positivo {
+      color: var(--green);
+    }
+
+    .card-note.negativo {
+      color: var(--gold);
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .chart-card,
+    .table-card {
+      padding: 20px;
+      min-width: 0;
+    }
+
+    .section-title {
+      margin: 0 0 16px;
+      padding-left: 12px;
+      border-left: 3px solid var(--red);
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .bar-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(96px, 1.8fr) 42px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bar-label {
+      min-width: 0;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .bar-track {
+      height: 10px;
+      border-radius: 999px;
+      background: #edf3f5;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #3b82a0, #76abc0);
+    }
+
+    .bar-row:nth-child(4n+2) .bar-fill {
+      background: linear-gradient(90deg, #4f9d69, #7db393);
+    }
+
+    .bar-row:nth-child(4n+3) .bar-fill {
+      background: linear-gradient(90deg, #64748b, #9aa9bc);
+    }
+
+    .bar-row:nth-child(4n+4) .bar-fill {
+      background: linear-gradient(90deg, #b0872f, #d3b468);
+    }
+
+    .bar-value {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .comparison-table th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .comparison-table td:not(:first-child),
+    .comparison-table th:not(:first-child) {
+      text-align: right;
+    }
+
+    .empty-state {
+      padding: 18px;
+      border-radius: var(--radius);
+      background: #f7fafb;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .charts-stacked {
+      grid-template-columns: 1fr;
+    }
+
+    .charts-stacked .bar-row {
+      grid-template-columns: minmax(220px, 1.4fr) minmax(160px, 2fr) 54px;
+    }
+
+    @media (max-width: 980px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+      }
+
+      .side-nav {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .banner-content,
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .period-card {
+        min-width: 0;
+      }
+
+      .cards-grid,
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .side-nav {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      select {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .bar-row {
+        grid-template-columns: 1fr 54px;
+      }
+
+      .bar-track {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="conteudoSistema" style="display:block;">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação do relatório NAPS">
+        <div class="brand">
+          <div class="brand-title">
+            <strong>SAIC</strong>
+            <span>Relatório NAPS</span>
+          </div>
+        </div>
+
+        <nav class="side-nav">
+          <a href="#resumo" class="active">Resumo</a>
+          <a href="#comparativo">Comparativo</a>
+          <a href="#tipos">Tipos</a>
+          <a href="#motivos">Motivos</a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <header class="page-banner">
+          <div class="banner-content">
+            <div>
+              <p class="eyebrow">Relatório NAPS</p>
+              <h1>Relatório NAPS</h1>
+              <span>Sistema de Gestão dos Atendimentos do SiSMen</span>
+            </div>
+            <div class="period-card">
+              <small>Período</small>
+              <strong id="periodoCabecalho">Mês atual</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="toolbar" aria-label="Filtros do relatório">
+          <div id="filtroAdministrador" style="display:none;">
+            <label for="filtroNaps">NAPS</label>
+            <select id="filtroNaps">
+              <option value="">Todos os NAPS</option>
+            </select>
+          </div>
+
+          <div id="filtroAtendente">
+            <label>NAPS</label>
+            <span id="napsFixo" class="naps-pill">Carregando</span>
+          </div>
+
+          <button id="btnAtualizar" type="button" onclick="carregarRelatorioNaps()">Atualizar</button>
+        </section>
+
+        <div id="statusRelatorio" class="status-line"></div>
+
+        <section id="resumo" class="cards-grid" aria-label="Indicadores do mês"></section>
+
+        <section id="comparativo" class="section-grid">
+          <div class="table-card">
+            <h2 class="section-title">Comparativo com mês anterior</h2>
+            <div id="tabelaComparativo"></div>
+          </div>
+
+          <div class="chart-card">
+            <h2 class="section-title">Responsáveis</h2>
+            <div id="graficoResponsaveis" class="bar-list"></div>
+          </div>
+        </section>
+
+        <section class="section-grid charts-stacked">
+          <div id="tipos" class="chart-card">
+            <h2 class="section-title">Tipos de atendimento</h2>
+            <div id="graficoTipos" class="bar-list"></div>
+          </div>
+
+          <div id="motivos" class="chart-card">
+            <h2 class="section-title">Motivos</h2>
+            <div id="graficoMotivos" class="bar-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const webAppUrl = "<?= webAppUrl ?>";
+    let tokenGoogle = "<?= tokenGoogleInicial ?>";
+    let usuarioLogado = <?!= usuarioInicialJson ?>;
+    let ultimoNapsSelecionado = "";
+
+    window.addEventListener("load", function() {
+      if (tokenGoogle && usuarioLogado && usuarioLogado.autorizado) {
+        prepararTelaUsuario();
+        carregarRelatorioNaps();
+      } else {
+        document.getElementById("napsFixo").innerText = "Sessão não identificada";
+        mostrarErro("Abra o Relatório NAPS pelo menu do formulário.");
+      }
+    });
+
+    function prepararTelaUsuario() {
+      const administrador = usuarioLogado && usuarioLogado.administrador === true;
+
+      document.getElementById("filtroAdministrador").style.display = administrador ? "block" : "none";
+      document.getElementById("filtroAtendente").style.display = administrador ? "none" : "block";
+      document.getElementById("napsFixo").innerText = corrigirTexto(usuarioLogado.naps || "NAPS não informado");
+    }
+
+    function carregarRelatorioNaps() {
+      if (!tokenGoogle) {
+        mostrarErro("Sessão expirada. Faça login novamente.");
+        return;
+      }
+
+      const btn = document.getElementById("btnAtualizar");
+      const filtro = document.getElementById("filtroNaps");
+      const filtros = {
+        naps: filtro ? filtro.value : ""
+      };
+
+      btn.disabled = true;
+      document.getElementById("statusRelatorio").className = "status-line";
+      document.getElementById("statusRelatorio").innerText = "Carregando relatório...";
+
+      google.script.run
+        .withSuccessHandler(function(dados) {
+          btn.disabled = false;
+          renderizarRelatorioNaps(dados);
+        })
+        .withFailureHandler(function(erro) {
+          btn.disabled = false;
+          mostrarErro(erro && erro.message ? erro.message : "Não foi possível carregar o relatório.");
+        })
+        .obterDadosRelatorioNaps(filtros, tokenGoogle);
+    }
+
+    function renderizarRelatorioNaps(dados) {
+      usuarioLogado = dados.usuario || usuarioLogado;
+      preencherFiltroNaps(dados);
+
+      document.getElementById("periodoCabecalho").innerText = corrigirTexto(dados.periodoAtual.rotulo);
+      document.getElementById("napsFixo").innerText = corrigirTexto(dados.napsSelecionado || usuarioLogado.naps || "NAPS não informado");
+      document.getElementById("statusRelatorio").className = "status-line";
+      document.getElementById("statusRelatorio").innerText =
+        "Atualizado em " + (dados.atualizadoEm || "") +
+        " | " + corrigirTexto(dados.napsSelecionado || "Todos os NAPS") +
+        " | " + dados.periodoAtual.inicio + " a " + dados.periodoAtual.fim;
+
+      renderizarCards(dados);
+      renderizarComparativo(dados.comparativo || []);
+      renderizarBarras(dados.atual.graficos.tipos || [], "graficoTipos");
+      renderizarBarras(dados.atual.graficos.motivos || [], "graficoMotivos");
+      renderizarBarras(dados.atual.graficos.responsaveis || [], "graficoResponsaveis");
+    }
+
+    function preencherFiltroNaps(dados) {
+      const select = document.getElementById("filtroNaps");
+
+      if (!select || !dados.administrador) return;
+
+      const valorResposta = dados.napsSelecionado === "Todos os NAPS" ? "" : (dados.napsSelecionado || "");
+      const valorAtual = ultimoNapsSelecionado || valorResposta || select.value || "";
+      const opcoes = dados.opcoes && dados.opcoes.naps ? dados.opcoes.naps : [];
+
+      select.innerHTML = '<option value="">Todos os NAPS</option>' + opcoes.map(function(naps) {
+        return '<option value="' + escaparHtml(naps) + '">' + escaparHtml(corrigirTexto(naps)) + '</option>';
+      }).join("");
+
+      select.value = valorResposta || valorAtual;
+      ultimoNapsSelecionado = select.value;
+      select.onchange = function() {
+        ultimoNapsSelecionado = select.value;
+      };
+    }
+
+    function renderizarCards(dados) {
+      const resumo = dados.atual.resumo || {};
+      const comparativo = dados.comparativo || [];
+      const mapaComparativo = {};
+
+      comparativo.forEach(function(item) {
+        mapaComparativo[item.chave] = item;
+      });
+
+      const cards = [
+        { chave: "atendimentos", titulo: "Atendimentos", valor: resumo.atendimentos || 0 },
+        { chave: "pessoas", titulo: "Pessoas", valor: resumo.pessoas || 0 },
+        { chave: "faltas", titulo: "Faltas", valor: resumo.faltas || 0 },
+        { chave: "altas", titulo: "Altas", valor: resumo.altas || 0 }
+      ];
+
+      document.getElementById("resumo").innerHTML = cards.map(function(card) {
+        const comp = mapaComparativo[card.chave] || {};
+        const classe = comp.diferenca > 0 ? "positivo" : (comp.diferenca < 0 ? "negativo" : "");
+
+        return '<article class="card">' +
+          '<p class="card-title">' + escaparHtml(card.titulo) + '</p>' +
+          '<div class="card-value">' + formatarNumero(card.valor) + '</div>' +
+          '<div class="card-note ' + classe + '">' + escaparHtml(textoComparativo(comp)) + '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function renderizarComparativo(lista) {
+      if (!lista.length) {
+        document.getElementById("tabelaComparativo").innerHTML = '<div class="empty-state">Sem dados para comparar.</div>';
+        return;
+      }
+
+      document.getElementById("tabelaComparativo").innerHTML =
+        '<table class="comparison-table">' +
+          '<thead><tr><th>Indicador</th><th>Atual</th><th>Anterior</th><th>Variação</th></tr></thead>' +
+          '<tbody>' +
+            lista.map(function(item) {
+              return '<tr>' +
+                '<td>' + escaparHtml(item.rotulo) + '</td>' +
+                '<td>' + formatarNumero(item.atual) + '</td>' +
+                '<td>' + formatarNumero(item.anterior) + '</td>' +
+                '<td>' + escaparHtml(formatarVariacao(item)) + '</td>' +
+              '</tr>';
+            }).join("") +
+          '</tbody>' +
+        '</table>';
+    }
+
+    function renderizarBarras(lista, idAlvo) {
+      const alvo = document.getElementById(idAlvo);
+
+      if (!lista || !lista.length) {
+        alvo.innerHTML = '<div class="empty-state">Sem dados no período.</div>';
+        return;
+      }
+
+      const maior = Math.max.apply(null, lista.map(function(item) {
+        return Number(item.valor || 0);
+      })) || 1;
+
+      alvo.innerHTML = lista.map(function(item) {
+        const valor = Number(item.valor || 0);
+        const largura = Math.max(4, Math.round((valor / maior) * 100));
+
+        return '<div class="bar-row">' +
+          '<div class="bar-label" title="' + escaparHtml(corrigirTexto(item.rotulo)) + '">' + escaparHtml(corrigirTexto(item.rotulo)) + '</div>' +
+          '<div class="bar-track"><span class="bar-fill" style="width:' + largura + '%"></span></div>' +
+          '<div class="bar-value">' + formatarNumero(valor) + '</div>' +
+        '</div>';
+      }).join("");
+    }
+
+    function textoComparativo(item) {
+      if (!item || item.anterior === undefined) return "Mês anterior: 0";
+
+      return "Mês anterior: " + formatarNumero(item.anterior) + " | " + formatarVariacao(item);
+    }
+
+    function formatarVariacao(item) {
+      const diferenca = Number(item.diferenca || 0);
+      const sinal = diferenca > 0 ? "+" : "";
+
+      if (item.percentual === null || item.percentual === undefined) {
+        return sinal + formatarNumero(diferenca);
+      }
+
+      return sinal + formatarNumero(diferenca) + " (" + sinal + String(item.percentual).replace(".", ",") + "%)";
+    }
+
+    function mostrarErro(texto) {
+      const status = document.getElementById("statusRelatorio");
+      status.className = "status-line erro";
+      status.innerText = texto;
+    }
+
+    function corrigirTexto(valor) {
+      let texto = String(valor === null || valor === undefined ? "" : valor).trim();
+
+      if (!texto) return "não informado";
+
+      const mapaExato = {
+        "nao informado": "não informado",
+        "marco": "março"
+      };
+      const chave = texto.toLowerCase();
+
+      if (mapaExato[chave]) return mapaExato[chave];
+
+      texto = texto.replace(/\bmarco\b/gi, "março");
+      texto = texto.replace(/\bPm\b/g, "PM");
+      texto = texto.replace(/\bCaps\b/g, "CAPS");
+      texto = texto.replace(/\bNaps\b/g, "NAPS");
+      texto = texto.replace(/\bCpam\b/g, "CPAM");
+
+      return texto;
+    }
+
+    function formatarNumero(valor) {
+      return Number(valor || 0).toLocaleString("pt-BR");
+    }
+
+    function escaparHtml(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
