@@ -635,6 +635,7 @@ function obterPaginaSolicitada(valor) {
   if (pagina === "relatorios") return "relatorios";
   if (pagina === "dashboard") return "dashboard";
   if (pagina === "mapa_de_calor") return "mapa_de_calor";
+  if (pagina === "relatorio_naps") return "relatorio_naps";
 
   return "Index";
 }
@@ -1646,6 +1647,190 @@ function obterDadosDashboard(filtros, idToken) {
     opcoes: montarOpcoesRelatorio(registros, vinculosPorAtendimento),
     totalRegistros: filtrados.length
   };
+}
+
+function obterDadosRelatorioNaps(filtros, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const administrador = usuario.perfil === PERFIL_ADMINISTRADOR;
+  const filtrosRelatorio = filtros || {};
+  const estrutura = configurarEstruturaPlanilha();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = estrutura.sheetDados;
+  const dados = lerDadosPadrao(sheet, CABECALHOS_DADOS, 1);
+  const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
+  const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
+  const registros = [];
+
+  for (let i = 1; i < dados.length; i++) {
+    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
+  }
+
+  const periodo = montarPeriodoRelatorioNaps(new Date());
+  const napsUsuario = String(usuario.naps || "").trim();
+  const napsSelecionado = administrador
+    ? String(filtrosRelatorio.naps || "").trim()
+    : napsUsuario;
+
+  if (!administrador && !napsSelecionado) {
+    throw new Error("Usuario sem NAPS cadastrado em usuarios_sistema.");
+  }
+
+  const registrosDoNaps = registros.filter(function(registro) {
+    return registroPassaNapsRelatorioNaps(registro, napsSelecionado);
+  });
+  const registrosMesAtual = filtrarRegistrosPeriodoRelatorioNaps(
+    registrosDoNaps,
+    periodo.atual.inicio,
+    periodo.atual.fim
+  );
+  const registrosMesAnterior = filtrarRegistrosPeriodoRelatorioNaps(
+    registrosDoNaps,
+    periodo.anterior.inicio,
+    periodo.anterior.fim
+  );
+  const dadosAtual = montarDadosMesRelatorioNaps(registrosMesAtual);
+  const dadosAnterior = montarDadosMesRelatorioNaps(registrosMesAnterior);
+
+  return {
+    usuario: {
+      email: usuario.email,
+      nome: usuario.nome,
+      perfil: usuario.perfil,
+      naps: usuario.naps || ""
+    },
+    administrador: administrador,
+    napsSelecionado: napsSelecionado || "Todos os NAPS",
+    periodoAtual: montarPeriodoRespostaRelatorioNaps(periodo.atual),
+    periodoAnterior: montarPeriodoRespostaRelatorioNaps(periodo.anterior),
+    atual: dadosAtual,
+    anterior: dadosAnterior,
+    comparativo: montarComparativoRelatorioNaps(dadosAtual.resumo, dadosAnterior.resumo),
+    opcoes: {
+      naps: administrador ? listarUnicosRelatorio(registros, "naps") : []
+    },
+    atualizadoEm: formatarDataHoraRelatorioNaps(new Date())
+  };
+}
+
+function montarPeriodoRelatorioNaps(base) {
+  const hoje = base || new Date();
+  const inicioAtual = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const fimAtual = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+  const inicioAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const fimAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59, 999);
+
+  return {
+    atual: {
+      inicio: inicioAtual,
+      fim: fimAtual,
+      rotulo: formatarMesExtensoRelatorioNaps(inicioAtual)
+    },
+    anterior: {
+      inicio: inicioAnterior,
+      fim: fimAnterior,
+      rotulo: formatarMesExtensoRelatorioNaps(inicioAnterior)
+    }
+  };
+}
+
+function montarPeriodoRespostaRelatorioNaps(periodo) {
+  return {
+    inicio: formatarDataBrasil(periodo.inicio),
+    fim: formatarDataBrasil(periodo.fim),
+    rotulo: periodo.rotulo
+  };
+}
+
+function formatarMesExtensoRelatorioNaps(data) {
+  const meses = [
+    "janeiro",
+    "fevereiro",
+    "marco",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro"
+  ];
+
+  return meses[data.getMonth()] + " de " + data.getFullYear();
+}
+
+function registroPassaNapsRelatorioNaps(registro, napsSelecionado) {
+  const filtro = normalizar(napsSelecionado);
+
+  if (!filtro) return true;
+
+  return normalizar(registro.naps) === filtro;
+}
+
+function filtrarRegistrosPeriodoRelatorioNaps(registros, inicio, fim) {
+  return registros.filter(function(registro) {
+    if (!registro.dataCadastroData) return false;
+    if (inicio && registro.dataCadastroData < inicio) return false;
+    if (fim && registro.dataCadastroData > fim) return false;
+    return true;
+  });
+}
+
+function montarDadosMesRelatorioNaps(registros) {
+  return {
+    resumo: montarIndicadoresRelatorioNaps(registros),
+    graficos: {
+      tipos: topDistribuicaoDashboard(contarPorCampo(registros, "tipoAtendimento"), 12),
+      motivos: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 12),
+      responsaveis: topDistribuicaoDashboard(contarPorCampo(registros, "responsavel"), 10)
+    },
+    totalRegistros: registros.length
+  };
+}
+
+function montarIndicadoresRelatorioNaps(registros) {
+  const resumo = montarResumoRelatorio(registros);
+
+  return {
+    registros: resumo.totalRegistros,
+    atendimentos: resumo.totalAtendimentos,
+    pessoas: resumo.pessoasDistintas,
+    faltas: resumo.totalFaltas,
+    altas: resumo.totalAltas
+  };
+}
+
+function montarComparativoRelatorioNaps(atual, anterior) {
+  const campos = [
+    { chave: "atendimentos", rotulo: "Atendimentos" },
+    { chave: "pessoas", rotulo: "Pessoas" },
+    { chave: "faltas", rotulo: "Faltas" },
+    { chave: "altas", rotulo: "Altas" }
+  ];
+
+  return campos.map(function(item) {
+    const valorAtual = Number(atual[item.chave] || 0);
+    const valorAnterior = Number(anterior[item.chave] || 0);
+    const diferenca = valorAtual - valorAnterior;
+
+    return {
+      chave: item.chave,
+      rotulo: item.rotulo,
+      atual: valorAtual,
+      anterior: valorAnterior,
+      diferenca: diferenca,
+      percentual: valorAnterior > 0 ? Math.round((diferenca / valorAnterior) * 1000) / 10 : null
+    };
+  });
+}
+
+function formatarDataHoraRelatorioNaps(data) {
+  try {
+    return Utilities.formatDate(data, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+  } catch (erro) {
+    return formatarDataHoraBrasil(data);
+  }
 }
 
 function obterDadosMapaCalor(filtros, idToken) {
