@@ -1456,6 +1456,7 @@ body {
   <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
 
 <div id="menuOpcoes" class="menu-opcoes" onmouseleave="fecharMenu()">
+  <button id="btnMenuRelatorioNaps" onclick="abrirRelatorioNaps()">Relatório NAPS</button>
   <button id="btnMenuRelatorios" onclick="abrirRelatorios()">Relatórios Gerenciais</button>
   <button id="btnMenuDashboard" onclick="abrirDashboard()">Dashboard Estatístico</button>
   <button id="btnMenuMapaCalor" onclick="abrirMapaDeCalor()">Mapa de Calor</button>
@@ -3346,10 +3347,8 @@ function bloquearAcessoAdministrativoMenu() {
   return true;
 }
 
-// Abre relatorios, dashboard ou mapa mantendo o token de sessao.
-function abrirPaginaAdministrativa(pagina) {
-  if (bloquearAcessoAdministrativoMenu()) return;
-
+// Abre uma pagina autenticada mantendo o token de sessao.
+function abrirPaginaComToken(pagina) {
   if (!tokenGoogle || !webAppUrl) {
     const mensagem = document.getElementById("mensagem");
 
@@ -3384,6 +3383,13 @@ function abrirPaginaAdministrativa(pagina) {
   document.body.appendChild(form);
   form.submit();
   form.remove();
+}
+
+// Abre relatorios, dashboard ou mapa mantendo a trava de administrador.
+function abrirPaginaAdministrativa(pagina) {
+  if (bloquearAcessoAdministrativoMenu()) return;
+
+  abrirPaginaComToken(pagina);
 }
 
 // Carrega recado ativo configurado na planilha.
@@ -3438,6 +3444,10 @@ function abrirMapaDeCalor() {
 
 function abrirRelatorios() {
   abrirPaginaAdministrativa("relatorios");
+}
+
+function abrirRelatorioNaps() {
+  abrirPaginaComToken("relatorio_naps");
 }
 
 function limparAvisosBusca() {
