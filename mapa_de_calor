@@ -1211,6 +1211,63 @@ body {
   width: 100%;
 }
 
+.map-title-actions {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-map-theme {
+  background: #ecefed;
+  border: 1px solid #d8e2ea;
+  border-radius: 8px;
+  color: #293033;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.btn-map-theme:hover {
+  background: #d9dddc;
+}
+
+body.mapa-tema-escuro #mapaCalor {
+  background: #07111f;
+  border-color: #223044;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12), 0 18px 48px rgba(15, 23, 42, 0.24);
+}
+
+body.mapa-tema-escuro #mapaCalor .leaflet-tile {
+  filter: brightness(0.62) invert(1) contrast(0.96) saturate(0.48) hue-rotate(180deg);
+}
+
+body.mapa-tema-escuro #mapaCalor.leaflet-container,
+body.mapa-tema-escuro #mapaCalor .leaflet-container {
+  background: #07111f;
+}
+
+body.mapa-tema-escuro #mapaCalor .leaflet-control-attribution,
+body.mapa-tema-escuro #mapaCalor .leaflet-control-scale-line {
+  background: rgba(15, 23, 42, 0.82);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #dbeafe;
+}
+
+body.mapa-tema-escuro .btn-map-theme {
+  background: #122033;
+  border-color: #27435f;
+  color: #e0f2fe;
+}
+
+body.mapa-tema-escuro .btn-map-theme:hover {
+  background: #18324d;
+}
+
 .map-fallback {
   align-items: center;
   color: var(--muted);
@@ -1497,8 +1554,8 @@ body {
         </nav>
 
         <div class="sidebar-footer">
-          <span>Sistema</span>
-          <strong>CAPS/NAPS</strong>
+          <span>Módulo</span>
+          <strong>Em desenvolvimento</strong>
         </div>
       </aside>
 
@@ -1581,7 +1638,10 @@ body {
           <section class="panel">
             <div class="section-title">
               <h2>Mapa do Estado de Sao Paulo</h2>
-              <span>Calor por residencia e marcadores dos NAPS</span>
+              <div class="map-title-actions">
+                <span>Calor por residencia e marcadores dos NAPS</span>
+                <button id="btnTemaMapa" type="button" class="btn-map-theme" onclick="alternarTemaMapa()" aria-pressed="false">Modo escuro</button>
+              </div>
             </div>
 
             <div class="map-layout">
@@ -1589,8 +1649,8 @@ body {
                 <div id="mapaCalor" aria-label="Mapa de calor dos atendimentos"></div>
 
                 <div class="legend" aria-label="Legenda do mapa">
-                  <span><i style="background:#2f6f89;"></i>NAPS existente</span>
-                  <span><i style="background:#c62828;"></i>CEP dos cadastrados</span>
+                  <span><i id="legendaNapsIcone" style="background:#2f6f89;"></i>NAPS existente</span>
+                  <span><i id="legendaDemandaIcone" style="background:#c62828;"></i><span id="legendaDemandaMapa">CEP dos cadastrados</span></span>
                 </div>
               </div>
             </div>
@@ -1674,6 +1734,8 @@ body {
     let mapaCalorLeaflet = null;
     let camadaNaps = null;
     let camadaPontos = null;
+    let temaMapaEscuro = false;
+    let mapaCalorAtual = null;
 
     document.addEventListener("DOMContentLoaded", function() {
       const administrador = tokenGoogle &&
@@ -1684,9 +1746,68 @@ body {
       if (!administrador) return;
 
       preencherMesAtualMapa();
+      carregarTemaMapaSalvo();
       inicializarMapaCalor();
       carregarMapaCalor();
     });
+
+    function carregarTemaMapaSalvo() {
+      try {
+        temaMapaEscuro = localStorage.getItem("saicMapaCalorTema") === "escuro";
+      } catch (erro) {
+        temaMapaEscuro = false;
+      }
+
+      aplicarTemaMapa();
+    }
+
+    function alternarTemaMapa() {
+      temaMapaEscuro = !temaMapaEscuro;
+
+      try {
+        localStorage.setItem("saicMapaCalorTema", temaMapaEscuro ? "escuro" : "claro");
+      } catch (erro) {}
+
+      aplicarTemaMapa();
+
+      if (mapaCalorAtual) {
+        renderizarCamadasMapa(mapaCalorAtual);
+      }
+
+      if (mapaCalorLeaflet) {
+        setTimeout(function() {
+          mapaCalorLeaflet.invalidateSize();
+        }, 50);
+      }
+    }
+
+    function aplicarTemaMapa() {
+      document.body.classList.toggle("mapa-tema-escuro", temaMapaEscuro);
+
+      const botao = document.getElementById("btnTemaMapa");
+      const legendaTexto = document.getElementById("legendaDemandaMapa");
+      const legendaIcone = document.getElementById("legendaDemandaIcone");
+      const legendaNapsIcone = document.getElementById("legendaNapsIcone");
+
+      if (botao) {
+        botao.innerText = temaMapaEscuro ? "Modo claro" : "Modo escuro";
+        botao.setAttribute("aria-pressed", temaMapaEscuro ? "true" : "false");
+      }
+
+      if (legendaTexto) {
+        legendaTexto.innerText = temaMapaEscuro ? "Calor por pessoas" : "CEP dos cadastrados";
+      }
+
+      if (legendaIcone) {
+        legendaIcone.style.background = temaMapaEscuro
+          ? "linear-gradient(90deg, #f59e0b, #f97316, #dc2626)"
+          : "#c62828";
+      }
+
+      if (legendaNapsIcone) {
+        legendaNapsIcone.style.background = temaMapaEscuro ? "#38bdf8" : "#2f6f89";
+      }
+    }
 
     function preencherMesAtualMapa() {
       const hoje = new Date();
@@ -1778,6 +1899,7 @@ body {
       const resumo = dados.resumo || {};
       const mapa = dados.mapa || {};
 
+      mapaCalorAtual = mapa;
       atualizarMetricasMapa(resumo, mapa);
       atualizarLeituraGerencial(mapa.bairros || mapa.calor || []);
       renderizarCamadasMapa(mapa);
@@ -1814,16 +1936,21 @@ body {
 
       alvo.innerHTML = cincoMaisAtendidos.map(function(item, indice) {
         const nomeBairro = item.bairro || item.regiao || "Bairro nao informado";
+        const distancia = item.distanciaNapsMaisProximoKm !== undefined
+          ? item.distanciaNapsMaisProximoKm
+          : item.distanciaAtualMediaKm;
+        const nomeNapsMaisProximo = item.napsMaisProximo || "NAPS mais próximo";
 
         return '<div class="bairro-item">' +
           '<span class="bairro-posicao">' + (indice + 1) + '</span>' +
           '<div>' +
             '<div class="bairro-nome">' + escaparHtmlMapa(nomeBairro) + '</div>' +
-            '<div class="bairro-detalhe">' + formatarKmMapa(item.distanciaNapsMaisProximoKm !== undefined
-              ? item.distanciaNapsMaisProximoKm
-              : item.distanciaAtualMediaKm) + ' de distancia do NAPS mais proximo</div>' +
+            '<div class="bairro-detalhe">' + formatarKmMapa(distancia) + ' de distância do ' + escaparHtmlMapa(nomeNapsMaisProximo) + '</div>' +
           '</div>' +
-          '<div class="bairro-total">' + formatarInteiroMapa(item.atendimentos) + '<small> atendimento(s)</small></div>' +
+          '<div class="bairro-total">' +
+            formatarInteiroMapa(item.atendimentos) + '<small> atendimento(s)</small>' +
+            '<br>' + formatarInteiroMapa(item.pessoasDistintas) + '<small> pessoa(s)</small>' +
+          '</div>' +
         '</div>';
       }).join("");
     }
@@ -1837,18 +1964,36 @@ body {
       const residencias = mapa.residencias || calor;
       const naps = mapa.naps || [];
       const limites = [];
+      const maxPessoasResidencia = residencias.reduce(function(maximo, item) {
+        return Math.max(maximo, Number(item.pessoasDistintas || 0));
+      }, 1);
 
       camadaPontos = L.layerGroup().addTo(mapaCalorLeaflet);
       residencias.forEach(function(item) {
         if (!item.latitude || !item.longitude) return;
 
-        L.circleMarker([item.latitude, item.longitude], {
-          radius: Math.max(5, Math.min(9, 4 + Number(item.pessoasDistintas || 1) / 8)),
-          color: "#ffffff",
-          weight: 2,
-          fillColor: "#c62828",
-          fillOpacity: 0.92
-        }).bindPopup(popupResidenciaMapa(item)).addTo(camadaPontos);
+        if (temaMapaEscuro) {
+          const intensidade = calcularIntensidadeCalorMapa(item, maxPessoasResidencia);
+          const corCalor = obterCorCalorMapa(intensidade);
+
+          L.circleMarker([item.latitude, item.longitude], {
+            radius: calcularRaioCalorMapa(item, maxPessoasResidencia),
+            color: corCalor,
+            opacity: 0.58,
+            weight: 1,
+            fillColor: corCalor,
+            fillOpacity: Math.min(0.62, 0.26 + intensidade * 0.38)
+          }).bindPopup(popupResidenciaMapa(item)).addTo(camadaPontos);
+        } else {
+          L.circleMarker([item.latitude, item.longitude], {
+            radius: Math.max(5, Math.min(9, 4 + Number(item.pessoasDistintas || 1) / 8)),
+            color: "#ffffff",
+            weight: 2,
+            fillColor: "#c62828",
+            fillOpacity: 0.92
+          }).bindPopup(popupResidenciaMapa(item)).addTo(camadaPontos);
+        }
+
         limites.push([item.latitude, item.longitude]);
       });
 
@@ -1861,11 +2006,11 @@ body {
         if (!item.latitude || !item.longitude) return;
 
         L.circleMarker([item.latitude, item.longitude], {
-          radius: 8,
-          color: "#ffffff",
+          radius: temaMapaEscuro ? 9 : 8,
+          color: temaMapaEscuro ? "#dbeafe" : "#ffffff",
           weight: 2,
-          fillColor: "#2f6f89",
-          fillOpacity: 0.95
+          fillColor: temaMapaEscuro ? "#38bdf8" : "#2f6f89",
+          fillOpacity: temaMapaEscuro ? 0.98 : 0.95
         }).bindPopup(popupNapsMapa(item)).addTo(camadaNaps);
         limites.push([item.latitude, item.longitude]);
       });
@@ -1875,6 +2020,25 @@ body {
       } else {
         mapaCalorLeaflet.setView([-22.25, -48.55], 7);
       }
+    }
+
+    function calcularIntensidadeCalorMapa(item, maxPessoas) {
+      const pessoas = Math.max(1, Number(item.pessoasDistintas || 1));
+      const maximo = Math.max(1, Number(maxPessoas || 1));
+
+      return Math.max(0.12, Math.min(1, pessoas / maximo));
+    }
+
+    function calcularRaioCalorMapa(item, maxPessoas) {
+      const intensidade = calcularIntensidadeCalorMapa(item, maxPessoas);
+
+      return Math.round(14 + Math.sqrt(intensidade) * 30);
+    }
+
+    function obterCorCalorMapa(intensidade) {
+      if (intensidade >= 0.68) return "#dc2626";
+      if (intensidade >= 0.36) return "#f97316";
+      return "#f59e0b";
     }
 
     function limparCamadasMapa() {
@@ -1889,10 +2053,12 @@ body {
     }
 
     function popupRegiaoMapa(item) {
+      const nomeNapsMaisProximo = item.napsMaisProximo || "NAPS mais próximo";
+
       return '<strong>' + escaparHtmlMapa(item.bairro || item.regiao || "Bairro") + '</strong><br>' +
         '<span class="map-popup-metric">Atendimentos: ' + formatarInteiroMapa(item.atendimentos) + '</span><br>' +
         '<span class="map-popup-metric">Pessoas: ' + formatarInteiroMapa(item.pessoasDistintas) + '</span><br>' +
-        'Distancia do NAPS mais proximo: ' + formatarKmMapa(
+        'Distância do ' + escaparHtmlMapa(nomeNapsMaisProximo) + ': ' + formatarKmMapa(
           item.distanciaNapsMaisProximoKm !== undefined
             ? item.distanciaNapsMaisProximoKm
             : item.distanciaAtualMediaKm
@@ -1900,11 +2066,13 @@ body {
     }
 
     function popupResidenciaMapa(item) {
+      const nomeNapsMaisProximo = item.napsMaisProximo || "NAPS mais próximo";
+
       return '<strong>CEP ' + escaparHtmlMapa(item.cep || item.regiao || "nao informado") + '</strong><br>' +
         (item.bairro ? escaparHtmlMapa(item.bairro) + '<br>' : '') +
         '<span class="map-popup-metric">Atendimentos: ' + formatarInteiroMapa(item.atendimentos) + '</span><br>' +
         '<span class="map-popup-metric">Pessoas: ' + formatarInteiroMapa(item.pessoasDistintas) + '</span><br>' +
-        'Distancia do NAPS mais proximo: ' + formatarKmMapa(
+        'Distância do ' + escaparHtmlMapa(nomeNapsMaisProximo) + ': ' + formatarKmMapa(
           item.distanciaNapsMaisProximoKm !== undefined
             ? item.distanciaNapsMaisProximoKm
             : item.distanciaAtualMediaKm
