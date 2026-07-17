@@ -600,6 +600,36 @@
       font-weight: 900;
     }
 
+    .individual-observacoes {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .individual-observacao-item {
+      background: #f8fafc;
+      border: 1px solid var(--line-soft);
+      border-left: 4px solid var(--success);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .individual-observacao-meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .individual-observacao-texto {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.55;
+      margin: 6px 0 0;
+      white-space: pre-wrap;
+    }
+
     @media (max-width: 1180px) {
       .app-shell {
         grid-template-columns: 1fr;
@@ -2190,6 +2220,7 @@ function formatarDataInput(data) {
           <h3>Outros Dados</h3>
           ${montarRelatorioIndividualOutrosDados(dados, distancia)}
           ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
+          ${montarObservacoesIndividuais(dados)}
         </section>
       `;
     }
@@ -2222,6 +2253,57 @@ function formatarDataInput(data) {
           ${ultimoAtendimento}
         </div>
       `;
+    }
+
+    function montarObservacoesIndividuais(dados) {
+      const observacoes = dados.observacoesHistorico || [];
+
+      if (observacoes.length === 0) return "";
+
+      const itens = observacoes.map(function(item) {
+        const meta = [
+          item.dataAtendimento ? "Data: " + item.dataAtendimento : "",
+          item.responsavel ? "Responsável: " + formatarTexto(item.responsavel) : "",
+          item.tipoAtendimento ? "Tipo: " + formatarTexto(item.tipoAtendimento) : "",
+          item.motivo ? "Motivo: " + formatarTexto(item.motivo) : ""
+        ].filter(Boolean).join(" | ");
+
+        const observacaoAtendimento = String(item.observacoes || "").trim()
+          ? `<p class="individual-observacao-texto"><strong>Observação do atendimento:</strong> ${escaparHtml(item.observacoes)}</p>`
+          : "";
+        const observacoesVinculos = montarObservacoesVinculosIndividuais(item.observacoesVinculos || []);
+
+        return `
+          <article class="individual-observacao-item">
+            <div class="individual-observacao-meta">${escaparHtml(meta || "Observação registrada")}</div>
+            ${observacaoAtendimento}
+            ${observacoesVinculos}
+          </article>
+        `;
+      }).join("");
+
+      return `<div class="individual-observacoes">${itens}</div>`;
+    }
+
+    function montarObservacoesVinculosIndividuais(vinculos) {
+      const itens = vinculos
+        .filter(function(vinculo) {
+          return String(vinculo.observacoes || "").trim() !== "";
+        })
+        .map(function(vinculo) {
+          const identificacao = [
+            vinculo.nome ? formatarTexto(vinculo.nome) : "",
+            vinculo.parentesco ? formatarTexto(vinculo.parentesco) : ""
+          ].filter(Boolean).join(" - ");
+
+          const rotulo = identificacao
+            ? "Observação da pessoa vinculada (" + identificacao + "):"
+            : "Observação da pessoa vinculada:";
+
+          return `<p class="individual-observacao-texto"><strong>${escaparHtml(rotulo)}</strong> ${escaparHtml(vinculo.observacoes)}</p>`;
+        });
+
+      return itens.join("");
     }
 
     function destacarQuantidadeRelatorio(valor, singular, plural) {
