@@ -1515,8 +1515,8 @@ h3,
       </nav>
 
       <div class="sidebar-footer">
-        <span>Sistema</span>
-        <strong>CAPS/NAPS</strong>
+        <span>Acesso</span>
+        <strong>Administrador</strong>
       </div>
     </aside>
 
@@ -1559,7 +1559,7 @@ h3,
 
         <div class="field">
           <label>Busca Individual</label>
-          <input id="buscaLivre" placeholder="CPF completo, R.E. ou nome da pessoa atendida">
+          <input id="buscaLivre" placeholder="CPF completo, R.E. ou nome da pessoa atendida" oninput="mascararBuscaIndividual(this)">
         </div>
 
         <div class="field">
@@ -2882,6 +2882,38 @@ function formatarDataInput(data) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .trim();
+    }
+
+    function mascararBuscaIndividual(campo) {
+      let valor = String(campo.value || "").toUpperCase();
+      const limpo = valor.replace(/[^0-9A-Z]/g, "");
+      const apenasNumeros = valor.replace(/\D/g, "");
+
+      if (/[B-Z]/.test(valor.replace(/^\d{6}A$/, ""))) {
+        campo.value = valor;
+        return;
+      }
+
+      if (/^\d{6}A$/.test(limpo)) {
+        campo.value = limpo.substring(0, 6) + "-A";
+        return;
+      }
+
+      if (/^\d{7}$/.test(limpo)) {
+        campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
+        return;
+      }
+
+      if (apenasNumeros.length >= 8 && apenasNumeros.length <= 11 && apenasNumeros === limpo) {
+        campo.value = apenasNumeros
+          .substring(0, 11)
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        return;
+      }
+
+      campo.value = valor;
     }
 
     function escaparHtml(valor) {
