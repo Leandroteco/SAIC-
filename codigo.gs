@@ -37,7 +37,8 @@ const CABECALHOS_DADOS = [
   "observacoes",
   "responsavel",
   "dataCadastro",
-  "postoGraduacao"
+  "postoGraduacao",
+  "napsAtendimento"
 ];
 
 const CABECALHOS_VINCULOS = [
@@ -126,6 +127,7 @@ const ALIASES_CABECALHOS_PADRAO = {
   chave: ["chave busca", "chave de busca"],
   tipochave: ["tipo chave", "tipo da chave"],
   linhadados: ["linha dados", "linha dos dados", "linha dado"],
+  napsatendimento: ["naps atendimento", "naps do atendimento", "naps_atendimento", "napsatendimento", "unidade atendimento", "unidade do atendimento"],
   cepnaps: ["cep naps", "cep do naps", "cep_naps"],
   latitude: ["lat"],
   longitude: ["lng", "long"],
@@ -982,6 +984,7 @@ function salvarAtendimento(dados, idToken) {
     const tipoAtendimento = normalizarTipoAtendimento(dados.tipoAtendimento);
     const motivoAtendimento = normalizar(dados.motivo);
     const responsavelAtendimento = normalizar(usuario.nome || dados.responsavel);
+    const napsAtendimento = normalizar(usuario.naps || dados.napsAtendimento || dados.naps);
 
     if (!tipoAtendimento) {
       throw new Error("Tipo de atendimento e obrigatorio.");
@@ -994,6 +997,8 @@ function salvarAtendimento(dados, idToken) {
     if (!responsavelAtendimento) {
       throw new Error("Nome do responsavel nao encontrado na aba usuarios_sistema.");
     }
+
+    validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice);
 
     gravarLinhasPadraoAbaixo(sheet, [[
       idAtendimento,
@@ -1023,7 +1028,8 @@ function salvarAtendimento(dados, idToken) {
       normalizar(dados.observacoes),
       responsavelAtendimento,
       dataCadastro,
-      dados.postoGraduacao || ""
+      dados.postoGraduacao || "",
+      napsAtendimento
     ]], CABECALHOS_DADOS);
 
     const linhaDados = sheet.getLastRow();
@@ -1069,6 +1075,133 @@ function salvarAtendimento(dados, idToken) {
       lock.releaseLock();
     }
   }
+}
+
+function verificarConflitoIdentificacao(dados, idToken) {
+  validarUsuarioPorToken(idToken);
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
+
+  return consultarConflitoIdentificacao(dados, sheetIndice);
+}
+
+function validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice) {
+  const conflito = consultarConflitoIdentificacao(dados, sheetIndice);
+
+  if (conflito.conflito) {
+    throw new Error(conflito.mensagem);
+  }
+}
+
+function consultarConflitoIdentificacao(dados, sheetIndice) {
+  const cpf = formatarCPF(dados && dados.cpf);
+  const cpfNumeros = somenteNumeros(cpf);
+  const re = normalizar(dados && dados.re);
+  const reNumeros = somenteNumeros(re);
+
+  if (!cpfNumeros || !re) {
+    return montarResultadoConflitoIdentificacao(false);
+  }
+
+  const linhas = localizarLinhasIndicePorChaves(sheetIndice, [cpfNumeros, reNumeros]);
+
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+    const cpfExistente = formatarCPF(linha[3]);
+    const cpfExistenteNumeros = somenteNumeros(cpfExistente);
+    const reExistente = normalizar(linha[4]);
+
+    if (!cpfExistenteNumeros && !reExistente) continue;
+
+    if (cpfExistenteNumeros === cpfNumeros && reExistente && reExistente !== re) {
+      return montarResultadoConflitoIdentificacao(true, {
+        tipo: "cpf",
+        cpf: cpf,
+        re: re,
+        cpfExistente: cpfExistente,
+        reExistente: reExistente,
+        nomeExistente: linha[5]
+      });
+    }
+
+    if (reExistente === re && cpfExistenteNumeros && cpfExistenteNumeros !== cpfNumeros) {
+      return montarResultadoConflitoIdentificacao(true, {
+        tipo: "re",
+        cpf: cpf,
+        re: re,
+        cpfExistente: cpfExistente,
+        reExistente: reExistente,
+        nomeExistente: linha[5]
+      });
+    }
+  }
+
+  return montarResultadoConflitoIdentificacao(false);
+}
+
+function localizarLinhasIndicePorChaves(sheetIndice, chaves) {
+  const ultimaLinha = sheetIndice.getLastRow();
+
+  if (ultimaLinha < 2) return [];
+
+  const linhas = [];
+  const linhasJaIncluidas = {};
+  const quantidadeColunas = Math.max(sheetIndice.getLastColumn(), CABECALHOS_INDICE.length);
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheetIndice, CABECALHOS_INDICE);
+  const rangeChaves = sheetIndice.getRange(2, 1, ultimaLinha - 1, 1);
+
+  chaves.forEach(function(chave) {
+    if (!chave) return;
+
+    const celulas = rangeChaves
+      .createTextFinder(String(chave))
+      .matchEntireCell(true)
+      .findAll();
+
+    celulas.forEach(function(celula) {
+      const numeroLinha = celula.getRow();
+
+      if (linhasJaIncluidas[numeroLinha]) return;
+
+      linhasJaIncluidas[numeroLinha] = true;
+
+      const linhaAtual = sheetIndice
+        .getRange(numeroLinha, 1, 1, quantidadeColunas)
+        .getValues()[0];
+
+      linhas.push(normalizarLinhaParaCabecalhoPadrao(linhaAtual, indicesPadrao));
+    });
+  });
+
+  return linhas;
+}
+
+function montarResultadoConflitoIdentificacao(conflito, detalhes) {
+  if (!conflito) {
+    return {
+      conflito: false,
+      mensagem: ""
+    };
+  }
+
+  const reExistente = String(detalhes.reExistente || "").toUpperCase();
+  const nomeExistente = String(detalhes.nomeExistente || "").trim();
+  const pessoa = nomeExistente ? " de " + nomeExistente : "";
+  const mensagem = detalhes.tipo === "cpf"
+    ? "Conflito de identificacao: este CPF ja consta no cadastro" + pessoa + " com o R.E. " + reExistente + ". Pesquise o cadastro antes de salvar."
+    : "Conflito de identificacao: este R.E. ja consta no cadastro" + pessoa + " com o CPF " + detalhes.cpfExistente + ". Pesquise o cadastro antes de salvar.";
+
+  return {
+    conflito: true,
+    tipo: detalhes.tipo,
+    mensagem: mensagem,
+    cpfInformado: detalhes.cpf,
+    reInformado: String(detalhes.re || "").toUpperCase(),
+    cpfExistente: detalhes.cpfExistente,
+    reExistente: reExistente,
+    nomeExistente: nomeExistente
+  };
 }
 
 function gerarIdSeguro(prefixo) {
@@ -1226,10 +1359,12 @@ function normalizarTelefone(valor) {
 }
 
 function montarRegistro(linha) {
+  const napsAtendimento = String(linha[28] || "").trim();
+
   return {
     id: linha[0],
     emailCadastro: linha[1],
-    naps: linha[1],
+    naps: napsAtendimento || "",
     tipoAtendimento: linha[2],
     motivo: linha[3],
     re: linha[4],
@@ -1255,7 +1390,8 @@ function montarRegistro(linha) {
     observacoes: linha[24],
     responsavel: linha[25],
     dataCadastro: linha[26],
-    postoGraduacao: linha[27] || ""
+    postoGraduacao: linha[27] || "",
+    napsAtendimento: napsAtendimento
   };
 }
 
@@ -1385,6 +1521,7 @@ function montarFichaAtendimentoImpressao(linha, vinculos) {
     observacoes: linha[24] || "",
     responsavel: linha[25] || "",
     postoGraduacao: linha[27] || "",
+    napsAtendimento: linha[28] || "",
     endereco: montarEnderecoRelatorio(linha),
     vinculos: vinculos || []
   };
@@ -2896,9 +3033,8 @@ function carregarUsuariosSistemaPorEmail(ss) {
 function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail) {
   const id = linha[0] || "";
   const emailCadastro = String(linha[1] || "").toLowerCase().trim();
-  const usuarioCadastro = usuariosPorEmail && usuariosPorEmail[emailCadastro]
-    ? usuariosPorEmail[emailCadastro]
-    : {};
+  const napsAtendimento = String(linha[28] || "").trim();
+  const napsRegistro = napsAtendimento || "nao informado";
   const dataCadastroData = obterData(linha[26]);
   const dataNascimentoData = obterData(linha[10]);
   const dataIngressoData = obterData(linha[9]);
@@ -2909,7 +3045,8 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
   return {
     id: id,
     emailCadastro: linha[1] || "",
-    naps: usuarioCadastro.naps || "nao informado",
+    naps: napsRegistro,
+    napsAtendimento: napsAtendimento,
     tipoAtendimento: linha[2] || "",
     motivo: linha[3] || "",
     re: linha[4] || "",
@@ -2937,7 +3074,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     complemento: linha[23] || "",
     observacoes: linha[24] || "",
     responsavel: linha[25] || "",
-    responsavelNaps: montarRotuloResponsavelNapsRelatorio(linha[25], usuarioCadastro.naps),
+    responsavelNaps: montarRotuloResponsavelNapsRelatorio(linha[25], napsRegistro),
     dataCadastro: formatarDataBrasil(linha[26]),
     dataCadastroIso: formatarDataParaInput(linha[26]),
     dataCadastroData: dataCadastroData,
