@@ -1588,6 +1588,8 @@ function buscarCadastro(termo, idToken) {
     preservarVariantesRE: pesquisouREBase
   });
 
+  anexarVinculosResultadosBusca(resultados);
+
   if (resultados.length === 0) {
     return {
       encontrado: false,
@@ -1689,6 +1691,7 @@ function montarResultadosBuscaPorIndice(sheetDados, candidatos, opcoes) {
 
 function montarRegistroBusca(l) {
   return {
+    idAtendimento: l[0] || "",
     re: l[4] || "",
     postoGraduacao: l[27] || "",
     nome: l[5] || "",
@@ -1710,8 +1713,52 @@ function montarRegistroBusca(l) {
     estado: l[21] || "",
     numero: l[22] || "",
     complemento: l[23] || "",
+    observacoes: l[24] || "",
+    vinculos: [],
     dataCadastro: formatarDataBrasil(l[26])
   };
+}
+
+function anexarVinculosResultadosBusca(resultados) {
+  if (!resultados || resultados.length === 0) return;
+
+  const ids = {};
+
+  resultados.forEach(function(registro) {
+    if (registro.idAtendimento) {
+      ids[String(registro.idAtendimento)] = true;
+    }
+  });
+
+  if (Object.keys(ids).length === 0) return;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ABA_VINCULOS);
+
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  const dados = lerDadosPadrao(sheet, CABECALHOS_VINCULOS, 1);
+  const mapa = {};
+
+  resultados.forEach(function(registro) {
+    mapa[String(registro.idAtendimento || "")] = registro;
+  });
+
+  for (let i = 1; i < dados.length; i++) {
+    const linha = dados[i];
+    const idAtendimento = String(linha[1] || "");
+    const registro = mapa[idAtendimento];
+
+    if (!registro) continue;
+
+    registro.vinculos.push({
+      nome: linha[2] || "",
+      cpf: linha[3] || "",
+      tipoVinculo: linha[4] || "",
+      parentesco: linha[5] || "",
+      observacoes: linha[6] || ""
+    });
+  }
 }
 
 function converterData(valor) {
@@ -2056,11 +2103,13 @@ function obterDadosMapaCalor(filtros, idToken) {
 
     atualizarNapsCargaMapa(cargaNaps, nomeNaps, dadosNaps, registro, distanciaAtual, distanciaAlerta);
 
-    const distanciaNapsMaisProximo = calcularDistanciaNapsMaisProximoMapa(
+    const napsMaisProximo = calcularNapsMaisProximoMapa(
       coordenadasResidencia.latitude,
       coordenadasResidencia.longitude,
       napsReferencia
     );
+    const distanciaNapsMaisProximo = napsMaisProximo ? napsMaisProximo.distanciaKm : null;
+    const nomeNapsMaisProximo = napsMaisProximo ? napsMaisProximo.naps : "";
 
     if (distanciaNapsMaisProximo !== null && distanciaNapsMaisProximo !== undefined && !isNaN(distanciaNapsMaisProximo)) {
       totalDistanciaNapsMaisProximo += distanciaNapsMaisProximo;
@@ -2087,11 +2136,16 @@ function obterDadosMapaCalor(filtros, idToken) {
       grupo.somaDistanciaNapsMaisProximo += distanciaNapsMaisProximo;
       grupo.totalDistanciaNapsMaisProximo++;
     }
+    if (nomeNapsMaisProximo) {
+      grupo.napsMaisProximoContagem[nomeNapsMaisProximo] =
+        (grupo.napsMaisProximoContagem[nomeNapsMaisProximo] || 0) + 1;
+    }
     grupo.registros.push({
       latitude: coordenadasResidencia.latitude,
       longitude: coordenadasResidencia.longitude,
       distanciaAtual: distanciaAtual,
-      distanciaNapsMaisProximo: distanciaNapsMaisProximo
+      distanciaNapsMaisProximo: distanciaNapsMaisProximo,
+      napsMaisProximo: nomeNapsMaisProximo
     });
 
     atualizarResidenciaMapaCalor(
@@ -2100,7 +2154,8 @@ function obterDadosMapaCalor(filtros, idToken) {
       registro,
       coordenadasResidencia,
       chavePessoa,
-      distanciaNapsMaisProximo
+      distanciaNapsMaisProximo,
+      nomeNapsMaisProximo
     );
   });
 
@@ -2333,6 +2388,7 @@ function criarGrupoRegiaoMapa(chave, cepBase, bairro, cidade, estado) {
     somaLng: 0,
     somaDistanciaNapsMaisProximo: 0,
     totalDistanciaNapsMaisProximo: 0,
+    napsMaisProximoContagem: {},
     registros: []
   };
 }
@@ -2394,8 +2450,9 @@ function atualizarNapsCargaMapa(mapa, nomeNaps, dadosNaps, registro, distanciaAt
   }
 }
 
-function calcularDistanciaNapsMaisProximoMapa(latitude, longitude, napsReferencia) {
+function calcularNapsMaisProximoMapa(latitude, longitude, napsReferencia) {
   let menorDistancia = null;
+  let nomeNapsMaisProximo = "";
 
   Object.keys(napsReferencia || {}).forEach(function(chave) {
     const dadosNaps = napsReferencia[chave];
@@ -2411,13 +2468,25 @@ function calcularDistanciaNapsMaisProximoMapa(latitude, longitude, napsReferenci
 
     if (menorDistancia === null || distancia < menorDistancia) {
       menorDistancia = distancia;
+      nomeNapsMaisProximo = dadosNaps.naps || chave;
     }
   });
 
-  return menorDistancia;
+  if (menorDistancia === null) return null;
+
+  return {
+    naps: nomeNapsMaisProximo,
+    distanciaKm: menorDistancia
+  };
 }
 
-function atualizarResidenciaMapaCalor(mapa, cepResidencia, registro, coordenadas, chavePessoa, distanciaNapsMaisProximo) {
+function calcularDistanciaNapsMaisProximoMapa(latitude, longitude, napsReferencia) {
+  const resultado = calcularNapsMaisProximoMapa(latitude, longitude, napsReferencia);
+
+  return resultado ? resultado.distanciaKm : null;
+}
+
+function atualizarResidenciaMapaCalor(mapa, cepResidencia, registro, coordenadas, chavePessoa, distanciaNapsMaisProximo, nomeNapsMaisProximo) {
   const cep = somenteNumeros(cepResidencia);
 
   if (!cep || !coordenadas) return;
@@ -2433,7 +2502,8 @@ function atualizarResidenciaMapaCalor(mapa, cepResidencia, registro, coordenadas
       atendimentos: 0,
       pessoas: {},
       somaDistanciaNapsMaisProximo: 0,
-      totalDistanciaNapsMaisProximo: 0
+      totalDistanciaNapsMaisProximo: 0,
+      napsMaisProximoContagem: {}
     };
   }
 
@@ -2443,6 +2513,11 @@ function atualizarResidenciaMapaCalor(mapa, cepResidencia, registro, coordenadas
   if (distanciaNapsMaisProximo !== null && distanciaNapsMaisProximo !== undefined && !isNaN(distanciaNapsMaisProximo)) {
     mapa[cep].somaDistanciaNapsMaisProximo += distanciaNapsMaisProximo;
     mapa[cep].totalDistanciaNapsMaisProximo++;
+  }
+
+  if (nomeNapsMaisProximo) {
+    mapa[cep].napsMaisProximoContagem[nomeNapsMaisProximo] =
+      (mapa[cep].napsMaisProximoContagem[nomeNapsMaisProximo] || 0) + 1;
   }
 }
 
@@ -2493,6 +2568,7 @@ function montarRegioesMapaCalor(gruposRegiao, filtros) {
       peso: grupo.atendimentos,
       distanciaAtualMediaKm: mediaArredondadaMapa(somaDistanciaAtual, totalComparavel),
       distanciaNapsMaisProximoKm: mediaArredondadaMapa(grupo.somaDistanciaNapsMaisProximo, grupo.totalDistanciaNapsMaisProximo),
+      napsMaisProximo: obterNomeMaisFrequenteMapa(grupo.napsMaisProximoContagem),
       distanciaNovaMediaKm: mediaArredondadaMapa(somaDistanciaNova, totalComparavel),
       ganhoMedioKm: mediaArredondadaMapa(somaGanho, totalComparavel),
       ganhoTotalKm: arredondarUmaCasa(somaGanho)
@@ -2531,6 +2607,7 @@ function montarResidenciasMapaCalor(gruposResidencia) {
         longitude: arredondarCoordenadaMapa(item.longitude),
         atendimentos: item.atendimentos,
         pessoasDistintas: Object.keys(item.pessoas).length,
+        napsMaisProximo: obterNomeMaisFrequenteMapa(item.napsMaisProximoContagem),
         distanciaNapsMaisProximoKm: mediaArredondadaMapa(
           item.somaDistanciaNapsMaisProximo,
           item.totalDistanciaNapsMaisProximo
@@ -2541,6 +2618,22 @@ function montarResidenciasMapaCalor(gruposResidencia) {
       if (b.atendimentos !== a.atendimentos) return b.atendimentos - a.atendimentos;
       return normalizar(a.cep).localeCompare(normalizar(b.cep));
     });
+}
+
+function obterNomeMaisFrequenteMapa(contagem) {
+  let melhorNome = "";
+  let melhorTotal = 0;
+
+  Object.keys(contagem || {}).forEach(function(nome) {
+    const total = Number(contagem[nome] || 0);
+
+    if (total > melhorTotal || (total === melhorTotal && normalizar(nome).localeCompare(normalizar(melhorNome)) < 0)) {
+      melhorNome = nome;
+      melhorTotal = total;
+    }
+  });
+
+  return melhorNome;
 }
 
 function montarNapsMapaCalor(cargaNaps) {
@@ -3242,8 +3335,46 @@ function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss)
     dataReferencia: referencia.dataCadastro || "",
     motivoReferencia: referencia.motivo || "",
     responsavelReferencia: referencia.responsavel || "",
-    mensagemDistancia: distancia.mensagem || ""
+    mensagemDistancia: distancia.mensagem || "",
+    observacoesHistorico: montarObservacoesHistoricoIndividual(registrosPessoa)
   };
+}
+
+function montarObservacoesHistoricoIndividual(registros) {
+  return registros
+    .slice()
+    .sort(function(a, b) {
+      return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
+    })
+    .map(function(registro) {
+      const observacaoAtendimento = String(registro.observacoes || "").trim();
+      const observacoesVinculos = (registro.vinculos || [])
+        .filter(function(vinculo) {
+          return String(vinculo.observacoes || "").trim() !== "";
+        })
+        .map(function(vinculo) {
+          return {
+            nome: vinculo.nome || "",
+            parentesco: vinculo.parentesco || vinculo.tipoVinculo || "",
+            observacoes: vinculo.observacoes || ""
+          };
+        });
+
+      if (!observacaoAtendimento && observacoesVinculos.length === 0) return null;
+
+      return {
+        idAtendimento: registro.id || "",
+        dataAtendimento: registro.dataCadastro || "",
+        responsavel: registro.responsavel || "",
+        tipoAtendimento: registro.tipoAtendimento || "",
+        motivo: registro.motivo || "",
+        observacoes: observacaoAtendimento,
+        observacoesVinculos: observacoesVinculos
+      };
+    })
+    .filter(function(item) {
+      return item !== null;
+    });
 }
 
 function agruparRegistrosPorPessoa(registros) {
