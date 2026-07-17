@@ -393,6 +393,19 @@
       text-align: center;
     }
 
+    .aviso-conflito-identificacao {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      color: #9a3412;
+      display: none;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+      margin-top: 8px;
+      padding: 8px 10px;
+    }
+
     .titulo-responsavel-linha {
       align-items: flex-end;
       display: flex;
@@ -1519,6 +1532,7 @@ body {
     <div>
       <label>CPF</label>
       <input id="cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this); limparErroCampo(this)" required>
+      <div id="avisoConflitoIdentificacao" class="aviso-conflito-identificacao"></div>
     </div>
 
     <div>
@@ -2045,6 +2059,9 @@ let usuarioLogado = <?!= usuarioInicialJson ?>;
 let ultimoAtendimentoSalvoId = "";
 let ultimosAtendimentosCarregados = false;
 let ultimosAtendimentosCarregando = false;
+let conflitoIdentificacaoAtual = null;
+let ultimaChaveIdentificacaoVerificada = "";
+let timerValidacaoIdentificacao = null;
 
 // Inicializacao da tela apos carregar o HTML.
 document.addEventListener("DOMContentLoaded", function() {
@@ -2062,6 +2079,7 @@ document.addEventListener("DOMContentLoaded", function() {
     preencherResponsavelLogado();
     configurarOcultarImpressaoAoEditar();
     configurarFechamentoUltimosAtendimentos();
+    configurarValidacaoIdentificacao();
   }
 });
 
@@ -2637,6 +2655,103 @@ function cpfValido(valor) {
   return String(valor || "").replace(/\D/g, "").length === 11;
 }
 
+function configurarValidacaoIdentificacao() {
+  const campoRE = document.getElementById("re");
+  const campoCPF = document.getElementById("cpf");
+
+  if (!campoRE || !campoCPF) return;
+
+  [campoRE, campoCPF].forEach(function(campo) {
+    campo.addEventListener("input", agendarValidacaoIdentificacao);
+    campo.addEventListener("blur", function() {
+      verificarConflitoIdentificacaoFormulario(true);
+    });
+    campo.addEventListener("change", function() {
+      verificarConflitoIdentificacaoFormulario(true);
+    });
+  });
+}
+
+function agendarValidacaoIdentificacao() {
+  conflitoIdentificacaoAtual = null;
+  ocultarAvisoConflitoIdentificacao();
+
+  if (timerValidacaoIdentificacao) {
+    clearTimeout(timerValidacaoIdentificacao);
+  }
+
+  timerValidacaoIdentificacao = setTimeout(function() {
+    verificarConflitoIdentificacaoFormulario(false);
+  }, 650);
+}
+
+function obterIdentificacaoFormulario() {
+  return {
+    re: document.getElementById("re").value || "",
+    cpf: document.getElementById("cpf").value || ""
+  };
+}
+
+function obterChaveIdentificacaoFormulario() {
+  const dados = obterIdentificacaoFormulario();
+  const cpfNumeros = String(dados.cpf || "").replace(/\D/g, "");
+  const re = String(dados.re || "").trim().toUpperCase();
+
+  if (!cpfValido(dados.cpf) || !reValido(dados.re)) return "";
+
+  return re + "|" + cpfNumeros;
+}
+
+function verificarConflitoIdentificacaoFormulario(forcar) {
+  const chave = obterChaveIdentificacaoFormulario();
+
+  if (!chave || !tokenGoogle) {
+    conflitoIdentificacaoAtual = null;
+    ultimaChaveIdentificacaoVerificada = "";
+    ocultarAvisoConflitoIdentificacao();
+    return;
+  }
+
+  if (!forcar && chave === ultimaChaveIdentificacaoVerificada) return;
+
+  ultimaChaveIdentificacaoVerificada = chave;
+
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      if (chave !== obterChaveIdentificacaoFormulario()) return;
+
+      conflitoIdentificacaoAtual = resposta && resposta.conflito ? resposta : null;
+
+      if (conflitoIdentificacaoAtual) {
+        mostrarAvisoConflitoIdentificacao(conflitoIdentificacaoAtual.mensagem);
+      } else {
+        ocultarAvisoConflitoIdentificacao();
+      }
+    })
+    .withFailureHandler(function() {
+      conflitoIdentificacaoAtual = null;
+    })
+    .verificarConflitoIdentificacao(obterIdentificacaoFormulario(), tokenGoogle);
+}
+
+function mostrarAvisoConflitoIdentificacao(texto) {
+  const aviso = document.getElementById("avisoConflitoIdentificacao");
+
+  if (!aviso) return;
+
+  aviso.innerText = texto || "Conflito de identificacao localizado. Pesquise o cadastro antes de salvar.";
+  aviso.style.display = "block";
+}
+
+function ocultarAvisoConflitoIdentificacao() {
+  const aviso = document.getElementById("avisoConflitoIdentificacao");
+
+  if (!aviso) return;
+
+  aviso.innerText = "";
+  aviso.style.display = "none";
+}
+
 function dataCampoValida(campo) {
   if (campo.disabled) return true;
   if (campo.required && campo.value === "") return false;
@@ -2870,6 +2985,14 @@ function salvar() {
     return;
   }
 
+  if (conflitoIdentificacaoAtual && conflitoIdentificacaoAtual.conflito) {
+    mensagem.style.color = "#b42318";
+    mensagem.innerText = conflitoIdentificacaoAtual.mensagem;
+    mostrarAvisoConflitoIdentificacao(conflitoIdentificacaoAtual.mensagem);
+    campoRE.focus();
+    return;
+  }
+
   definirEstadoSalvamento(true);
   mensagem.style.color = "#475569";
   mensagem.innerHTML = '<span class="mensagem-processando"><span class="spinner-mensagem"></span><span>' + obterMensagemProcessandoSalvar() + '</span></span>';
@@ -2932,6 +3055,10 @@ function salvar() {
 // Limpa o formulario para novo atendimento preservando a ficha quando necessario.
 function limparFormulario(opcoes) {
   const preservarImpressao = opcoes && opcoes.preservarImpressao;
+
+  conflitoIdentificacaoAtual = null;
+  ultimaChaveIdentificacaoVerificada = "";
+  ocultarAvisoConflitoIdentificacao();
 
   document.querySelectorAll("input, textarea, select").forEach(el => {
     el.value = "";
@@ -3158,6 +3285,10 @@ function tratarResultadoBusca(resposta) {
 // Preenche o formulario com os dados do cadastro selecionado.
 function preencherFormulario(r) {
   definirAtendimentoImpressao("");
+  conflitoIdentificacaoAtual = null;
+  ultimaChaveIdentificacaoVerificada = "";
+  ocultarAvisoConflitoIdentificacao();
+
   // Limpa os dados antigos antes de carregar o novo cadastro
   document.getElementById("re").value = "";
   document.getElementById("cpf").value = "";
