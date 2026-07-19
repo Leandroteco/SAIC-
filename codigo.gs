@@ -1714,6 +1714,7 @@ function montarRegistroBusca(l) {
     numero: l[22] || "",
     complemento: l[23] || "",
     observacoes: l[24] || "",
+    responsavel: l[25] || "",
     vinculos: [],
     dataCadastro: formatarDataBrasil(l[26])
   };
