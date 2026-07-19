@@ -1581,7 +1581,8 @@ body {
 
     <div>
       <label>Email</label>
-      <input id="email" placeholder="EX: todosnos@gmail.com" oninput="limparErroCampo(this)">
+      <input id="email" list="sugestoesEmail" placeholder="EX: todosnos@gmail.com" oninput="sugerirDominioEmail(this); limparErroCampo(this)">
+      <datalist id="sugestoesEmail"></datalist>
     </div>
 
     <div>
@@ -2088,7 +2089,7 @@ function preencherResponsavelLogado() {
   const campoResponsavel = document.getElementById("responsavel");
   const nomeResponsavel = usuarioLogado && usuarioLogado.nome ? usuarioLogado.nome : "";
 
-  campoResponsavel.value = converterMaiusculas(nomeResponsavel || "");
+  campoResponsavel.value = formatarTextoRetornoBusca(nomeResponsavel || "");
 }
 
 // Controla quando o botao de imprimir ficha deve aparecer apos salvar.
@@ -3317,12 +3318,21 @@ function tratarResultadoBusca(resposta) {
 function montarDetalhesBuscaAtendimento(registro) {
   const partes = [];
   const observacao = String((registro && registro.observacoes) || "").trim();
+  const responsavel = String((registro && registro.responsavel) || "").trim();
   const vinculos = (registro && registro.vinculos) || [];
+
+  if (responsavel) {
+    partes.push(
+      "<div style='margin-top:8px;'><strong>Responsável pelo último atendimento:</strong> " +
+      escaparHtml(formatarTextoRetornoBusca(responsavel)) +
+      "</div>"
+    );
+  }
 
   if (observacao) {
     partes.push(
       "<div style='margin-top:8px;'><strong>Observação do último atendimento:</strong>" +
-      "<div style='white-space:pre-wrap;margin-top:4px;'>" + escaparHtml(observacao) + "</div></div>"
+      "<div style='white-space:pre-wrap;margin-top:4px;'>" + escaparHtml(formatarTextoRetornoBusca(observacao)) + "</div></div>"
     );
   }
 
@@ -3347,13 +3357,13 @@ function montarVinculosBuscaAtendimento(vinculos) {
   return "<div style='margin-top:8px;'><strong>Pessoa vinculada no último atendimento:</strong>" +
     itens.map(function(vinculo) {
       const dados = [
-        vinculo.nome ? escaparHtml(vinculo.nome) : "",
+        vinculo.nome ? escaparHtml(formatarTextoRetornoBusca(vinculo.nome)) : "",
         vinculo.cpf ? "CPF: " + escaparHtml(vinculo.cpf) : "",
-        vinculo.parentesco ? escaparHtml(vinculo.parentesco) : "",
-        vinculo.tipoVinculo ? escaparHtml(vinculo.tipoVinculo) : ""
+        vinculo.parentesco ? escaparHtml(formatarTextoRetornoBusca(vinculo.parentesco)) : "",
+        vinculo.tipoVinculo ? escaparHtml(formatarTextoRetornoBusca(vinculo.tipoVinculo)) : ""
       ].filter(Boolean).join(" | ");
       const observacao = String(vinculo.observacoes || "").trim()
-        ? "<div style='white-space:pre-wrap;margin-top:3px;'><strong>Observação da pessoa vinculada:</strong> " + escaparHtml(vinculo.observacoes) + "</div>"
+        ? "<div style='white-space:pre-wrap;margin-top:3px;'><strong>Observação da pessoa vinculada:</strong> " + escaparHtml(formatarTextoRetornoBusca(vinculo.observacoes)) + "</div>"
         : "";
 
       return "<div style='border-top:1px solid #e2e8f0;margin-top:7px;padding-top:7px;'>" +
@@ -3362,6 +3372,33 @@ function montarVinculosBuscaAtendimento(vinculos) {
         "</div>";
     }).join("") +
     "</div>";
+}
+
+function formatarTextoRetornoBusca(valor) {
+  if (valor === null || valor === undefined) return "";
+
+  const conectivos = ["a", "as", "ao", "aos", "da", "das", "de", "do", "dos", "e", "em", "na", "nas", "no", "nos", "para", "por", "com", "of"];
+  const siglas = ["pm", "cpf", "re", "rg", "opm", "naps", "caps", "cpa", "cpam", "copom", "cmed", "crpm", "pmrg"];
+
+  return String(valor)
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map(function(parte, indice) {
+      if (!parte || /^\s+$/.test(parte)) return parte;
+
+      const pedacos = parte.match(/^([^a-zÀ-ÿ0-9ºª]*)(.*?)([^a-zÀ-ÿ0-9ºª]*)$/i);
+      const prefixo = pedacos ? pedacos[1] : "";
+      const palavra = pedacos ? pedacos[2] : parte;
+      const sufixo = pedacos ? pedacos[3] : "";
+      const chave = palavra.toLowerCase();
+
+      if (!palavra) return parte;
+      if (siglas.indexOf(chave) >= 0) return prefixo + chave.toUpperCase() + sufixo;
+      if (indice > 0 && conectivos.indexOf(chave) >= 0) return prefixo + chave + sufixo;
+
+      return prefixo + palavra.charAt(0).toUpperCase() + palavra.slice(1) + sufixo;
+    })
+    .join("");
 }
 
 // Preenche o formulario com os dados do cadastro selecionado.
@@ -3483,6 +3520,38 @@ function novoAtendimento() {
     `<p style="color:#166534; font-weight:bold;">
       Novo atendimento iniciado. Preencha os dados manualmente.
     </p>`;
+}
+
+function sugerirDominioEmail(campo) {
+  const lista = document.getElementById("sugestoesEmail");
+
+  if (!lista) return;
+
+  const dominio = "policiamilitar.sp.gov.br";
+  const valor = String((campo && campo.value) || "").trim();
+  const partes = valor.split("@");
+
+  if (partes.length !== 2 || !partes[0]) {
+    lista.innerHTML = "";
+    return;
+  }
+
+  const usuario = partes[0];
+  const dominioDigitado = partes[1].toLowerCase();
+
+  if (dominioDigitado && dominio.indexOf(dominioDigitado) !== 0) {
+    lista.innerHTML = "";
+    return;
+  }
+
+  const sugestao = usuario + "@" + dominio;
+
+  if (valor.toLowerCase() === sugestao.toLowerCase()) {
+    lista.innerHTML = "";
+    return;
+  }
+
+  lista.innerHTML = "<option value=\"" + escaparAttr(sugestao) + "\"></option>";
 }
 
 
