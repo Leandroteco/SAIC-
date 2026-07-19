@@ -2166,7 +2166,7 @@ function formatarDataInput(data) {
       if (abaAtual === "localidade") {
         return `
           <div class="tab-grid">
-            ${montarGraficoBarras("OPM", d.porOPM, { limite: 15 })}
+            ${montarGraficoBarras("OPM", d.porOPM, { limite: 15, contexto: "opmAtual" })}
             ${montarGraficoBarras("Cidade", d.porCidade, { limite: 15 })}
             ${montarGraficoBarras("Bairro", d.porBairro, { limite: 15 })}
           ${montarGraficoBarras("NAPS", d.porNAPS, { limite: 10 })}
@@ -2398,7 +2398,7 @@ function formatarDataInput(data) {
 
       itens.forEach(function(item) {
         const largura = maximo > 0 ? Math.max((item.total / maximo) * 100, 2) : 0;
-        const label = config.tipo === "mes" ? formatarMes(item.nome) : formatarTexto(item.nome);
+        const label = config.tipo === "mes" ? formatarMes(item.nome) : formatarTexto(item.nome, config.contexto);
 
         linhas += `
           <div class="bar-row">
