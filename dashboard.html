@@ -1435,8 +1435,8 @@ h3,
         </nav>
 
         <div class="sidebar-footer">
-          <span>Sistema</span>
-          <strong>CAPS/NAPS</strong>
+          <span>Acesso</span>
+          <strong>Administrador</strong>
         </div>
       </aside>
 
@@ -1684,7 +1684,7 @@ h3,
       atualizarMetricas(dados.resumo || {});
       renderizarGraficos(dados.graficos || {});
       renderizarRanking("rankingMotivos", (dados.rankings && dados.rankings.motivos) || []);
-      renderizarRanking("rankingOPMs", (dados.rankings && dados.rankings.opms) || []);
+      renderizarRanking("rankingOPMs", (dados.rankings && dados.rankings.opms) || [], "opm");
 
       const status = document.getElementById("status");
       status.className = "status";
@@ -1947,7 +1947,7 @@ h3,
     function criarGrafico(chave, canvasId, tipo, lista, idVazio, filtroAlvo) {
       const ctx = document.getElementById(canvasId);
       const vazio = document.getElementById(idVazio);
-      const labels = lista.map(function(item) { return capitalizar(item.rotulo); });
+      const labels = lista.map(function(item) { return formatarRotuloDashboard(item.rotulo, chave); });
       const valores = lista.map(function(item) { return item.valor; });
 
       vazio.innerText = lista.length === 0 ? "Sem dados no período." : "";
@@ -2094,7 +2094,7 @@ h3,
       }
     }
 
-    function renderizarRanking(id, lista) {
+    function renderizarRanking(id, lista, contexto) {
       const div = document.getElementById(id);
       const maior = lista.length > 0 ? lista[0].valor : 0;
 
@@ -2105,13 +2105,24 @@ h3,
 
       div.innerHTML = lista.map(function(item) {
         const largura = maior > 0 ? Math.max(4, Math.round((item.valor / maior) * 100)) : 0;
+        const rotulo = formatarRotuloDashboard(item.rotulo, contexto);
 
         return "<div class='ranking-row'>" +
-          "<div class='ranking-label' title='" + escaparHtml(item.rotulo) + "'>" + escaparHtml(capitalizar(item.rotulo)) + "</div>" +
+          "<div class='ranking-label' title='" + escaparHtml(rotulo) + "'>" + escaparHtml(rotulo) + "</div>" +
           "<div class='ranking-bar'><div class='ranking-fill' style='width:" + largura + "%'></div></div>" +
           "<div class='ranking-value'>" + item.valor + "</div>" +
           "</div>";
       }).join("");
+    }
+
+    function formatarRotuloDashboard(rotulo, contexto) {
+      const texto = String(rotulo || "Não informado");
+
+      if (contexto === "opm") {
+        return texto.toUpperCase();
+      }
+
+      return capitalizar(texto);
     }
 
     function formatarNumero(valor) {
