@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--
+  SAIC - Dashboard gerencial
+  Arquivo organizado para manutencao visual e funcional no Apps Script.
+  Mantem filtros, indicadores, graficos e chamadas ao codigo.gs.
+-->
 <html>
 <head>
   <meta charset="UTF-8">
@@ -7,6 +12,14 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
+    /*
+      CSS principal
+      - Variaveis visuais
+      - Layout institucional
+      - Cards de indicadores
+      - Graficos e rankings
+      - Responsividade
+    */
     :root {
       --bg: #f4f8fb;
       --surface: #ffffff;
@@ -1387,6 +1400,158 @@ h3,
 .btn-primary:hover {
   background: #2f6f89 !important;
 }
+
+/* Camada executiva: leitura gerencial, modo percentual e notas dos graficos */
+.executive-summary {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.executive-card {
+  background: #ffffff;
+  border: 1px solid #d8e2ea;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  min-height: 116px;
+  overflow: hidden;
+  padding: 16px 18px;
+  position: relative;
+}
+
+.executive-card::before {
+  background: #3b82a0;
+  content: "";
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 5px;
+}
+
+.executive-card:nth-child(2)::before { background: #4f9d69; }
+.executive-card:nth-child(3)::before { background: #a16207; }
+.executive-card:nth-child(4)::before { background: #64748b; }
+
+.executive-card span {
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.executive-card strong {
+  color: #293033;
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.executive-card p {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 8px 0 0;
+}
+
+.chart-toolbar {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d8e2ea;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 12px;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.chart-toolbar strong {
+  color: #293033;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.chart-toolbar span {
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+.mode-toggle {
+  background: #eef4f7;
+  border: 1px solid #d8e2ea;
+  border-radius: 8px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+
+.mode-toggle button {
+  background: transparent;
+  color: #475569;
+  min-height: 34px;
+  padding: 8px 12px;
+}
+
+.mode-toggle button.active {
+  background: #293033;
+  color: #ffffff;
+}
+
+.chart-note {
+  background: #f8fbfd;
+  border: 1px solid #edf3f7;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+}
+
+.ranking-row {
+  grid-template-columns: minmax(150px, 240px) 1fr 92px !important;
+}
+
+.ranking-value {
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .executive-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .executive-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mode-toggle {
+    width: 100%;
+  }
+
+  .mode-toggle button {
+    flex: 1;
+  }
+
+}
 </style>
 </head>
 
@@ -1512,12 +1677,46 @@ h3,
         </div>
       </section>
 
+      <section id="leituraExecutiva" class="executive-summary">
+        <article class="executive-card">
+          <span>Leitura Gerencial</span>
+          <strong id="insightSintese">Sem dados carregados.</strong>
+          <p id="insightDestaque">Atualize o dashboard para calcular a leitura do período.</p>
+        </article>
+        <article class="executive-card">
+          <span>Faltas</span>
+          <strong id="insightFaltas">0%</strong>
+          <p id="insightFaltasTexto">Taxa calculada sobre atendimentos e faltas.</p>
+        </article>
+        <article class="executive-card">
+          <span>Altas</span>
+          <strong id="insightAltas">0%</strong>
+          <p id="insightAltasTexto">Taxa calculada sobre atendimentos.</p>
+        </article>
+        <article class="executive-card">
+          <span>Concentração</span>
+          <strong id="insightConcentracao">-</strong>
+          <p id="insightConcentracaoTexto">NAPS e motivo mais frequentes no período.</p>
+        </article>
+      </section>
+
       <section id="graficos" class="dashboard-grid">
+        <div class="chart-toolbar">
+          <div>
+            <strong>Visualização dos gráficos</strong>
+          </div>
+          <div class="mode-toggle" aria-label="Modo de visualização">
+            <button type="button" id="btnModoQuantidade" class="active" onclick="definirModoGrafico('quantidade')">Quantidade</button>
+            <button type="button" id="btnModoPercentual" onclick="definirModoGrafico('percentual')">Percentual</button>
+          </div>
+        </div>
+
         <div class="chart-box wide">
           <h3 id="tituloEvolucao">Evolução</h3>
           <div class="chart-wrap short">
             <canvas id="graficoEvolucao"></canvas>
           </div>
+          <p id="notaEvolucao" class="chart-note"></p>
         </div>
 
         <div class="chart-box full">
@@ -1525,23 +1724,26 @@ h3,
           <div class="chart-wrap">
             <canvas id="graficoNAPSComparativo"></canvas>
           </div>
+          <p id="notaNAPSComparativo" class="chart-note"></p>
           <p id="vazioNAPSComparativo" class="empty"></p>
         </div>
 
-        <div class="chart-box">
+        <div class="chart-box full">
           <h3>Atendimentos por tipo</h3>
           <div class="chart-wrap">
             <canvas id="graficoTipo"></canvas>
           </div>
           <div id="legendaTipo" class="tipo-legend-list"></div>
+          <p id="notaTipo" class="chart-note"></p>
           <p id="vazioTipo" class="empty"></p>
         </div>
 
-        <div class="chart-box">
+        <div class="chart-box full">
           <h3>Atendimentos por motivo</h3>
           <div class="chart-wrap">
             <canvas id="graficoMotivo"></canvas>
           </div>
+          <p id="notaMotivo" class="chart-note"></p>
           <p id="vazioMotivo" class="empty"></p>
         </div>
 
@@ -1550,6 +1752,7 @@ h3,
           <div class="chart-wrap">
             <canvas id="graficoOPM"></canvas>
           </div>
+          <p id="notaOPM" class="chart-note"></p>
           <p id="vazioOPM" class="empty"></p>
         </div>
 
@@ -1558,6 +1761,7 @@ h3,
           <div class="chart-wrap">
             <canvas id="graficoSituacaoSexo"></canvas>
           </div>
+          <p id="notaSituacaoSexo" class="chart-note"></p>
           <p id="vazioSituacaoSexo" class="empty"></p>
         </div>
 
@@ -1577,8 +1781,11 @@ h3,
   </div>
 
   <script>
+    // Estado da tela: login, filtros, indicadores, graficos e rankings.
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
+    let dadosDashboardAtual = null;
+    let modoGrafico = "quantidade";
     const graficos = {};
     const cores = ["#2563eb", "#16a34a", "#f59e0b", "#7c3aed", "#0891b2", "#4f46e5", "#65a30d", "#0f766e", "#a855f7", "#0284c7", "#ca8a04", "#475569"];
 
@@ -1643,6 +1850,19 @@ h3,
       definirMesAtual();
     }
 
+    function definirModoGrafico(modo) {
+      modoGrafico = modo === "percentual" ? "percentual" : "quantidade";
+
+      document.getElementById("btnModoQuantidade").classList.toggle("active", modoGrafico === "quantidade");
+      document.getElementById("btnModoPercentual").classList.toggle("active", modoGrafico === "percentual");
+
+      if (dadosDashboardAtual) {
+        renderizarGraficos(dadosDashboardAtual.graficos || {});
+        renderizarRanking("rankingMotivos", (dadosDashboardAtual.rankings && dadosDashboardAtual.rankings.motivos) || []);
+        renderizarRanking("rankingOPMs", (dadosDashboardAtual.rankings && dadosDashboardAtual.rankings.opms) || [], "opm");
+      }
+    }
+
     function formatarDataInput(data) {
       const ano = data.getFullYear();
       const mes = String(data.getMonth() + 1).padStart(2, "0");
@@ -1680,8 +1900,11 @@ h3,
     }
 
     function renderizarDashboard(dados) {
+      dados = dados || {};
+      dadosDashboardAtual = dados || {};
       atualizarPeriodo(dados.periodo);
       atualizarMetricas(dados.resumo || {});
+      atualizarLeituraExecutiva(dados || {});
       renderizarGraficos(dados.graficos || {});
       renderizarRanking("rankingMotivos", (dados.rankings && dados.rankings.motivos) || []);
       renderizarRanking("rankingOPMs", (dados.rankings && dados.rankings.opms) || [], "opm");
@@ -1705,6 +1928,46 @@ h3,
       document.getElementById("metricMedia").innerText = String(resumo.mediaDiaria || 0).replace(".", ",");
     }
 
+    function atualizarLeituraExecutiva(dados) {
+      const resumo = dados.resumo || {};
+      const graficosDados = dados.graficos || {};
+      const rankings = dados.rankings || {};
+      const atendimentos = Number(resumo.totalAtendimentos || 0);
+      const pessoas = Number(resumo.pessoasDistintas || 0);
+      const faltas = Number(resumo.totalFaltas || 0);
+      const altas = Number(resumo.totalAltas || 0);
+      const totalComFaltas = atendimentos + faltas;
+      const taxaFaltas = totalComFaltas > 0 ? (faltas / totalComFaltas) * 100 : 0;
+      const taxaAltas = atendimentos > 0 ? (altas / atendimentos) * 100 : 0;
+      const atendimentosPorPessoa = pessoas > 0 ? atendimentos / pessoas : 0;
+      const principalMotivo = primeiroItem((rankings && rankings.motivos) || graficosDados.porMotivo || []);
+      const principalNaps = primeiroNaps(graficosDados);
+
+      document.getElementById("insightSintese").innerText = atendimentos > 0
+        ? formatarNumero(atendimentos) + " atendimento(s) para " + formatarNumero(pessoas) + " pessoa(s)"
+        : "Sem atendimentos no período";
+      document.getElementById("insightDestaque").innerText = pessoas > 0
+        ? "Média de " + atendimentosPorPessoa.toFixed(1).replace(".", ",") + " atendimento(s) por pessoa."
+        : "Ajuste o período ou atualize para analisar a demanda.";
+
+      document.getElementById("insightFaltas").innerText = formatarPercentual(taxaFaltas);
+      document.getElementById("insightFaltasTexto").innerText = faltas > 0
+        ? formatarNumero(faltas) + " falta(s) registradas no período."
+        : "Nenhuma falta registrada no período.";
+
+      document.getElementById("insightAltas").innerText = formatarPercentual(taxaAltas);
+      document.getElementById("insightAltasTexto").innerText = altas > 0
+        ? formatarNumero(altas) + " alta(s) registradas no período."
+        : "Nenhuma alta registrada no período.";
+
+      document.getElementById("insightConcentracao").innerText = principalNaps
+        ? formatarRotuloDashboard(principalNaps.rotulo, "naps")
+        : "-";
+      document.getElementById("insightConcentracaoTexto").innerText = principalMotivo
+        ? "Motivo mais frequente: " + formatarRotuloDashboard(principalMotivo.rotulo) + " (" + formatarNumero(principalMotivo.valor) + ")."
+        : "Sem motivo predominante no período.";
+    }
+
     function renderizarGraficos(graficosDados) {
       const evolucao = graficosDados.evolucao || { pontos: [] };
       document.getElementById("tituloEvolucao").innerText = evolucao.titulo || "Evolução mensal";
@@ -1715,6 +1978,7 @@ h3,
       criarGrafico("motivo", "graficoMotivo", "bar", graficosDados.porMotivo || [], "vazioMotivo", "");
       criarGrafico("opm", "graficoOPM", "bar", graficosDados.porOPM || [], "vazioOPM", "");
       criarGraficoSituacaoSexo(graficosDados.porSituacao || [], graficosDados.porSexo || []);
+      atualizarNotasGraficos(graficosDados);
     }
 
     function criarGraficoNAPSComparativo(graficosDados) {
@@ -1764,12 +2028,12 @@ h3,
       const labelsOriginais = Object.keys(mapa).sort(function(a, b) {
         return String(a).localeCompare(String(b), "pt-BR", { sensitivity: "base" });
       });
-      const labels = labelsOriginais.map(function(item) { return capitalizar(item); });
+      const labels = labelsOriginais.map(function(item) { return formatarRotuloDashboard(item, "naps"); });
       const container = ctx.parentElement;
 
       vazio.innerText = labelsOriginais.length === 0 ? "Sem dados no período." : "";
       if (container) {
-        container.style.height = Math.max(320, labelsOriginais.length * 34) + "px";
+        container.style.height = Math.max(420, labelsOriginais.length * 54) + "px";
       }
       destruirGrafico("napsComparativo");
 
@@ -1778,27 +2042,9 @@ h3,
         data: {
           labels: labels,
           datasets: [
-            {
-              label: "Atendimentos",
-              data: labelsOriginais.map(function(naps) { return mapa[naps].atendimentos; }),
-              backgroundColor: "#2563eb",
-              borderColor: "#1d4ed8",
-              borderWidth: 1
-            },
-            {
-              label: "Faltas",
-              data: labelsOriginais.map(function(naps) { return mapa[naps].faltas; }),
-              backgroundColor: "#f59e0b",
-              borderColor: "#d97706",
-              borderWidth: 1
-            },
-            {
-              label: "Altas",
-              data: labelsOriginais.map(function(naps) { return mapa[naps].altas; }),
-              backgroundColor: "#16a34a",
-              borderColor: "#15803d",
-              borderWidth: 1
-            }
+            criarDatasetSerie("Atendimentos", labelsOriginais, mapa, "atendimentos", "#2563eb", "#1d4ed8"),
+            criarDatasetSerie("Faltas", labelsOriginais, mapa, "faltas", "#f59e0b", "#d97706"),
+            criarDatasetSerie("Altas", labelsOriginais, mapa, "altas", "#16a34a", "#15803d")
           ]
         },
         options: opcoesGrafico({
@@ -1806,7 +2052,14 @@ h3,
           beginAtZero: true,
           layout: {
             padding: {
-              right: 52
+              right: 68
+            }
+          },
+          datasets: {
+            bar: {
+              categoryPercentage: 0.68,
+              barPercentage: 0.72,
+              maxBarThickness: 16
             }
           },
           plugins: {
@@ -1836,12 +2089,20 @@ h3,
             const meta = chart.getDatasetMeta(datasetIndex);
 
             meta.data.forEach(function(barra, indice) {
-              const valor = Number(dataset.data[indice] || 0);
+              const valorOriginal = dataset.dadosOriginais
+                ? Number(dataset.dadosOriginais[indice] || 0)
+                : Number(dataset.data[indice] || 0);
+              const percentual = dataset.percentuais
+                ? Number(dataset.percentuais[indice] || 0)
+                : null;
+              const texto = modoGrafico === "percentual" && percentual !== null
+                ? formatarPercentual(percentual)
+                : formatarNumero(valorOriginal);
 
-              if (!valor) return;
+              if (!valorOriginal) return;
 
               ctx.fillText(
-                valor.toLocaleString("pt-BR"),
+                texto,
                 barra.x + 6,
                 barra.y
               );
@@ -1911,19 +2172,25 @@ h3,
         return;
       }
 
+      const total = somarValores(lista);
+
       div.innerHTML = lista.map(function(item, indice) {
         const cor = cores[indice % cores.length];
+        const percentual = total > 0 ? (Number(item.valor || 0) / total) * 100 : 0;
 
         return "<div class='tipo-legend-item'>" +
           "<span class='tipo-legend-color' style='background:" + cor + "'></span>" +
           "<span class='tipo-legend-label' title='" + escaparHtml(item.rotulo) + "'>" + escaparHtml(capitalizar(item.rotulo)) + "</span>" +
-          "<span class='tipo-legend-value'>" + formatarNumero(item.valor) + "</span>" +
+          "<span class='tipo-legend-value'>" + formatarNumero(item.valor) + " | " + formatarPercentual(percentual) + "</span>" +
           "</div>";
       }).join("");
     }
 
     function criarGraficoLinha(chave, canvasId, pontos) {
       const ctx = document.getElementById(canvasId);
+      const valoresOriginais = pontos.map(function(item) { return Number(item.valor || 0); });
+      const total = somarNumeros(valoresOriginais);
+      const percentuais = calcularPercentuais(valoresOriginais, total);
 
       destruirGrafico(chave);
       graficos[chave] = new Chart(ctx, {
@@ -1932,7 +2199,9 @@ h3,
           labels: pontos.map(function(item) { return item.rotulo; }),
           datasets: [{
             label: "Atendimentos",
-            data: pontos.map(function(item) { return item.valor; }),
+            data: modoGrafico === "percentual" ? percentuais : valoresOriginais,
+            dadosOriginais: valoresOriginais,
+            percentuais: percentuais,
             borderColor: "#2563eb",
             backgroundColor: "rgba(37, 99, 235, 0.14)",
             fill: true,
@@ -1948,7 +2217,12 @@ h3,
       const ctx = document.getElementById(canvasId);
       const vazio = document.getElementById(idVazio);
       const labels = lista.map(function(item) { return formatarRotuloDashboard(item.rotulo, chave); });
-      const valores = lista.map(function(item) { return item.valor; });
+      const valores = lista.map(function(item) { return Number(item.valor || 0); });
+      const total = somarNumeros(valores);
+      const percentuais = calcularPercentuais(valores, total);
+      const dadosGrafico = tipo === "doughnut" || modoGrafico === "quantidade"
+        ? valores
+        : percentuais;
 
       vazio.innerText = lista.length === 0 ? "Sem dados no período." : "";
       if (chave === "tipo") {
@@ -1962,9 +2236,12 @@ h3,
           labels: labels,
           datasets: [{
             label: "Atendimentos",
-            data: valores,
+            data: dadosGrafico,
+            dadosOriginais: valores,
+            percentuais: percentuais,
             backgroundColor: tipo === "doughnut" ? cores : cores,
             borderColor: tipo === "doughnut" ? "#ffffff" : "#ffffff",
+            borderRadius: tipo === "bar" ? 6 : 0,
             borderWidth: tipo === "doughnut" ? 2 : 1
           }]
         },
@@ -1992,7 +2269,6 @@ h3,
         plugins: tipo === "bar" ? [pluginValoresNasBarras()] : tipo === "doughnut" ? [pluginPercentuaisPizza()] : []
       });
     }
-
     function criarGraficoSituacaoSexo(listaSituacao, listaSexo) {
       const ctx = document.getElementById("graficoSituacaoSexo");
       const vazio = document.getElementById("vazioSituacaoSexo");
@@ -2012,6 +2288,9 @@ h3,
         sexo.push(item.valor);
       });
 
+      const percentuaisSituacao = calcularPercentuais(situacao, somarNumeros(situacao));
+      const percentuaisSexo = calcularPercentuais(sexo, somarNumeros(sexo));
+
       vazio.innerText = labels.length === 0 ? "Sem dados no período." : "";
       destruirGrafico("situacaoSexo");
 
@@ -2022,13 +2301,19 @@ h3,
           datasets: [
             {
               label: "Situação",
-              data: situacao,
-              backgroundColor: "#7c3aed"
+              data: modoGrafico === "percentual" ? percentuaisSituacao : situacao,
+              dadosOriginais: situacao,
+              percentuais: percentuaisSituacao,
+              backgroundColor: "#7c3aed",
+              borderRadius: 6
             },
             {
               label: "Sexo",
-              data: sexo,
-              backgroundColor: "#0891b2"
+              data: modoGrafico === "percentual" ? percentuaisSexo : sexo,
+              dadosOriginais: sexo,
+              percentuais: percentuaisSexo,
+              backgroundColor: "#0891b2",
+              borderRadius: 6
             }
           ]
         },
@@ -2053,6 +2338,13 @@ h3,
           legend: {
             display: true,
             position: "bottom"
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return formatarTooltipGrafico(context);
+              }
+            }
           }
         },
         scales: {
@@ -2080,11 +2372,165 @@ h3,
       if (extra) {
         Object.keys(extra).forEach(function(chave) {
           if (extra[chave] === undefined) return;
+          if (chave === "plugins") {
+            base.plugins = Object.assign({}, base.plugins, extra.plugins);
+            if (base.plugins.legend && extra.plugins.legend) {
+              base.plugins.legend = Object.assign({}, base.plugins.legend, extra.plugins.legend);
+            }
+            if (!base.plugins.tooltip) {
+              base.plugins.tooltip = {
+                callbacks: {
+                  label: function(context) {
+                    return formatarTooltipGrafico(context);
+                  }
+                }
+              };
+            }
+            return;
+          }
           if (chave !== "beginAtZero") base[chave] = extra[chave];
         });
       }
 
       return base;
+    }
+
+    function criarDatasetSerie(label, labelsOriginais, mapa, campo, corFundo, corBorda) {
+      const valores = labelsOriginais.map(function(naps) {
+        return Number((mapa[naps] && mapa[naps][campo]) || 0);
+      });
+      const percentuais = calcularPercentuais(valores, somarNumeros(valores));
+
+      return {
+        label: label,
+        data: modoGrafico === "percentual" ? percentuais : valores,
+        dadosOriginais: valores,
+        percentuais: percentuais,
+        backgroundColor: corFundo,
+        borderColor: corBorda,
+        borderRadius: 6,
+        borderWidth: 1
+      };
+    }
+
+    function somarNumeros(lista) {
+      return (lista || []).reduce(function(soma, valor) {
+        return soma + Number(valor || 0);
+      }, 0);
+    }
+
+    function somarValores(lista) {
+      return somarNumeros((lista || []).map(function(item) {
+        return Number(item.valor || 0);
+      }));
+    }
+
+    function calcularPercentuais(valores, total) {
+      return (valores || []).map(function(valor) {
+        return total > 0 ? Math.round((Number(valor || 0) / total) * 1000) / 10 : 0;
+      });
+    }
+
+    function formatarTooltipGrafico(context) {
+      const dataset = context.dataset || {};
+      const indice = context.dataIndex;
+      const valorOriginal = dataset.dadosOriginais
+        ? Number(dataset.dadosOriginais[indice] || 0)
+        : Number(context.parsed && context.parsed.x !== undefined ? context.parsed.x : context.parsed);
+      const percentual = dataset.percentuais
+        ? Number(dataset.percentuais[indice] || 0)
+        : null;
+      const partes = [
+        (dataset.label || "Total") + ": " + formatarNumero(valorOriginal)
+      ];
+
+      if (percentual !== null) {
+        partes.push(formatarPercentual(percentual));
+      }
+
+      return partes.join(" | ");
+    }
+
+    function atualizarNotasGraficos(graficosDados) {
+      const evolucao = (graficosDados.evolucao && graficosDados.evolucao.pontos) || [];
+      const totalEvolucao = somarValores(evolucao);
+      const picoEvolucao = primeiroItem(evolucao);
+      const principalNaps = primeiroNaps(graficosDados);
+
+      definirTexto("notaEvolucao", totalEvolucao > 0 && picoEvolucao
+        ? "Total no período: " + formatarNumero(totalEvolucao) + ". Maior ponto: " + picoEvolucao.rotulo + " com " + formatarNumero(picoEvolucao.valor) + "."
+        : "Sem evolução para o período selecionado.");
+
+      definirTexto("notaNAPSComparativo", principalNaps
+        ? "Maior volume em " + formatarRotuloDashboard(principalNaps.rotulo, "naps") + ": " + formatarNumero(principalNaps.valor) + " registro(s) considerados."
+        : "Sem distribuição por NAPS no período.");
+
+      definirTexto("notaTipo", montarNotaDistribuicao(graficosDados.porTipo || [], "tipo de atendimento"));
+      definirTexto("notaMotivo", montarNotaDistribuicao(graficosDados.porMotivo || [], "motivo"));
+      definirTexto("notaOPM", montarNotaDistribuicao(graficosDados.porOPM || [], "OPM", "opm"));
+      definirTexto("notaSituacaoSexo", montarNotaSituacaoSexo(graficosDados.porSituacao || [], graficosDados.porSexo || []));
+    }
+
+    function montarNotaDistribuicao(lista, nome, contexto) {
+      const total = somarValores(lista);
+      const principal = primeiroItem(lista);
+
+      if (!principal || total === 0) {
+        return "Sem dados de " + nome + " no período.";
+      }
+
+      return "Principal " + nome + ": " +
+        formatarRotuloDashboard(principal.rotulo, contexto) +
+        " com " +
+        formatarNumero(principal.valor) +
+        " (" +
+        formatarPercentual((Number(principal.valor || 0) / total) * 100) +
+        " do recorte exibido).";
+    }
+    function montarNotaSituacaoSexo(listaSituacao, listaSexo) {
+      const principalSituacao = primeiroItem(listaSituacao);
+      const principalSexo = primeiroItem(listaSexo);
+      const partes = [];
+
+      if (principalSituacao) {
+        partes.push("Situação predominante: " + formatarRotuloDashboard(principalSituacao.rotulo) + " (" + formatarNumero(principalSituacao.valor) + ")");
+      }
+
+      if (principalSexo) {
+        partes.push("Sexo predominante: " + formatarRotuloDashboard(principalSexo.rotulo) + " (" + formatarNumero(principalSexo.valor) + ")");
+      }
+
+      return partes.length ? partes.join(". ") + "." : "Sem dados de situação ou sexo no período.";
+    }
+
+    function definirTexto(id, texto) {
+      const elemento = document.getElementById(id);
+      if (elemento) elemento.innerText = texto || "";
+    }
+
+    function primeiroItem(lista) {
+      if (!lista || lista.length === 0) return null;
+
+      return lista.slice().sort(function(a, b) {
+        return Number(b.valor || 0) - Number(a.valor || 0);
+      })[0];
+    }
+
+    function primeiroNaps(graficosDados) {
+      const comparativo = (graficosDados && graficosDados.comparativoNAPS) || [];
+
+      if (comparativo.length > 0) {
+        return comparativo.slice().sort(function(a, b) {
+          return Number(b.total || 0) - Number(a.total || 0);
+        }).map(function(item) {
+          return {
+            rotulo: item.rotulo,
+            valor: Number(item.total || 0)
+          };
+        })[0];
+      }
+
+      return primeiroItem((graficosDados && graficosDados.porNAPSAtendimentos) || []);
     }
 
     function destruirGrafico(chave) {
@@ -2097,6 +2543,7 @@ h3,
     function renderizarRanking(id, lista, contexto) {
       const div = document.getElementById(id);
       const maior = lista.length > 0 ? lista[0].valor : 0;
+      const total = somarValores(lista);
 
       if (lista.length === 0) {
         div.innerHTML = "<p class='empty'>Sem dados no período.</p>";
@@ -2106,11 +2553,12 @@ h3,
       div.innerHTML = lista.map(function(item) {
         const largura = maior > 0 ? Math.max(4, Math.round((item.valor / maior) * 100)) : 0;
         const rotulo = formatarRotuloDashboard(item.rotulo, contexto);
+        const percentual = total > 0 ? (Number(item.valor || 0) / total) * 100 : 0;
 
         return "<div class='ranking-row'>" +
           "<div class='ranking-label' title='" + escaparHtml(rotulo) + "'>" + escaparHtml(rotulo) + "</div>" +
           "<div class='ranking-bar'><div class='ranking-fill' style='width:" + largura + "%'></div></div>" +
-          "<div class='ranking-value'>" + item.valor + "</div>" +
+          "<div class='ranking-value'>" + formatarNumero(item.valor) + " | " + formatarPercentual(percentual) + "</div>" +
           "</div>";
       }).join("");
     }
@@ -2118,7 +2566,7 @@ h3,
     function formatarRotuloDashboard(rotulo, contexto) {
       const texto = String(rotulo || "Não informado");
 
-      if (contexto === "opm") {
+      if (contexto === "opm" || contexto === "naps") {
         return texto.toUpperCase();
       }
 
@@ -2127,6 +2575,16 @@ h3,
 
     function formatarNumero(valor) {
       return Number(valor || 0).toLocaleString("pt-BR");
+    }
+
+    function formatarPercentual(valor) {
+      const numero = Number(valor || 0);
+      const casas = numero > 0 && numero < 10 ? 1 : 0;
+
+      return numero.toLocaleString("pt-BR", {
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas
+      }) + "%";
     }
 
     function capitalizar(texto) {
