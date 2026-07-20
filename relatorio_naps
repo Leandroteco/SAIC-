@@ -1,10 +1,22 @@
 <!DOCTYPE html>
+<!--
+  SAIC - Relatorio NAPS
+  Arquivo organizado para manutencao visual e funcional no Apps Script.
+  Mantem acesso por NAPS, comparativos mensais e chamadas ao codigo.gs.
+-->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relatório NAPS - SiSMen</title>
   <style>
+    /*
+      CSS principal
+      - Variaveis visuais
+      - Layout institucional
+      - Indicadores, comparativos e graficos simples
+      - Responsividade
+    */
     :root {
       --bg: #eef4f7;
       --surface: #ffffff;
@@ -608,6 +620,7 @@
   </div>
 
   <script>
+    // Estado da tela: acesso do usuario, NAPS selecionado e comparativos mensais.
     const webAppUrl = "<?= webAppUrl ?>";
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
@@ -807,9 +820,10 @@
       const chave = texto.toLowerCase();
 
       if (mapaExato[chave]) return mapaExato[chave];
+      if (/^naps(\/| |-)/i.test(texto) || /^naps$/i.test(texto)) return texto.toUpperCase();
 
       texto = texto.replace(/\bmarco\b/gi, "março");
-      texto = texto.replace(/\bPm\b/g, "PM");
+      texto = texto.replace(/\bpm\b/gi, "PM");
       texto = texto.replace(/\bCaps\b/g, "CAPS");
       texto = texto.replace(/\bNaps\b/g, "NAPS");
       texto = texto.replace(/\bCpam\b/g, "CPAM");
