@@ -1,5 +1,10 @@
 
 <!DOCTYPE html>
+<!--
+  SAIC - Relatorios gerenciais
+  Arquivo organizado para manutencao visual e funcional no Apps Script.
+  Mantem filtros, abas, busca individual e chamadas ao codigo.gs.
+-->
 <html>
 <head>
   <meta charset="UTF-8">
@@ -7,6 +12,14 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
+    /*
+      CSS principal
+      - Variaveis visuais
+      - Layout institucional
+      - Filtros, indicadores e abas
+      - Tabelas, rankings e busca individual
+      - Responsividade
+    */
     :root {
       --bg: #f4f8fb;
       --surface: #ffffff;
@@ -1745,6 +1758,7 @@ h3,
 </div>
 
   <script>
+// Estado da tela: login, filtros, abas, carregamento e renderizacao do relatorio.
 let tokenGoogle = "<?= tokenGoogleInicial ?>";
 let usuarioLogado = <?!= usuarioInicialJson ?>;
 let relatorioAtual = null;
@@ -2950,7 +2964,8 @@ function formatarDataInput(data) {
         [/\bPm\b/g, "PM"],
         [/\bCpam\b/g, "CPAM"],
         [/\bCaps\b/g, "CAPS"],
-        [/\bNaps\b/g, "NAPS"]
+        [/\bNaps\b/g, "NAPS"],
+        [/\bNAPS\/[A-Z0-9-]+/gi, function(valor) { return valor.toUpperCase(); }]
       ];
 
       return substituicoes.reduce(function(resultado, item) {
