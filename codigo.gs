@@ -1,3 +1,19 @@
+/*
+ * SAIC - Sistema de Gestao dos Atendimentos do SiSMen
+ *
+ * Organizacao do arquivo:
+ * 1. Configuracoes e cabecalhos
+ * 2. Estrutura da planilha
+ * 3. Usuarios, autenticacao e paginas
+ * 4. Recados do sistema
+ * 5. Salvamento, busca, indice e ficha
+ * 6. Relatorios, dashboard, mapa de calor e NAPS
+ * 7. Utilitarios e autorizacao
+ *
+ * Observacao: estes comentarios organizam a manutencao sem alterar a logica.
+ */
+
+// CONFIGURACOES E CABECALHOS
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
 const ABA_INDICE = "cadastro_indice";
@@ -135,6 +151,7 @@ const ALIASES_CABECALHOS_PADRAO = {
   dataatualizacao: ["data atualizacao", "data atualização", "data de atualizacao", "data de atualização"]
 };
 
+// ESTRUTURA DA PLANILHA E MAPEAMENTO DE CABECALHOS
 function configurarEstruturaPlanilha() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -333,6 +350,7 @@ function gravarLinhasPadraoAbaixo(sheet, linhasPadrao, cabecalhosPadrao) {
     .setValues(linhasAtuais);
 }
 
+// MANUTENCAO E DIAGNOSTICOS
 function diagnosticarCabecalhosDados() {
   const estrutura = configurarEstruturaPlanilha();
   const sheet = estrutura.sheetDados;
@@ -433,6 +451,7 @@ function numeroColunaParaLetra(numero) {
   return letra || "?";
 }
 
+// USUARIOS E AUTENTICACAO
 function lerDadosUsuarioSistema(linha, indices) {
   return {
     email: String(linha[indices.email] || "").toLowerCase().trim(),
@@ -625,6 +644,7 @@ function escaparHtmlServidor(valor) {
     .replace(/'/g, "&#039;");
 }
 
+// WEB APP E RENDERIZACAO DE PAGINAS
 function doGet(e) {
   const pagina = obterPaginaSolicitada(e && e.parameter ? e.parameter.pagina : "");
 
@@ -836,6 +856,7 @@ function obterUsuarioSistemaPorEmail(email) {
   };
 }
 
+// RECADOS DO SISTEMA
 function obterRecadoAtivo(idToken) {
   const usuario = validarUsuarioPorToken(idToken);
   const estrutura = configurarEstruturaPlanilha();
@@ -958,6 +979,7 @@ function normalizarCorRecado(cor) {
 }
 
 
+// SALVAMENTO, CONFLITOS E INDICE DE CADASTROS
 function salvarAtendimento(dados, idToken) {
   const usuario = validarUsuarioPorToken(idToken);
   const lock = LockService.getScriptLock();
@@ -1358,6 +1380,7 @@ function normalizarTelefone(valor) {
   return String(valor).replace(/\D/g, "");
 }
 
+// BUSCA, ULTIMOS ATENDIMENTOS E FICHA
 function montarRegistro(linha) {
   const napsAtendimento = String(linha[28] || "").trim();
 
@@ -1766,6 +1789,7 @@ function converterData(valor) {
   return formatarDataParaInput(valor);
 }
 
+// RELATORIOS, DASHBOARD, RELATORIO NAPS E MAPA DE CALOR
 function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio, idToken) {
   validarAdministradorPorToken(idToken);
 
@@ -1881,10 +1905,10 @@ function obterDadosRelatorioNaps(filtros, idToken) {
       email: usuario.email,
       nome: usuario.nome,
       perfil: usuario.perfil,
-      naps: usuario.naps || ""
+      naps: formatarNapsRelatorio(usuario.naps || "")
     },
     administrador: administrador,
-    napsSelecionado: napsSelecionado || "Todos os NAPS",
+    napsSelecionado: napsSelecionado ? formatarNapsRelatorio(napsSelecionado) : "Todos os NAPS",
     periodoAtual: montarPeriodoRespostaRelatorioNaps(periodo.atual),
     periodoAnterior: montarPeriodoRespostaRelatorioNaps(periodo.anterior),
     atual: dadosAtual,
@@ -2202,6 +2226,7 @@ function obterDadosMapaCalor(filtros, idToken) {
   };
 }
 
+// FILTROS E APOIO DOS PAINEIS GERENCIAIS
 function normalizarFiltrosDashboard(filtros) {
   const hoje = new Date();
   const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -2270,7 +2295,7 @@ function carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail) {
 }
 
 function adicionarNapsReferenciaMapa(mapa, nomeNaps, cepNaps, coordenadas) {
-  const nome = String(nomeNaps || "").trim();
+  const nome = formatarNapsRelatorio(nomeNaps);
   const cep = somenteNumeros(cepNaps);
 
   if (!nome || nome === "nao informado" || cep.length !== 8) return;
@@ -2410,7 +2435,7 @@ function preencherNapsReferenciaCargaMapa(cargaNaps, napsReferencia) {
 }
 
 function garantirNapsCargaMapa(mapa, nomeNaps, dadosNaps) {
-  const nome = String(nomeNaps || "nao informado").trim() || "nao informado";
+  const nome = formatarNapsRelatorio(nomeNaps || "nao informado") || "nao informado";
   const chave = normalizar(nome);
 
   if (!mapa[chave]) {
@@ -3128,7 +3153,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
   const id = linha[0] || "";
   const emailCadastro = String(linha[1] || "").toLowerCase().trim();
   const napsAtendimento = String(linha[28] || "").trim();
-  const napsRegistro = napsAtendimento || "nao informado";
+  const napsRegistro = formatarNapsRelatorio(napsAtendimento || "nao informado");
   const dataCadastroData = obterData(linha[26]);
   const dataNascimentoData = obterData(linha[10]);
   const dataIngressoData = obterData(linha[9]);
@@ -3140,7 +3165,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     id: id,
     emailCadastro: linha[1] || "",
     naps: napsRegistro,
-    napsAtendimento: napsAtendimento,
+    napsAtendimento: formatarNapsRelatorio(napsAtendimento),
     tipoAtendimento: linha[2] || "",
     motivo: linha[3] || "",
     re: linha[4] || "",
@@ -3153,17 +3178,17 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     dataNascimento: formatarDataBrasil(linha[10]),
     idade: idade,
     faixaEtaria: obterFaixaEtaria(idade),
-    sexo: linha[11] || "",
-    opmAtual: linha[12] || "",
+    sexo: formatarSexoRelatorio(linha[11]),
+    opmAtual: formatarCampoMaiusculoRelatorio(linha[12]),
     situacaoStatus: linha[13] || "",
     dataInatividade: formatarDataBrasil(linha[14]),
-    estadoCivil: linha[15] || "",
+    estadoCivil: formatarEstadoCivilRelatorio(linha[15]),
     numeroFilhos: linha[16] || "",
     cep: linha[17] || "",
     rua: linha[18] || "",
-    bairro: linha[19] || "",
-    cidade: linha[20] || "",
-    estado: linha[21] || "",
+    bairro: formatarLocalidadeRelatorio(linha[19]),
+    cidade: formatarLocalidadeRelatorio(linha[20]),
+    estado: formatarCampoMaiusculoRelatorio(linha[21]),
     numero: linha[22] || "",
     complemento: linha[23] || "",
     observacoes: linha[24] || "",
@@ -3183,13 +3208,88 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
 
 function montarRotuloResponsavelNapsRelatorio(responsavel, naps) {
   const nomeResponsavel = String(responsavel || "").trim() || "nao informado";
-  const nomeNaps = String(naps || "").trim();
+  const nomeNaps = formatarNapsRelatorio(naps);
 
   if (!nomeNaps || normalizar(nomeNaps) === "nao informado") {
     return nomeResponsavel + ", NAPS nao informado";
   }
 
   return nomeResponsavel + ", " + nomeNaps;
+}
+
+function formatarNapsRelatorio(valor) {
+  const texto = String(valor || "").trim();
+
+  if (!texto || normalizar(texto) === "nao informado") {
+    return texto ? "nao informado" : "";
+  }
+
+  return texto.toUpperCase();
+}
+
+function formatarSexoRelatorio(valor) {
+  const texto = String(valor || "").trim();
+  const chave = normalizar(texto);
+
+  if (!texto) return "";
+  if (chave === "feminino" || chave === "fem" || chave === "f") return "Feminino";
+  if (chave === "masculino" || chave === "masc" || chave === "m") return "Masculino";
+
+  return texto;
+}
+
+function formatarEstadoCivilRelatorio(valor) {
+  const texto = String(valor || "").trim();
+  const chave = normalizar(texto);
+
+  if (!texto) return "";
+  if (chave === "solteiro" || chave === "solteira" || chave === "solteiro(a)") return "Solteiro(a)";
+  if (chave === "casado" || chave === "casada" || chave === "casado(a)") return "Casado(a)";
+  if (chave === "divorciado" || chave === "divorciada" || chave === "divorciado(a)") return "Divorciado(a)";
+  if (chave === "viuvo" || chave === "viuva" || chave === "viuvo(a)") return "Vi\u00favo(a)";
+  if (chave === "uniao estavel" || chave === "uniao estavel(a)") return "Uni\u00e3o Est\u00e1vel";
+  if (chave === "outro" || chave === "outros") return "Outros";
+
+  return formatarLocalidadeRelatorio(texto);
+}
+
+function formatarCampoMaiusculoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  return texto ? texto.toUpperCase() : "";
+}
+
+function formatarLocalidadeRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto).replace(/\s+/g, " ");
+  const traducoes = {
+    "sao paulo": "S\u00e3o Paulo",
+    "sao jose dos campos": "S\u00e3o Jos\u00e9 dos Campos",
+    "sao jose do rio preto": "S\u00e3o Jos\u00e9 do Rio Preto",
+    "sao bernardo do campo": "S\u00e3o Bernardo do Campo",
+    "sao caetano do sul": "S\u00e3o Caetano do Sul",
+    "sao vicente": "S\u00e3o Vicente",
+    "ribeirao preto": "Ribeir\u00e3o Preto",
+    "maua": "Mau\u00e1",
+    "se": "S\u00e9",
+    "butanta": "Butant\u00e3",
+    "itapecerica da serra": "Itapecerica da Serra"
+  };
+
+  if (!texto) return "";
+  if (traducoes[chave]) return traducoes[chave];
+
+  return texto
+    .toLowerCase()
+    .split(" ")
+    .map(function(parte) {
+      if (!parte) return "";
+      return parte.charAt(0).toUpperCase() + parte.slice(1);
+    })
+    .join(" ");
+}
+
+function limparEspacosRelatorio(valor) {
+  return String(valor || "").trim().replace(/\s+/g, " ");
 }
 
 function montarResumoRelatorio(registros) {
@@ -3326,7 +3426,7 @@ function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss)
     re: referencia.re || "",
     cpf: referencia.cpf || "",
     unidade: referencia.opmAtual || "",
-    naps: usuarioNaps.naps || "nao informado",
+    naps: formatarNapsRelatorio(usuarioNaps.naps || "nao informado"),
     totalAtendimentos: totaisPessoa.atendimentos,
     totalFaltas: totaisPessoa.faltas,
     totalAltas: totaisPessoa.altas,
@@ -3850,6 +3950,7 @@ function obterData(valor) {
   return null;
 }
 
+// UTILITARIOS GERAIS E AUTORIZACAO
 function obterUrlApp() {
   return ScriptApp.getService().getUrl();
 }
