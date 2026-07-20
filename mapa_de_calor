@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--
+  SAIC - Mapa de calor
+  Arquivo organizado para manutencao visual e funcional no Apps Script.
+  Mantem filtros, mapa, pontos, modo escuro e chamadas ao codigo.gs.
+-->
 <html>
 <head>
   <meta charset="UTF-8">
@@ -8,6 +13,14 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
+    /*
+      CSS principal
+      - Variaveis visuais
+      - Layout institucional
+      - Cards de leitura gerencial
+      - Mapa Leaflet, pontos e modo escuro
+      - Responsividade
+    */
     :root {
       --bg: #f4f8fb;
       --surface: #ffffff;
@@ -1554,8 +1567,8 @@ body.mapa-tema-escuro .btn-map-theme:hover {
         </nav>
 
         <div class="sidebar-footer">
-          <span>Módulo</span>
-          <strong>Em desenvolvimento</strong>
+          <span>Acesso</span>
+          <strong>Administrador</strong>
         </div>
       </aside>
 
@@ -1716,6 +1729,7 @@ body.mapa-tema-escuro .btn-map-theme:hover {
   </div>
 
   <script>
+    // Estado inicial para validar acesso antes de carregar o mapa.
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
 
@@ -1731,6 +1745,7 @@ body.mapa-tema-escuro .btn-map-theme:hover {
   </script>
 
   <script>
+    // Estado do mapa: camadas, tema, filtros e renderizacao da leitura gerencial.
     let mapaCalorLeaflet = null;
     let camadaNaps = null;
     let camadaPontos = null;
