@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--
+  SAIC - Formulario de atendimento
+  Arquivo organizado para manutencao visual e funcional no Apps Script.
+  Nao remover chamadas google.script.run sem revisar codigo.gs.
+-->
 <html>
 <head>
   <meta charset="UTF-8">
@@ -6,6 +11,14 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
+    /*
+      CSS principal
+      - Variaveis visuais
+      - Layout institucional
+      - Formulario, cards e controles
+      - Estados de carregamento, erro e impressao
+      - Responsividade
+    */
     /* Base funcional limpa: somente estrutura, componentes e estados usados pelo formulario. */
     :root {
       --bg: #f4f8fb;
@@ -284,6 +297,26 @@
     select option.opcao-alerta-atendimento,
     select.tipo-atendimento-alerta {
       font-weight: 900;
+    }
+
+    .campo-outros-condicional {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .campo-outros-condicional.visivel {
+      display: block;
+    }
+
+    .campo-outros-condicional input {
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .campo-outros-condicional input::placeholder {
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: lowercase;
     }
 
     .grid,
@@ -1903,7 +1936,7 @@ body {
    <div class="grid-2">
     <div>
       <label>Tipo de Atendimento</label>
-      <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento(); atualizarObrigatoriedadeObservacoes()" required>
+      <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento(); atualizarCamposOutros()" required>
         <option value="">Selecione</option>
         <option class="opcao-alerta-atendimento" value="alta">Atendimento de ALTA</option>
         <option class="opcao-alerta-atendimento" value="falta">Registrar como FALTA</option>
@@ -1925,11 +1958,17 @@ body {
         <option>Exame Criminológico</option>
         <option>Outros</option>
       </select>
+      <div id="grupoTipoAtendimentoOutros" class="campo-outros-condicional">
+        <input
+          id="tipoAtendimentoOutros"
+          placeholder="outros"
+          oninput="converterMaiusculas(this); limparErroCampo(this)">
+      </div>
     </div>
 
     <div>
       <label>Motivo</label>
-      <select id="motivo" onchange="limparErroCampo(this); atualizarObrigatoriedadeObservacoes()" required>
+      <select id="motivo" onchange="limparErroCampo(this); atualizarCamposOutros()" required>
         <option value="">Selecione</option>
         <option>Ansiedade</option>
         <option>Conflitos Interpessoais</option>
@@ -1948,6 +1987,12 @@ body {
         <option>Sexualidade e Identidade de Gênero</option>
         <option>Outros</option>
       </select>
+      <div id="grupoMotivoOutros" class="campo-outros-condicional">
+        <input
+          id="motivoOutros"
+          placeholder="outros"
+          oninput="converterMaiusculas(this); limparErroCampo(this)">
+      </div>
     </div>
   </div>
 
@@ -2004,7 +2049,7 @@ body {
     </button>
   </div>
 
-  <!-- Observacoes: obrigatorio quando Tipo de Atendimento ou Motivo for "Outros". -->
+  <!-- Observacoes livres do atendimento. Complementos de "Outros" ficam nos campos especificos acima. -->
   <h2>Observações</h2>
   <textarea id="observacoes" oninput="converterMaiusculas(this); limparErroCampo(this)"></textarea>
 
@@ -2041,7 +2086,7 @@ body {
   <div id="mensagem"></div>
 
 <div class="copyright">
-  © 2026 - Sistema de Gestão dos Atendimentos do SiSMen<br>
+  © 2026 - Sistema de Gestão dos Atendimentos do SiSMen (versão 2.0)<br>
   Desenvolvido por Major Isabela, Subtenente Tome, Sargento PM Felix e Cabo PM Myazaki
 </div>
 </div>
@@ -2076,7 +2121,7 @@ document.addEventListener("DOMContentLoaded", function() {
     carregarRecadoAtivo();
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeEmail();
-    atualizarObrigatoriedadeObservacoes();
+    atualizarCamposOutros();
     preencherResponsavelLogado();
     configurarOcultarImpressaoAoEditar();
     configurarFechamentoUltimosAtendimentos();
@@ -2850,21 +2895,42 @@ function valorIndicaOutros(valor) {
     .includes("outros");
 }
 
-function observacoesObrigatoriasPorOutros() {
-  const tipoAtendimento = document.getElementById("tipoAtendimento").value;
-  const motivo = document.getElementById("motivo").value;
-
-  return valorIndicaOutros(tipoAtendimento) || valorIndicaOutros(motivo);
+function campoOutrosObrigatorio(idCampoPrincipal) {
+  const campoPrincipal = document.getElementById(idCampoPrincipal);
+  return campoPrincipal && valorIndicaOutros(campoPrincipal.value);
 }
 
-// Torna Observacoes obrigatorio quando Tipo de Atendimento ou Motivo for "Outros".
-function atualizarObrigatoriedadeObservacoes() {
-  const campoObservacoes = document.getElementById("observacoes");
-  const obrigatorio = observacoesObrigatoriasPorOutros();
+function alternarCampoOutros(idGrupo, idCampo, obrigatorio) {
+  const grupo = document.getElementById(idGrupo);
+  const campo = document.getElementById(idCampo);
 
-  campoObservacoes.required = obrigatorio;
+  if (!grupo || !campo) return;
+
+  grupo.classList.toggle("visivel", obrigatorio);
+  campo.required = obrigatorio;
 
   if (!obrigatorio) {
+    campo.value = "";
+    limparErroVisualCampo(campo);
+  }
+}
+
+// Exibe e exige os complementos especificos quando Tipo de Atendimento ou Motivo for "Outros".
+function atualizarCamposOutros() {
+  alternarCampoOutros(
+    "grupoTipoAtendimentoOutros",
+    "tipoAtendimentoOutros",
+    campoOutrosObrigatorio("tipoAtendimento")
+  );
+  alternarCampoOutros(
+    "grupoMotivoOutros",
+    "motivoOutros",
+    campoOutrosObrigatorio("motivo")
+  );
+
+  const campoObservacoes = document.getElementById("observacoes");
+  if (campoObservacoes) {
+    campoObservacoes.required = false;
     limparErroVisualCampo(campoObservacoes);
   }
 }
@@ -2920,6 +2986,59 @@ function definirEstadoSalvamento(salvando) {
     : obterRotuloBotaoSalvar();
 }
 
+function observacaoSemComplementosOutros(valor) {
+  const linhas = [];
+
+  String(valor || "").split(/\r?\n/).forEach(function(linha) {
+    const texto = String(linha || "").trim();
+
+    if (!texto) return;
+
+    const normalizada = texto
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+    if (normalizada.indexOf("tipo de atendimento - outros:") === 0 ||
+      normalizada.indexOf("motivo - outros:") === 0) {
+      return;
+    }
+
+    if (normalizada.indexOf("observacoes:") === 0) {
+      const indiceSeparador = texto.indexOf(":");
+      const conteudo = indiceSeparador >= 0 ? texto.substring(indiceSeparador + 1).trim() : "";
+      if (conteudo) linhas.push(conteudo);
+      return;
+    }
+
+    linhas.push(texto);
+  });
+
+  return linhas.join("\n").trim();
+}
+
+// Monta a observacao final preservando listas controladas e detalhando escolhas "Outros".
+function montarObservacoesAtendimentoParaSalvar() {
+  const linhas = [];
+  const tipoAtendimentoOutros = String(document.getElementById("tipoAtendimentoOutros").value || "").trim();
+  const motivoOutros = String(document.getElementById("motivoOutros").value || "").trim();
+  const observacoesLivres = observacaoSemComplementosOutros(document.getElementById("observacoes").value);
+
+  if (campoOutrosObrigatorio("tipoAtendimento") && tipoAtendimentoOutros) {
+    linhas.push("TIPO DE ATENDIMENTO - OUTROS: " + tipoAtendimentoOutros.toUpperCase());
+  }
+
+  if (campoOutrosObrigatorio("motivo") && motivoOutros) {
+    linhas.push("MOTIVO - OUTROS: " + motivoOutros.toUpperCase());
+  }
+
+  if (observacoesLivres) {
+    linhas.push("OBSERVACOES: " + observacoesLivres);
+  }
+
+  return linhas.join("\n");
+}
+
 
 
 // Valida o formulario e envia o atendimento para gravacao na planilha.
@@ -2940,17 +3059,22 @@ function salvar() {
     return document.getElementById(id);
   });
   const campoTipoAtendimento = document.getElementById("tipoAtendimento");
+  const campoTipoAtendimentoOutros = document.getElementById("tipoAtendimentoOutros");
   const campoMotivo = document.getElementById("motivo");
+  const campoMotivoOutros = document.getElementById("motivoOutros");
   const campoEmail = document.getElementById("email");
   const campoObservacoes = document.getElementById("observacoes");
   const campoResponsavel = document.getElementById("responsavel");
   const mensagem = document.getElementById("mensagem");
   const camposComErro = [];
+  let faltouComplementoOutros = false;
 
   camposDadosPessoaisObrigatorios.forEach(limparErroCampo);
   limparErroCampo(document.getElementById("dataInatividade"));
   limparErroCampo(campoTipoAtendimento);
+  limparErroCampo(campoTipoAtendimentoOutros);
   limparErroCampo(campoMotivo);
+  limparErroCampo(campoMotivoOutros);
   limparErroCampo(campoEmail);
   limparErroCampo(campoObservacoes);
   limparErroCampo(campoResponsavel);
@@ -2990,14 +3114,21 @@ function salvar() {
     camposComErro.push(campoMotivo);
   }
 
+  if (campoOutrosObrigatorio("tipoAtendimento") && !campoPreenchido(campoTipoAtendimentoOutros)) {
+    marcarCampoObrigatorio(campoTipoAtendimentoOutros);
+    camposComErro.push(campoTipoAtendimentoOutros);
+    faltouComplementoOutros = true;
+  }
+
+  if (campoOutrosObrigatorio("motivo") && !campoPreenchido(campoMotivoOutros)) {
+    marcarCampoObrigatorio(campoMotivoOutros);
+    camposComErro.push(campoMotivoOutros);
+    faltouComplementoOutros = true;
+  }
+
   if (statusExigeEmail(document.getElementById("situacaoStatus").value) && !campoPreenchido(campoEmail)) {
     marcarCampoObrigatorio(campoEmail);
     camposComErro.push(campoEmail);
-  }
-
-  if (observacoesObrigatoriasPorOutros() && campoObservacoes.value.trim() === "") {
-    marcarCampoObrigatorio(campoObservacoes);
-    camposComErro.push(campoObservacoes);
   }
 
   const camposDataComErro = validarDatasAtendimento();
@@ -3007,8 +3138,8 @@ function salvar() {
 
   if (camposComErro.length > 0) {
     mensagem.style.color = "#b42318";
-    mensagem.innerText = observacoesObrigatoriasPorOutros() && campoObservacoes.value.trim() === ""
-      ? "Preencha o campo Observações para explicar a escolha de outros."
+    mensagem.innerText = faltouComplementoOutros
+      ? "Preencha os campos destacados para explicar a escolha de outros."
       : camposDataComErro.length > 0
       ? "Preencha corretamente os campos destacados. As datas obrigatórias devem ter ano com 4 dígitos."
       : statusExigeEmail(document.getElementById("situacaoStatus").value)
@@ -3055,7 +3186,7 @@ function salvar() {
     estado: document.getElementById("estado").value,
     numero: document.getElementById("numero").value,
     complemento: document.getElementById("complemento").value,
-    observacoes: document.getElementById("observacoes").value,
+    observacoes: montarObservacoesAtendimentoParaSalvar(),
     responsavel: document.getElementById("responsavel").value,
     pessoasVinculadas: coletarPessoasVinculadas()
   };
@@ -3103,7 +3234,7 @@ function limparFormulario(opcoes) {
   atualizarCampoDataInatividade();
   atualizarObrigatoriedadeEmail();
   aplicarEstiloTipoAtendimento();
-  atualizarObrigatoriedadeObservacoes();
+  atualizarCamposOutros();
   preencherResponsavelLogado();
   ocultarUltimosAtendimentos();
 
@@ -3272,12 +3403,8 @@ function tratarResultadoBusca(resposta) {
   if (!resposta.multiplos) {
   preencherFormulario(resposta.registro);
 
-  const data = resposta.registro.dataCadastro || "data não informada";
-
-
-  div.innerHTML = `<p style="color:#166534; font-weight:bold;">
-    Cadastro localizado. Último atendimento em: ${data}.
-  </p>` + montarDetalhesBuscaAtendimento(resposta.registro);
+  div.innerHTML = montarMensagemCadastroLocalizado(resposta.registro) +
+    montarDetalhesBuscaAtendimento(resposta.registro);
 
   return;
 }
@@ -3304,30 +3431,30 @@ function tratarResultadoBusca(resposta) {
     item.onclick = function() {
   preencherFormulario(registro);
 
-  const data = registro.dataCadastro || "data não informada";
-
-  div.innerHTML = `<p style="color:#166534; font-weight:bold;">
-    Cadastro localizado. Último atendimento em: ${data}.
-  </p>` + montarDetalhesBuscaAtendimento(registro);
+  div.innerHTML = montarMensagemCadastroLocalizado(registro) +
+    montarDetalhesBuscaAtendimento(registro);
 };
 
     div.appendChild(item);
   });
 }
 
+function montarMensagemCadastroLocalizado(registro) {
+  const data = (registro && registro.dataCadastro) || "data não informada";
+  const responsavel = String((registro && registro.responsavel) || "").trim();
+  const complementoResponsavel = responsavel
+    ? ", Responsável: " + escaparHtml(formatarTextoRetornoBusca(responsavel))
+    : "";
+
+  return `<p style="color:#166534; font-weight:bold;">
+    Cadastro localizado. Último atendimento em: ${escaparHtml(data)}${complementoResponsavel}.
+  </p>`;
+}
+
 function montarDetalhesBuscaAtendimento(registro) {
   const partes = [];
   const observacao = String((registro && registro.observacoes) || "").trim();
-  const responsavel = String((registro && registro.responsavel) || "").trim();
   const vinculos = (registro && registro.vinculos) || [];
-
-  if (responsavel) {
-    partes.push(
-      "<div style='margin-top:8px;'><strong>Responsável pelo último atendimento:</strong> " +
-      escaparHtml(formatarTextoRetornoBusca(responsavel)) +
-      "</div>"
-    );
-  }
 
   if (observacao) {
     partes.push(
@@ -3454,7 +3581,7 @@ function preencherFormulario(r) {
   document.getElementById("complemento").value = converterMaiusculas(r.complemento || "");
   atualizarCampoDataInatividade();
   atualizarObrigatoriedadeEmail();
-  atualizarObrigatoriedadeObservacoes();
+  atualizarCamposOutros();
 }
 
 
