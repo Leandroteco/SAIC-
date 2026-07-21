@@ -3160,6 +3160,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
   const idade = calcularAnosAteHoje(dataNascimentoData);
   const tempoServicoAnos = calcularAnosAteHoje(dataIngressoData);
   const vinculos = vinculosPorAtendimento[String(id)] || [];
+  const responsavelFormatado = formatarResponsavelRelatorio(linha[25]);
 
   return {
     id: id,
@@ -3180,7 +3181,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     faixaEtaria: obterFaixaEtaria(idade),
     sexo: formatarSexoRelatorio(linha[11]),
     opmAtual: formatarCampoMaiusculoRelatorio(linha[12]),
-    situacaoStatus: linha[13] || "",
+    situacaoStatus: formatarSituacaoStatusRelatorio(linha[13]),
     dataInatividade: formatarDataBrasil(linha[14]),
     estadoCivil: formatarEstadoCivilRelatorio(linha[15]),
     numeroFilhos: linha[16] || "",
@@ -3192,8 +3193,8 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     numero: linha[22] || "",
     complemento: linha[23] || "",
     observacoes: linha[24] || "",
-    responsavel: linha[25] || "",
-    responsavelNaps: montarRotuloResponsavelNapsRelatorio(linha[25], napsRegistro),
+    responsavel: responsavelFormatado,
+    responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavelFormatado, napsRegistro),
     dataCadastro: formatarDataBrasil(linha[26]),
     dataCadastroIso: formatarDataParaInput(linha[26]),
     dataCadastroData: dataCadastroData,
@@ -3228,7 +3229,7 @@ function formatarNapsRelatorio(valor) {
 }
 
 function formatarSexoRelatorio(valor) {
-  const texto = String(valor || "").trim();
+  const texto = limparEspacosRelatorio(valor);
   const chave = normalizar(texto);
 
   if (!texto) return "";
@@ -3238,14 +3239,30 @@ function formatarSexoRelatorio(valor) {
   return texto;
 }
 
+function formatarSituacaoStatusRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto);
+
+  if (!texto) return "";
+  if (chave === "ativo operacional") return "Ativo Operacional";
+  if (chave === "ativo administrativo") return "Ativo Administrativo";
+  if (chave === "agregado" || chave === "agregado(a)") return "Agregado(a)";
+  if (chave === "exonerado" || chave === "exonerado(a)") return "Exonerado(a)";
+  if (chave === "inativo falecido") return "Inativo Falecido";
+  if (chave === "inativo") return "Inativo";
+
+  return formatarLocalidadeRelatorio(texto);
+}
+
 function formatarEstadoCivilRelatorio(valor) {
-  const texto = String(valor || "").trim();
+  const texto = limparEspacosRelatorio(valor);
   const chave = normalizar(texto);
 
   if (!texto) return "";
   if (chave === "solteiro" || chave === "solteira" || chave === "solteiro(a)") return "Solteiro(a)";
   if (chave === "casado" || chave === "casada" || chave === "casado(a)") return "Casado(a)";
   if (chave === "divorciado" || chave === "divorciada" || chave === "divorciado(a)") return "Divorciado(a)";
+  if (chave === "separado" || chave === "separada" || chave === "separado(a)") return "Separado(a)";
   if (chave === "viuvo" || chave === "viuva" || chave === "viuvo(a)") return "Vi\u00favo(a)";
   if (chave === "uniao estavel" || chave === "uniao estavel(a)") return "Uni\u00e3o Est\u00e1vel";
   if (chave === "outro" || chave === "outros") return "Outros";
@@ -3256,6 +3273,21 @@ function formatarEstadoCivilRelatorio(valor) {
 function formatarCampoMaiusculoRelatorio(valor) {
   const texto = limparEspacosRelatorio(valor);
   return texto ? texto.toUpperCase() : "";
+}
+
+function formatarResponsavelRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+
+  if (!texto) return "";
+
+  return formatarLocalidadeRelatorio(texto)
+    .replace(/\bPm\b/g, "PM")
+    .replace(/\bCpam\b/g, "CPAM")
+    .replace(/\bCaps\b/g, "CAPS")
+    .replace(/\bNaps\b/g, "NAPS")
+    .replace(/\bNAPS\/[A-Z0-9-]+/gi, function(trecho) {
+      return trecho.toUpperCase();
+    });
 }
 
 function formatarLocalidadeRelatorio(valor) {
