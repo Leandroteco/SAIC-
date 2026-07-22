@@ -535,6 +535,76 @@
         grid-row: 2;
       }
     }
+
+    /* Mobile ampliado: melhora leitura e toque, sem alterar funcionalidades */
+    @media (max-width: 620px) {
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      label,
+      .bar-label,
+      .empty-state,
+      .delta,
+      td,
+      th {
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      input,
+      select,
+      textarea {
+        font-size: 16px;
+        line-height: 1.35;
+        min-height: 52px;
+        padding: 13px 14px;
+      }
+
+      button,
+      .btn,
+      .nav-item,
+      .side-nav a {
+        font-size: 16px;
+        line-height: 1.25;
+        min-height: 50px;
+        padding: 12px 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+        line-height: 1.15;
+      }
+
+      h2 {
+        font-size: 19px;
+        line-height: 1.25;
+      }
+
+      h3 {
+        font-size: 17px;
+        line-height: 1.3;
+      }
+
+      .metric-card strong,
+      .card-value,
+      .kpi-value {
+        font-size: 30px;
+        line-height: 1.1;
+      }
+
+      .panel,
+      .metric-card,
+      .chart-card,
+      .table-card {
+        padding: 16px;
+      }
+    }
   </style>
 </head>
 
