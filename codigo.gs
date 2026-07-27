@@ -20,6 +20,9 @@ const ABA_INDICE = "cadastro_indice";
 const ABA_USUARIOS = "usuarios_sistema";
 const ABA_CEPS_CACHE = "ceps_cache";
 const ABA_RECADOS = "recados_sistema";
+const ABA_EVENTOS_COLETIVOS = "eventos_coletivos";
+const ABA_PARTICIPANTES_EVENTO = "participantes_evento";
+const ABA_PARTICIPANTES_EVENTO_INDICE = "participantes_evento_indice";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 
 const PERFIL_ADMINISTRADOR = "administrador";
@@ -108,6 +111,67 @@ const CABECALHOS_RECADOS = [
   "data_criacao"
 ];
 
+const CABECALHOS_EVENTOS_COLETIVOS = [
+  "id_evento",
+  "tipo_evento",
+  "data_evento",
+  "napsAtendimento",
+  "responsavel_nome",
+  "responsavel_email",
+  "tema",
+  "motivo",
+  "quantidade_informada",
+  "quantidade_validada",
+  "status",
+  "token_evento",
+  "data_criacao",
+  "data_fechamento",
+  "observacoes",
+  "modalidade"
+];
+
+const CABECALHOS_PARTICIPANTES_EVENTO = [
+  "id_participante",
+  "id_evento",
+  "tipo_evento",
+  "RE",
+  "CPF",
+  "Nome",
+  "postograduacao",
+  "Situacao_Status",
+  "e-mail",
+  "Telefone",
+  "Data_Ingresso",
+  "Data_Nascimento",
+  "Sexo",
+  "OPM_Atual",
+  "Data_Inatividade",
+  "Estado_Civil",
+  "Numero_Filhos",
+  "CEP",
+  "Rua",
+  "Bairro",
+  "Cidade",
+  "Estado",
+  "Numero",
+  "Complemento",
+  "status",
+  "data_envio",
+  "validado_por",
+  "data_validacao"
+];
+
+const CABECALHOS_PARTICIPANTES_EVENTO_INDICE = [
+  "chave",
+  "tipo_chave",
+  "id_participante",
+  "id_evento",
+  "cpf",
+  "re",
+  "nome",
+  "linha_participante"
+];
+
 const ALIASES_CABECALHOS_PADRAO = {
   idatendimento: ["id atendimento", "id do atendimento", "id"],
   emailcadastro: ["email cadastrado", "email_cadastrado", "emailcadastrado", "email cadastro", "email do cadastro", "email responsavel", "email do responsavel"],
@@ -148,7 +212,8 @@ const ALIASES_CABECALHOS_PADRAO = {
   latitude: ["lat"],
   longitude: ["lng", "long"],
   endereco: ["endereço"],
-  dataatualizacao: ["data atualizacao", "data atualização", "data de atualizacao", "data de atualização"]
+  dataatualizacao: ["data atualizacao", "data atualização", "data de atualizacao", "data de atualização"],
+  modalidade: ["modalidade_evento", "modalidade do evento"]
 };
 
 // ESTRUTURA DA PLANILHA E MAPEAMENTO DE CABECALHOS
@@ -161,6 +226,10 @@ function configurarEstruturaPlanilha() {
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
   const sheetCepsCache = obterOuCriarAba(ss, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
   const sheetRecados = obterOuCriarAba(ss, ABA_RECADOS, CABECALHOS_RECADOS);
+  const sheetEventosColetivos = obterOuCriarAba(ss, ABA_EVENTOS_COLETIVOS, CABECALHOS_EVENTOS_COLETIVOS);
+  garantirCabecalhoFinal(sheetEventosColetivos, "modalidade");
+  const sheetParticipantesEvento = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO, CABECALHOS_PARTICIPANTES_EVENTO);
+  const sheetParticipantesEventoIndice = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO_INDICE, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
 
   return {
     sheetDados: sheetDados,
@@ -168,7 +237,10 @@ function configurarEstruturaPlanilha() {
     sheetIndice: sheetIndice,
     sheetUsuarios: sheetUsuarios,
     sheetCepsCache: sheetCepsCache,
-    sheetRecados: sheetRecados
+    sheetRecados: sheetRecados,
+    sheetEventosColetivos: sheetEventosColetivos,
+    sheetParticipantesEvento: sheetParticipantesEvento,
+    sheetParticipantesEventoIndice: sheetParticipantesEventoIndice
   };
 }
 
@@ -188,6 +260,15 @@ function obterOuCriarAba(ss, nomeAba, cabecalhos) {
   }
 
   return sheet;
+}
+
+function garantirCabecalhoFinal(sheet, cabecalho) {
+  const mapa = obterMapaCabecalhos(sheet, sheet.getLastColumn());
+  const chave = normalizarCabecalho(cabecalho);
+
+  if (mapa[chave] !== undefined) return;
+
+  sheet.getRange(1, sheet.getLastColumn() + 1).setValue(cabecalho);
 }
 
 function obterIndicesUsuariosSistema(sheet) {
@@ -646,18 +727,25 @@ function escaparHtmlServidor(valor) {
 
 // WEB APP E RENDERIZACAO DE PAGINAS
 function doGet(e) {
-  const pagina = obterPaginaSolicitada(e && e.parameter ? e.parameter.pagina : "");
+  const parametros = e && e.parameter ? e.parameter : {};
+  const pagina = obterPaginaSolicitada(parametros.pagina || "");
+
+  if (pagina === "participante_evento") {
+    return renderizarPaginaParticipanteEvento(parametros.token || "");
+  }
 
   return renderizarPagina(pagina, "", null, "");
 }
 
 function obterPaginaSolicitada(valor) {
-  const pagina = String(valor || "").toLowerCase().trim();
+  const pagina = String(valor || "").toLowerCase().trim().split(":")[0];
 
   if (pagina === "relatorios") return "relatorios";
   if (pagina === "dashboard") return "dashboard";
   if (pagina === "mapa_de_calor") return "mapa_de_calor";
   if (pagina === "relatorio_naps") return "relatorio_naps";
+  if (pagina === "eventos_coletivos") return "eventos_coletivos";
+  if (pagina === "participante_evento") return "participante_evento";
 
   return "Index";
 }
@@ -676,6 +764,7 @@ function doPost(e) {
   const idToken = e && e.parameter ? String(e.parameter.credential || "") : "";
   const destino = e && e.parameter ? String(e.parameter.state || "index") : "index";
   const pagina = obterPaginaSolicitada(destino);
+  const tipoEventoInicial = obterTipoEventoInicial(destino);
 
   try {
     const usuario = validarLoginGoogle(idToken);
@@ -684,24 +773,49 @@ function doPost(e) {
       throw new Error("Acesso permitido somente para administradores.");
     }
 
-    return renderizarPagina(pagina, idToken, usuario, "");
+    return renderizarPagina(pagina, idToken, usuario, "", {
+      tipoEvento: tipoEventoInicial
+    });
   } catch (erro) {
     return renderizarPagina(pagina, "", null, erro.message);
   }
 }
 
-function renderizarPagina(nomeArquivo, tokenGoogle, usuario, mensagemLogin) {
+function obterTipoEventoInicial(valor) {
+  const partes = String(valor || "").toLowerCase().trim().split(":");
+  const tipo = partes.length > 1 ? partes[1] : "";
+
+  if (tipo === "workshop" || tipo === "prosen" || tipo === "palestra") return tipo;
+
+  return "";
+}
+
+function renderizarPagina(nomeArquivo, tokenGoogle, usuario, mensagemLogin, parametrosPagina) {
   const template = HtmlService.createTemplateFromFile(nomeArquivo);
+  const parametros = parametrosPagina || {};
 
   template.googleClientId = GOOGLE_CLIENT_ID;
   template.webAppUrl = ScriptApp.getService().getUrl();
   template.tokenGoogleInicial = tokenGoogle || "";
   template.usuarioInicialJson = JSON.stringify(usuario || null);
   template.mensagemLoginInicial = mensagemLogin || "";
+  template.tipoEventoInicial = parametros.tipoEvento || "";
 
   return template
     .evaluate()
     .setTitle("SAIC")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function renderizarPaginaParticipanteEvento(tokenEvento) {
+  const template = HtmlService.createTemplateFromFile("participante_evento");
+
+  template.tokenEventoInicial = tokenEvento || "";
+  template.webAppUrl = ScriptApp.getService().getUrl();
+
+  return template
+    .evaluate()
+    .setTitle("Participante - Evento Coletivo")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -1097,6 +1211,1130 @@ function salvarAtendimento(dados, idToken) {
       lock.releaseLock();
     }
   }
+}
+
+// EVENTOS COLETIVOS: WORKSHOP, PROSEN E PALESTRAS
+function criarRascunhoEventoColetivo(dados, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetEventos = estrutura.sheetEventosColetivos;
+    const evento = prepararDadosEventoColetivo(dados, usuario);
+    let idEvento = String(dados.idEvento || "").trim();
+    let tokenEvento = String(dados.tokenEvento || "").trim();
+    let dataCriacao = new Date();
+    let existente = idEvento ? localizarEventoColetivoPorId(sheetEventos, idEvento) : null;
+
+    if (!evento.tema) {
+      throw new Error("Informe o tema do evento antes de gerar o link.");
+    }
+
+    const rascunhoAberto = localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, usuario.email);
+
+    if (!existente && rascunhoAberto) {
+      if (normalizarTipoEventoColetivo(rascunhoAberto.linha[1]) !== evento.tipoEvento) {
+        throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
+      }
+
+      existente = rascunhoAberto;
+      idEvento = String(existente.linha[0] || "").trim();
+      tokenEvento = tokenEvento || String(existente.linha[11] || "").trim();
+    }
+
+    if (existente && rascunhoAberto && String(existente.linha[0] || "").trim() !== String(rascunhoAberto.linha[0] || "").trim()) {
+      throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
+    }
+
+    if (existente) {
+      if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
+        throw new Error("Voce nao tem permissao para alterar este evento.");
+      }
+
+      if (normalizar(existente.linha[10]) === "salvo") {
+        throw new Error("Este evento ja foi salvo e nao pode receber novo rascunho.");
+      }
+
+      if (normalizar(existente.linha[10]) === "cancelado") {
+        throw new Error("Este evento foi cancelado.");
+      }
+
+      if (normalizarTipoEventoColetivo(existente.linha[1]) !== evento.tipoEvento) {
+        throw new Error("Finalize o evento em aberto antes de iniciar outro tipo de evento.");
+      }
+
+      tokenEvento = tokenEvento || String(existente.linha[11] || "").trim() || gerarTokenEventoColetivo();
+      dataCriacao = existente.linha[12] || dataCriacao;
+      atualizarLinhaPadrao(sheetEventos, existente.numeroLinha, montarLinhaEventoColetivo(
+        idEvento,
+        evento,
+        "",
+        "rascunho",
+        tokenEvento,
+        dataCriacao,
+        ""
+      ), CABECALHOS_EVENTOS_COLETIVOS);
+    } else {
+      idEvento = gerarIdSeguro("EVT");
+      tokenEvento = gerarTokenEventoColetivo();
+      gravarLinhasPadraoAbaixo(sheetEventos, [montarLinhaEventoColetivo(
+        idEvento,
+        evento,
+        "",
+        "rascunho",
+        tokenEvento,
+        dataCriacao,
+        ""
+      )], CABECALHOS_EVENTOS_COLETIVOS);
+    }
+
+    return {
+      sucesso: true,
+      idEvento: idEvento,
+      tokenEvento: tokenEvento,
+      linkParticipante: montarLinkParticipanteEvento(tokenEvento),
+      mensagem: "Link do evento preparado com sucesso."
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function salvarEventoColetivo(dados, participantesManuais, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetEventos = estrutura.sheetEventosColetivos;
+    const sheetParticipantes = estrutura.sheetParticipantesEvento;
+    const sheetIndice = estrutura.sheetParticipantesEventoIndice;
+    const evento = prepararDadosEventoColetivo(dados, usuario);
+    const participantesManuaisLista = Array.isArray(participantesManuais) ? participantesManuais : [];
+
+    if (tipoEventoUsaParticipantes(evento.tipoEvento) && participantesManuaisLista.length > 0) {
+      participantesManuaisLista.forEach(function(participante) {
+        prepararDadosParticipanteEvento(participante);
+      });
+      validarDuplicidadeParticipantesEventoEmLista(participantesManuaisLista);
+    }
+
+    let idEvento = String(dados.idEvento || "").trim();
+    let tokenEvento = String(dados.tokenEvento || "").trim();
+    let dataCriacao = new Date();
+    const dataFechamento = new Date();
+    let existente = idEvento ? localizarEventoColetivoPorId(sheetEventos, idEvento) : null;
+    const rascunhoAberto = localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, usuario.email);
+
+    if (!existente && rascunhoAberto) {
+      if (normalizarTipoEventoColetivo(rascunhoAberto.linha[1]) !== evento.tipoEvento) {
+        throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
+      }
+
+      existente = rascunhoAberto;
+      idEvento = String(existente.linha[0] || "").trim();
+      tokenEvento = tokenEvento || String(existente.linha[11] || "").trim();
+    }
+
+    if (existente && rascunhoAberto && String(existente.linha[0] || "").trim() !== String(rascunhoAberto.linha[0] || "").trim()) {
+      throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
+    }
+
+    if (existente) {
+      if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
+        throw new Error("Voce nao tem permissao para salvar este evento.");
+      }
+
+      if (normalizar(existente.linha[10]) === "salvo") {
+        throw new Error("Este evento ja foi salvo.");
+      }
+
+      if (normalizar(existente.linha[10]) === "cancelado") {
+        throw new Error("Este evento foi cancelado.");
+      }
+
+      if (normalizarTipoEventoColetivo(existente.linha[1]) !== evento.tipoEvento) {
+        throw new Error("Finalize o evento em aberto antes de iniciar outro tipo de evento.");
+      }
+
+      tokenEvento = tokenEvento || String(existente.linha[11] || "").trim() || gerarTokenEventoColetivo();
+      dataCriacao = existente.linha[12] || dataCriacao;
+    } else {
+      if (tipoEventoUsaParticipantes(evento.tipoEvento) && participantesManuaisLista.length < 1) {
+        throw new Error("Inclua ao menos um participante antes de salvar o evento.");
+      }
+
+      idEvento = gerarIdSeguro("EVT");
+      tokenEvento = tokenEvento || gerarTokenEventoColetivo();
+      gravarLinhasPadraoAbaixo(sheetEventos, [montarLinhaEventoColetivo(
+        idEvento,
+        evento,
+        "",
+        "rascunho",
+        tokenEvento,
+        dataCriacao,
+        ""
+      )], CABECALHOS_EVENTOS_COLETIVOS);
+      existente = localizarEventoColetivoPorId(sheetEventos, idEvento);
+    }
+
+    const participantesValidos = prepararParticipantesManuaisEvento(participantesManuaisLista, idEvento, evento.tipoEvento, usuario);
+    validarDuplicidadeParticipantesEventoEmLista(participantesValidos.participantes);
+
+    participantesValidos.participantes.forEach(function(participante) {
+      validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, participante.dados);
+    });
+
+    const linhasIndice = [];
+
+    if (participantesValidos.linhas.length > 0) {
+      gravarLinhasPadraoAbaixo(sheetParticipantes, participantesValidos.linhas, CABECALHOS_PARTICIPANTES_EVENTO);
+
+      participantesValidos.participantes.forEach(function(participante) {
+        const linhaParticipante = localizarUltimaLinhaParticipantePorId(sheetParticipantes, participante.idParticipante);
+        montarLinhasIndiceParticipanteEvento(
+          participante.idParticipante,
+          idEvento,
+          participante.dados,
+          linhaParticipante
+        ).forEach(function(linhaIndice) {
+          linhasIndice.push(linhaIndice);
+        });
+      });
+    }
+
+    if (linhasIndice.length > 0) {
+      gravarLinhasPadraoAbaixo(sheetIndice, linhasIndice, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
+    }
+
+    const participantesValidadosDoLink = validarParticipantesPendentesEvento(sheetParticipantes, idEvento, usuario);
+    const totalParticipantes = contarParticipantesEvento(sheetParticipantes, idEvento);
+    const quantidadeValidada = tipoEventoUsaParticipantes(evento.tipoEvento)
+      ? totalParticipantes
+      : evento.quantidadeInformada;
+
+    if (tipoEventoUsaParticipantes(evento.tipoEvento) && quantidadeValidada < 1) {
+      throw new Error("Inclua ao menos um participante antes de salvar o evento.");
+    }
+
+    atualizarLinhaPadrao(sheetEventos, existente.numeroLinha, montarLinhaEventoColetivo(
+      idEvento,
+      evento,
+      quantidadeValidada,
+      "salvo",
+      tokenEvento,
+      dataCriacao,
+      dataFechamento
+    ), CABECALHOS_EVENTOS_COLETIVOS);
+
+    return {
+      sucesso: true,
+      idEvento: idEvento,
+      mensagem: obterRotuloTipoEventoColetivo(evento.tipoEvento) + " salvo com sucesso.",
+      quantidadeValidada: quantidadeValidada,
+      participantesValidadosDoLink: participantesValidadosDoLink
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function listarParticipantesEvento(idEventoOuToken, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaPlanilha();
+  const sheetEventos = estrutura.sheetEventosColetivos;
+  const chaveEvento = String(idEventoOuToken || "").trim();
+  let evento = localizarEventoColetivoPorId(sheetEventos, chaveEvento);
+
+  if (!evento) {
+    evento = localizarEventoColetivoPorToken(sheetEventos, chaveEvento);
+  }
+
+  if (!evento) {
+    throw new Error("Evento nao localizado.");
+  }
+
+  if (!usuarioPodeAcessarEventoColetivo(usuario, evento.linha)) {
+    throw new Error("Voce nao tem permissao para consultar este evento.");
+  }
+
+  const idEvento = String(evento.linha[0] || "").trim();
+
+  return {
+    sucesso: true,
+    idEvento: idEvento,
+    tokenEvento: String(evento.linha[11] || "").trim(),
+    participantes: listarParticipantesEventoPorId(estrutura.sheetParticipantesEvento, idEvento)
+  };
+}
+
+function obterRascunhoEventoColetivo(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaPlanilha();
+  const rascunho = localizarRascunhoEventoColetivoPorResponsavel(
+    estrutura.sheetEventosColetivos,
+    usuario.email
+  );
+
+  if (!rascunho) {
+    return {
+      sucesso: true,
+      encontrado: false
+    };
+  }
+
+  return montarRascunhoEventoColetivoRetorno(
+    rascunho.linha,
+    estrutura.sheetParticipantesEvento
+  );
+}
+
+function registrarParticipanteEventoManual(dadosEvento, participante, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetEventos = estrutura.sheetEventosColetivos;
+    const sheetParticipantes = estrutura.sheetParticipantesEvento;
+    const sheetIndice = estrutura.sheetParticipantesEventoIndice;
+    const evento = prepararDadosEventoColetivo(dadosEvento, usuario);
+    const dadosParticipante = prepararDadosParticipanteEvento(participante);
+
+    if (!tipoEventoUsaParticipantes(evento.tipoEvento)) {
+      throw new Error("Este tipo de evento nao recebe cadastro individual de participantes.");
+    }
+
+    let idEvento = String(dadosEvento.idEvento || "").trim();
+    let tokenEvento = String(dadosEvento.tokenEvento || "").trim();
+    let dataCriacao = new Date();
+    let existente = idEvento ? localizarEventoColetivoPorId(sheetEventos, idEvento) : null;
+    const rascunhoAberto = localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, usuario.email);
+
+    if (!existente && rascunhoAberto) {
+      if (normalizarTipoEventoColetivo(rascunhoAberto.linha[1]) !== evento.tipoEvento) {
+        throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
+      }
+
+      existente = rascunhoAberto;
+      idEvento = String(existente.linha[0] || "").trim();
+      tokenEvento = tokenEvento || String(existente.linha[11] || "").trim();
+    }
+
+    if (existente && rascunhoAberto && String(existente.linha[0] || "").trim() !== String(rascunhoAberto.linha[0] || "").trim()) {
+      throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
+    }
+
+    if (existente) {
+      if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
+        throw new Error("Voce nao tem permissao para alterar este evento.");
+      }
+
+      if (normalizar(existente.linha[10]) === "salvo") {
+        throw new Error("Este evento ja foi salvo.");
+      }
+
+      if (normalizar(existente.linha[10]) === "cancelado") {
+        throw new Error("Este evento foi cancelado.");
+      }
+
+      if (normalizarTipoEventoColetivo(existente.linha[1]) !== evento.tipoEvento) {
+        throw new Error("Finalize o evento em aberto antes de iniciar outro tipo de evento.");
+      }
+
+      tokenEvento = tokenEvento || String(existente.linha[11] || "").trim();
+      dataCriacao = existente.linha[12] || dataCriacao;
+      atualizarLinhaPadrao(sheetEventos, existente.numeroLinha, montarLinhaEventoColetivo(
+        idEvento,
+        evento,
+        "",
+        "rascunho",
+        tokenEvento,
+        dataCriacao,
+        ""
+      ), CABECALHOS_EVENTOS_COLETIVOS);
+    } else {
+      idEvento = gerarIdSeguro("EVT");
+      gravarLinhasPadraoAbaixo(sheetEventos, [montarLinhaEventoColetivo(
+        idEvento,
+        evento,
+        "",
+        "rascunho",
+        tokenEvento,
+        dataCriacao,
+        ""
+      )], CABECALHOS_EVENTOS_COLETIVOS);
+    }
+
+    validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dadosParticipante);
+
+    const idParticipante = gerarIdSeguro("PEV");
+    const linhaParticipante = montarLinhaParticipanteEvento(
+      idParticipante,
+      idEvento,
+      evento.tipoEvento,
+      dadosParticipante,
+      "pendente",
+      new Date(),
+      "",
+      ""
+    );
+
+    gravarLinhasPadraoAbaixo(sheetParticipantes, [linhaParticipante], CABECALHOS_PARTICIPANTES_EVENTO);
+
+    const numeroLinhaParticipante = sheetParticipantes.getLastRow();
+    const linhasIndice = montarLinhasIndiceParticipanteEvento(
+      idParticipante,
+      idEvento,
+      dadosParticipante,
+      numeroLinhaParticipante
+    );
+
+    if (linhasIndice.length > 0) {
+      gravarLinhasPadraoAbaixo(sheetIndice, linhasIndice, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
+    }
+
+    const eventoAtualizado = localizarEventoColetivoPorId(sheetEventos, idEvento);
+    const retorno = montarRascunhoEventoColetivoRetorno(eventoAtualizado.linha, sheetParticipantes);
+    retorno.mensagem = "Participante adicionado a lista temporaria.";
+
+    return retorno;
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function cancelarEventoColetivo(dadosEvento, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetEventos = estrutura.sheetEventosColetivos;
+    const sheetParticipantes = estrutura.sheetParticipantesEvento;
+    const idEvento = String((dadosEvento && dadosEvento.idEvento) || "").trim();
+    const tokenEvento = String((dadosEvento && dadosEvento.tokenEvento) || "").trim();
+    let existente = idEvento ? localizarEventoColetivoPorId(sheetEventos, idEvento) : null;
+
+    if (!existente && tokenEvento) {
+      existente = localizarEventoColetivoPorToken(sheetEventos, tokenEvento);
+    }
+
+    if (!existente) {
+      existente = localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, usuario.email);
+    }
+
+    if (!existente) {
+      throw new Error("Evento em aberto nao localizado.");
+    }
+
+    if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
+      throw new Error("Voce nao tem permissao para cancelar este evento.");
+    }
+
+    const statusAtual = normalizar(existente.linha[10]);
+
+    if (statusAtual === "salvo") {
+      throw new Error("Eventos salvos nao podem ser cancelados por este botao.");
+    }
+
+    if (statusAtual === "cancelado") {
+      return {
+        sucesso: true,
+        mensagem: "Este evento ja estava cancelado."
+      };
+    }
+
+    if (statusAtual !== "rascunho") {
+      throw new Error("Somente eventos em rascunho podem ser cancelados.");
+    }
+
+    const observacaoAnterior = String(existente.linha[14] || "").trim();
+    const observacaoCancelamento = "cancelado pelo responsavel em " + formatarDataHoraBrasil(new Date());
+    const observacoes = observacaoAnterior
+      ? observacaoAnterior + " | " + observacaoCancelamento
+      : observacaoCancelamento;
+    const eventoCancelado = {
+      tipoEvento: normalizarTipoEventoColetivo(existente.linha[1]),
+      dataEvento: existente.linha[2],
+      napsAtendimento: existente.linha[3],
+      responsavelNome: existente.linha[4],
+      responsavelEmail: existente.linha[5],
+      tema: existente.linha[6],
+      motivo: existente.linha[7],
+      quantidadeInformada: existente.linha[8],
+      observacoes: observacoes,
+      modalidade: existente.linha[15] || ""
+    };
+    const participantesCancelados = cancelarParticipantesEvento(
+      sheetParticipantes,
+      existente.linha[0],
+      usuario
+    );
+
+    atualizarLinhaPadrao(sheetEventos, existente.numeroLinha, montarLinhaEventoColetivo(
+      existente.linha[0],
+      eventoCancelado,
+      existente.linha[9],
+      "cancelado",
+      existente.linha[11],
+      existente.linha[12] || new Date(),
+      new Date()
+    ), CABECALHOS_EVENTOS_COLETIVOS);
+
+    return {
+      sucesso: true,
+      mensagem: "Evento cancelado com sucesso.",
+      participantesCancelados: participantesCancelados
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function obterEventoPorTokenPublico(tokenEvento) {
+  const token = String(tokenEvento || "").trim();
+
+  if (!token) {
+    return {
+      encontrado: false,
+      mensagem: "Link do evento nao informado."
+    };
+  }
+
+  const estrutura = configurarEstruturaPlanilha();
+  const evento = localizarEventoColetivoPorToken(estrutura.sheetEventosColetivos, token);
+
+  if (!evento) {
+    return {
+      encontrado: false,
+      mensagem: "Evento nao localizado."
+    };
+  }
+
+  if (!tipoEventoUsaParticipantes(evento.linha[1])) {
+    return {
+      encontrado: false,
+      mensagem: "Este tipo de evento nao recebe cadastro individual de participantes."
+    };
+  }
+
+  if (normalizar(evento.linha[10]) === "cancelado") {
+    return {
+      encontrado: false,
+      mensagem: "Este evento foi cancelado."
+    };
+  }
+
+  if (normalizar(evento.linha[10]) === "salvo") {
+    return {
+      encontrado: false,
+      mensagem: "Este evento ja foi finalizado."
+    };
+  }
+
+  return {
+    encontrado: true,
+    idEvento: evento.linha[0],
+    tipoEvento: evento.linha[1],
+    tipoEventoRotulo: obterRotuloTipoEventoColetivo(evento.linha[1]),
+    dataEvento: formatarDataBrasil(evento.linha[2]),
+    napsAtendimento: evento.linha[3],
+    tema: evento.linha[6],
+    motivo: evento.linha[7]
+  };
+}
+
+function registrarParticipanteEventoPublico(tokenEvento, participante) {
+  const token = String(tokenEvento || "").trim();
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetEventos = estrutura.sheetEventosColetivos;
+    const sheetParticipantes = estrutura.sheetParticipantesEvento;
+    const sheetIndice = estrutura.sheetParticipantesEventoIndice;
+    const evento = localizarEventoColetivoPorToken(sheetEventos, token);
+
+    if (!evento) {
+      throw new Error("Evento nao localizado.");
+    }
+
+    if (!tipoEventoUsaParticipantes(evento.linha[1])) {
+      throw new Error("Este tipo de evento nao recebe cadastro individual de participantes.");
+    }
+
+    if (normalizar(evento.linha[10]) === "cancelado") {
+      throw new Error("Este evento foi cancelado.");
+    }
+
+    if (normalizar(evento.linha[10]) === "salvo") {
+      throw new Error("Este evento ja foi finalizado.");
+    }
+
+    const dadosParticipante = prepararDadosParticipanteEvento(participante);
+    validarDuplicidadeParticipanteEvento(sheetIndice, evento.linha[0], dadosParticipante);
+
+    const idParticipante = gerarIdSeguro("PEV");
+    const linhaParticipante = montarLinhaParticipanteEvento(
+      idParticipante,
+      evento.linha[0],
+      evento.linha[1],
+      dadosParticipante,
+      "pendente",
+      new Date(),
+      "",
+      ""
+    );
+
+    gravarLinhasPadraoAbaixo(sheetParticipantes, [linhaParticipante], CABECALHOS_PARTICIPANTES_EVENTO);
+
+    const numeroLinhaParticipante = sheetParticipantes.getLastRow();
+    const linhasIndice = montarLinhasIndiceParticipanteEvento(
+      idParticipante,
+      evento.linha[0],
+      dadosParticipante,
+      numeroLinhaParticipante
+    );
+
+    if (linhasIndice.length > 0) {
+      gravarLinhasPadraoAbaixo(sheetIndice, linhasIndice, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
+    }
+
+    return {
+      sucesso: true,
+      mensagem: "Cadastro enviado ao responsavel pelo evento."
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function prepararDadosEventoColetivo(dados, usuario) {
+  const tipoEvento = normalizarTipoEventoColetivo(dados.tipoEvento);
+  const dataEvento = validarDataFormulario(dados.dataEvento, "Data do evento");
+  const responsavelNome = String(usuario.nome || dados.responsavelNome || "").trim();
+  const responsavelEmail = normalizar(usuario.email || dados.responsavelEmail);
+  const napsAtendimento = String(usuario.naps || dados.napsAtendimento || dados.naps || "").trim().toUpperCase();
+  const quantidadeInformada = Number(dados.quantidadeInformada || 0);
+  const modalidade = normalizar(dados.modalidadeEvento || dados.modalidade);
+
+  if (!tipoEvento) {
+    throw new Error("Tipo de evento invalido.");
+  }
+
+  if (!dataEvento) {
+    throw new Error("Data do evento e obrigatoria.");
+  }
+
+  if (!responsavelNome) {
+    throw new Error("Responsavel nao localizado na aba usuarios_sistema.");
+  }
+
+  if (!napsAtendimento) {
+    throw new Error("NAPS do responsavel nao localizado na aba usuarios_sistema.");
+  }
+
+  if (tipoEvento === "palestra" && quantidadeInformada < 1) {
+    throw new Error("Informe a quantidade de participantes da palestra.");
+  }
+
+  if (tipoEvento === "palestra" && !modalidade) {
+    throw new Error("Informe a modalidade da palestra.");
+  }
+
+  if (tipoEvento === "palestra" && modalidade !== "presencial" && modalidade !== "online") {
+    throw new Error("Modalidade da palestra invalida.");
+  }
+
+  return {
+    tipoEvento: tipoEvento,
+    dataEvento: dataEvento,
+    napsAtendimento: napsAtendimento,
+    responsavelNome: responsavelNome,
+    responsavelEmail: responsavelEmail,
+    tema: normalizar(dados.tema),
+    motivo: normalizar(dados.motivo),
+    quantidadeInformada: quantidadeInformada || "",
+    observacoes: normalizar(dados.observacoes),
+    modalidade: tipoEvento === "palestra" ? modalidade : ""
+  };
+}
+
+function montarLinhaEventoColetivo(idEvento, evento, quantidadeValidada, status, tokenEvento, dataCriacao, dataFechamento) {
+  return [
+    idEvento,
+    evento.tipoEvento,
+    evento.dataEvento,
+    evento.napsAtendimento,
+    evento.responsavelNome,
+    evento.responsavelEmail,
+    evento.tema,
+    evento.motivo,
+    evento.quantidadeInformada,
+    quantidadeValidada,
+    status,
+    tokenEvento,
+    dataCriacao,
+    dataFechamento,
+    evento.observacoes,
+    evento.modalidade || ""
+  ];
+}
+
+function prepararParticipantesManuaisEvento(participantesManuais, idEvento, tipoEvento, usuario) {
+  const participantes = [];
+  const linhas = [];
+  const lista = Array.isArray(participantesManuais) ? participantesManuais : [];
+
+  lista.forEach(function(participante) {
+    const dados = prepararDadosParticipanteEvento(participante);
+    const idParticipante = gerarIdSeguro("PEV");
+
+    participantes.push({
+      idParticipante: idParticipante,
+      dados: dados
+    });
+
+    linhas.push(montarLinhaParticipanteEvento(
+      idParticipante,
+      idEvento,
+      tipoEvento,
+      dados,
+      "validado",
+      new Date(),
+      usuario.email,
+      new Date()
+    ));
+  });
+
+  return {
+    participantes: participantes,
+    linhas: linhas
+  };
+}
+
+function prepararDadosParticipanteEvento(participante) {
+  const dados = participante || {};
+  const nome = normalizar(dados.nome);
+  const cpf = formatarCPF(dados.cpf);
+  const re = normalizar(dados.re);
+
+  if (!nome) {
+    throw new Error("Nome do participante e obrigatorio.");
+  }
+
+  if (!cpf && !re) {
+    throw new Error("Informe CPF ou R.E. do participante.");
+  }
+
+  return {
+    re: re,
+    cpf: cpf,
+    nome: nome,
+    postoGraduacao: String(dados.postoGraduacao || "").trim(),
+    situacaoStatus: normalizar(dados.situacaoStatus),
+    email: normalizar(dados.email),
+    telefone: normalizarTelefone(dados.telefone),
+    dataIngresso: validarDataFormulario(dados.dataIngresso, "Data de Ingresso"),
+    dataNascimento: validarDataFormulario(dados.dataNascimento, "Data de Nascimento"),
+    sexo: normalizar(dados.sexo),
+    opmAtual: normalizar(dados.opmAtual),
+    dataInatividade: validarDataFormulario(dados.dataInatividade, "Data de Inatividade"),
+    estadoCivil: normalizar(dados.estadoCivil),
+    numeroFilhos: dados.numeroFilhos || "",
+    cep: formatarCEP(dados.cep),
+    rua: normalizar(dados.rua),
+    bairro: normalizar(dados.bairro),
+    cidade: normalizar(dados.cidade),
+    estado: normalizar(dados.estado),
+    numero: dados.numero || "",
+    complemento: normalizar(dados.complemento)
+  };
+}
+
+function montarLinhaParticipanteEvento(idParticipante, idEvento, tipoEvento, dados, status, dataEnvio, validadoPor, dataValidacao) {
+  return [
+    idParticipante,
+    idEvento,
+    tipoEvento,
+    dados.re,
+    dados.cpf,
+    dados.nome,
+    dados.postoGraduacao,
+    dados.situacaoStatus,
+    dados.email,
+    dados.telefone,
+    dados.dataIngresso,
+    dados.dataNascimento,
+    dados.sexo,
+    dados.opmAtual,
+    dados.dataInatividade,
+    dados.estadoCivil,
+    dados.numeroFilhos,
+    dados.cep,
+    dados.rua,
+    dados.bairro,
+    dados.cidade,
+    dados.estado,
+    dados.numero,
+    dados.complemento,
+    status,
+    dataEnvio,
+    validadoPor,
+    dataValidacao
+  ];
+}
+
+function montarLinhasIndiceParticipanteEvento(idParticipante, idEvento, dados, linhaParticipante) {
+  const cpf = formatarCPF(dados.cpf);
+  const cpfNumeros = somenteNumeros(cpf);
+  const re = normalizar(dados.re);
+  const reNumeros = somenteNumeros(re);
+  const nome = normalizar(dados.nome);
+  const linhas = [];
+
+  if (cpfNumeros) {
+    linhas.push([cpfNumeros, "cpf", idParticipante, idEvento, cpf, re, nome, linhaParticipante]);
+  }
+
+  if (reNumeros) {
+    linhas.push([reNumeros, "re", idParticipante, idEvento, cpf, re, nome, linhaParticipante]);
+  }
+
+  if (nome) {
+    linhas.push([nome, "nome", idParticipante, idEvento, cpf, re, nome, linhaParticipante]);
+  }
+
+  return linhas;
+}
+
+function validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dados) {
+  const id = String(idEvento || "").trim();
+  const cpfNumeros = somenteNumeros(formatarCPF(dados && dados.cpf));
+  const reNumeros = somenteNumeros(normalizar(dados && dados.re));
+
+  if (!id || (!cpfNumeros && !reNumeros)) return;
+  if (sheetIndice.getLastRow() < 2) return;
+
+  const linhas = lerDadosPadrao(sheetIndice, CABECALHOS_PARTICIPANTES_EVENTO_INDICE, 2);
+
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+
+    if (String(linha[3] || "").trim() !== id) continue;
+
+    const chave = String(linha[0] || "").trim();
+    const tipoChave = normalizar(linha[1]);
+
+    if (cpfNumeros && tipoChave === "cpf" && chave === cpfNumeros) {
+      throw new Error("Este CPF ja foi enviado para este evento.");
+    }
+
+    if (reNumeros && tipoChave === "re" && chave === reNumeros) {
+      throw new Error("Este R.E. ja foi enviado para este evento.");
+    }
+  }
+}
+
+function validarDuplicidadeParticipantesEventoEmLista(participantes) {
+  const cpfs = {};
+  const res = {};
+  const lista = Array.isArray(participantes) ? participantes : [];
+
+  lista.forEach(function(item) {
+    const dados = item && item.dados ? item.dados : item;
+    const cpfNumeros = somenteNumeros(formatarCPF(dados && dados.cpf));
+    const reNumeros = somenteNumeros(normalizar(dados && dados.re));
+
+    if (cpfNumeros) {
+      if (cpfs[cpfNumeros]) {
+        throw new Error("Ha participante duplicado na lista manual pelo CPF.");
+      }
+
+      cpfs[cpfNumeros] = true;
+    }
+
+    if (reNumeros) {
+      if (res[reNumeros]) {
+        throw new Error("Ha participante duplicado na lista manual pelo R.E.");
+      }
+
+      res[reNumeros] = true;
+    }
+  });
+}
+
+function localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, emailResponsavel) {
+  const email = normalizar(emailResponsavel);
+  const ultimaLinha = sheetEventos.getLastRow();
+
+  if (!email || ultimaLinha < 2) return null;
+
+  const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2);
+
+  for (let i = linhas.length - 1; i >= 0; i--) {
+    const linha = linhas[i];
+
+    if (normalizar(linha[10]) !== "rascunho") continue;
+    if (normalizar(linha[5]) !== email) continue;
+
+    return {
+      numeroLinha: i + 2,
+      linha: linha
+    };
+  }
+
+  return null;
+}
+
+function montarRascunhoEventoColetivoRetorno(linhaEvento, sheetParticipantes) {
+  const idEvento = String(linhaEvento[0] || "").trim();
+  const tokenEvento = String(linhaEvento[11] || "").trim();
+
+  return {
+    sucesso: true,
+    encontrado: true,
+    idEvento: idEvento,
+    tipoEvento: normalizarTipoEventoColetivo(linhaEvento[1]),
+    tipoEventoRotulo: obterRotuloTipoEventoColetivo(linhaEvento[1]),
+    dataEvento: formatarDataBrasil(linhaEvento[2]),
+    napsAtendimento: linhaEvento[3] || "",
+    responsavelNome: linhaEvento[4] || "",
+    responsavelEmail: linhaEvento[5] || "",
+    tema: linhaEvento[6] || "",
+    motivo: linhaEvento[7] || "",
+    quantidadeInformada: linhaEvento[8] || "",
+    quantidadeValidada: linhaEvento[9] || "",
+    status: linhaEvento[10] || "",
+    tokenEvento: tokenEvento,
+    linkParticipante: tokenEvento ? montarLinkParticipanteEvento(tokenEvento) : "",
+    dataCriacao: formatarDataHoraBrasil(linhaEvento[12]),
+    observacoes: linhaEvento[14] || "",
+    modalidade: linhaEvento[15] || "",
+    participantes: sheetParticipantes ? listarParticipantesEventoPorId(sheetParticipantes, idEvento) : []
+  };
+}
+
+function localizarEventoColetivoPorId(sheet, idEvento) {
+  return localizarLinhaPadraoPorCampo(sheet, CABECALHOS_EVENTOS_COLETIVOS, 0, idEvento);
+}
+
+function localizarEventoColetivoPorToken(sheet, tokenEvento) {
+  return localizarLinhaPadraoPorCampo(sheet, CABECALHOS_EVENTOS_COLETIVOS, 11, tokenEvento);
+}
+
+function localizarLinhaPadraoPorCampo(sheet, cabecalhosPadrao, indicePadrao, valor) {
+  const alvo = String(valor || "").trim();
+  const ultimaLinha = sheet.getLastRow();
+
+  if (!alvo || ultimaLinha < 2) return null;
+
+  const linhas = lerDadosPadrao(sheet, cabecalhosPadrao, 2);
+
+  for (let i = 0; i < linhas.length; i++) {
+    if (String(linhas[i][indicePadrao] || "").trim() === alvo) {
+      return {
+        numeroLinha: i + 2,
+        linha: linhas[i]
+      };
+    }
+  }
+
+  return null;
+}
+
+function atualizarLinhaPadrao(sheet, numeroLinha, linhaPadrao, cabecalhosPadrao) {
+  const linhaAtual = normalizarLinhaParaCabecalhosAtuais(sheet, linhaPadrao, cabecalhosPadrao);
+
+  sheet.getRange(numeroLinha, 1, 1, linhaAtual.length).setValues([linhaAtual]);
+}
+
+function listarParticipantesEventoPorId(sheetParticipantes, idEvento) {
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+  const id = String(idEvento || "").trim();
+
+  return linhas
+    .filter(function(linha) {
+      return String(linha[1] || "").trim() === id;
+    })
+    .map(function(linha) {
+      return montarParticipanteEventoRetorno(linha);
+    });
+}
+
+function montarParticipanteEventoRetorno(linha) {
+  return {
+    idParticipante: linha[0],
+    idEvento: linha[1],
+    tipoEvento: linha[2],
+    re: linha[3],
+    cpf: linha[4],
+    nome: linha[5],
+    postoGraduacao: linha[6],
+    situacaoStatus: linha[7],
+    email: linha[8],
+    telefone: linha[9],
+    dataIngresso: formatarDataParaInput(linha[10]),
+    dataNascimento: formatarDataParaInput(linha[11]),
+    sexo: linha[12],
+    opmAtual: linha[13],
+    dataInatividade: formatarDataParaInput(linha[14]),
+    estadoCivil: linha[15],
+    numeroFilhos: linha[16],
+    cep: linha[17],
+    rua: linha[18],
+    bairro: linha[19],
+    cidade: linha[20],
+    estado: linha[21],
+    numero: linha[22],
+    complemento: linha[23],
+    status: linha[24],
+    dataEnvio: formatarDataHoraBrasil(linha[25])
+  };
+}
+
+function validarParticipantesPendentesEvento(sheetParticipantes, idEvento, usuario) {
+  const ultimaLinha = sheetParticipantes.getLastRow();
+  let total = 0;
+
+  if (ultimaLinha < 2) return total;
+
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+
+  linhas.forEach(function(linha, indice) {
+    if (String(linha[1] || "").trim() !== String(idEvento || "").trim()) return;
+    if (normalizar(linha[24]) !== "pendente") return;
+
+    linha[24] = "validado";
+    linha[26] = usuario.email;
+    linha[27] = new Date();
+    atualizarLinhaPadrao(sheetParticipantes, indice + 2, linha, CABECALHOS_PARTICIPANTES_EVENTO);
+    total++;
+  });
+
+  return total;
+}
+
+function cancelarParticipantesEvento(sheetParticipantes, idEvento, usuario) {
+  const ultimaLinha = sheetParticipantes.getLastRow();
+  let total = 0;
+
+  if (ultimaLinha < 2) return total;
+
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+
+  linhas.forEach(function(linha, indice) {
+    if (String(linha[1] || "").trim() !== String(idEvento || "").trim()) return;
+    if (normalizar(linha[24]) === "cancelado") return;
+
+    linha[24] = "cancelado";
+    linha[26] = usuario.email;
+    linha[27] = new Date();
+    atualizarLinhaPadrao(sheetParticipantes, indice + 2, linha, CABECALHOS_PARTICIPANTES_EVENTO);
+    total++;
+  });
+
+  return total;
+}
+
+function contarParticipantesEvento(sheetParticipantes, idEvento) {
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+  const id = String(idEvento || "").trim();
+
+  return linhas.filter(function(linha) {
+    return String(linha[1] || "").trim() === id &&
+      normalizar(linha[24]) === "validado";
+  }).length;
+}
+
+function localizarUltimaLinhaParticipantePorId(sheetParticipantes, idParticipante) {
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+
+  for (let i = linhas.length - 1; i >= 0; i--) {
+    if (String(linhas[i][0] || "").trim() === String(idParticipante || "").trim()) {
+      return i + 2;
+    }
+  }
+
+  return sheetParticipantes.getLastRow();
+}
+
+function usuarioPodeAcessarEventoColetivo(usuario, linhaEvento) {
+  if (!usuario) return false;
+  if (usuario.perfil === PERFIL_ADMINISTRADOR) return true;
+
+  const emailEvento = normalizar(linhaEvento[5]);
+  const emailUsuario = normalizar(usuario.email);
+
+  return emailEvento && emailEvento === emailUsuario;
+}
+
+function normalizarTipoEventoColetivo(valor) {
+  const tipo = normalizar(valor);
+
+  if (tipo === "workshop" || tipo === "worshop") return "workshop";
+  if (tipo === "prosen") return "prosen";
+  if (tipo === "palestra" || tipo === "palestras") return "palestra";
+
+  return "";
+}
+
+function obterRotuloTipoEventoColetivo(tipoEvento) {
+  const tipo = normalizarTipoEventoColetivo(tipoEvento);
+
+  if (tipo === "workshop") return "Workshop";
+  if (tipo === "prosen") return "PROSEN";
+  if (tipo === "palestra") return "Palestra";
+
+  return "Evento coletivo";
+}
+
+function tipoEventoUsaParticipantes(tipoEvento) {
+  const tipo = normalizarTipoEventoColetivo(tipoEvento);
+
+  return tipo === "workshop" || tipo === "prosen";
+}
+
+function gerarTokenEventoColetivo() {
+  return gerarIdSeguro("TEV");
+}
+
+function montarLinkParticipanteEvento(tokenEvento) {
+  return ScriptApp.getService().getUrl() +
+    "?pagina=participante_evento&token=" +
+    encodeURIComponent(tokenEvento || "");
 }
 
 function verificarConflitoIdentificacao(dados, idToken) {
