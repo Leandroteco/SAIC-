@@ -144,6 +144,16 @@
       text-decoration: none;
     }
 
+    .side-nav button.nav-item {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+      margin-top: 0;
+      text-align: left;
+      width: 100%;
+    }
+
     .nav-dot {
       border-radius: 999px;
       height: 8px;
@@ -671,13 +681,6 @@
       line-height: 1.5;
       margin: 0;
       white-space: pre-wrap;
-    }
-
-    .recado-vigencia {
-      color: rgba(63, 58, 27, 0.72);
-      font-size: 12px;
-      font-weight: 700;
-      margin-top: 18px;
     }
 
     @media (max-width: 1180px) {
@@ -1554,7 +1557,7 @@ body {
       </div>
 
       <nav class="side-nav">
-        <span class="nav-item active"><span class="nav-dot"></span>SAIC</span>
+        <button type="button" class="nav-item active" onclick="abrirEventosColetivos()"><span class="nav-dot"></span>Eventos Coletivos</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -1571,7 +1574,6 @@ body {
     <button type="button" class="recado-fechar" onclick="fecharRecado()" aria-label="Fechar recado">&times;</button>
     <h2 id="recadoTitulo">Recado</h2>
     <p id="recadoMensagem"></p>
-    <div id="recadoVigencia" class="recado-vigencia"></div>
   </article>
 </div>
 
@@ -3908,21 +3910,11 @@ function mostrarRecado(recado) {
   const postit = document.getElementById("recadoPostit");
   const titulo = document.getElementById("recadoTitulo");
   const mensagem = document.getElementById("recadoMensagem");
-  const vigencia = document.getElementById("recadoVigencia");
   const cor = recado.cor || "amarelo";
 
   postit.className = "recado-postit " + cor;
   titulo.innerText = recado.titulo || "Recado";
   mensagem.innerText = recado.mensagem || "";
-
-  if (recado.dataInicio || recado.dataFim) {
-    vigencia.innerText = "Vigência: " +
-      (recado.dataInicio || "sem início") +
-      " a " +
-      (recado.dataFim || "sem fim");
-  } else {
-    vigencia.innerText = "";
-  }
 
   overlay.style.display = "flex";
 }
@@ -3946,6 +3938,11 @@ function abrirRelatorios() {
 
 function abrirRelatorioNaps() {
   abrirPaginaComToken("relatorio_naps");
+}
+
+function abrirEventosColetivos(tipo) {
+  const tipoEvento = tipo ? ":" + tipo : "";
+  abrirPaginaComToken("eventos_coletivos" + tipoEvento);
 }
 
 function limparAvisosBusca() {
