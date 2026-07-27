@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<!--
+  SAIC - Eventos Coletivos
+  Tela leve para Workshop, PROSEN e Palestras.
+  Workshop/PROSEN recebem participantes nominais; Palestra registra quantidade.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventos Coletivos - SiSMen</title>
+  <style>
+    :root {
+      --bg: #eef4f7;
+      --surface: #ffffff;
+      --surface-soft: #f7fbfc;
+      --ink: #263033;
+      --muted: #66747c;
+      --line: #d8e4e8;
+      --red: #b31f2a;
+      --red-soft: #f5e1e3;
+      --blue: #315f72;
+      --blue-soft: #dbeef5;
+      --green: #2f7d55;
+      --gold: #b0872f;
+      --shadow: 0 18px 38px rgba(31, 48, 56, 0.10);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+      outline: none;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(49, 95, 114, 0.14);
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      color: #ffffff;
+      overflow-y: auto;
+    }
+
+    .sidebar::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
+    }
+
+    .brand {
+      padding-bottom: 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.76);
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 26px;
+    }
+
+    .side-nav button {
+      min-height: 42px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: transparent;
+      color: rgba(255, 255, 255, 0.84);
+      text-align: left;
+    }
+
+    .side-nav button:hover,
+    .side-nav button.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .content {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .page-banner {
+      position: relative;
+      overflow: hidden;
+      min-height: 142px;
+      padding: 28px 30px;
+      border: 1px solid rgba(216, 228, 232, 0.8);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #ffffff 0%, #eef6f8 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .page-banner::before,
+    .page-banner::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 8px;
+      pointer-events: none;
+    }
+
+    .page-banner::before {
+      top: 0;
+      background: linear-gradient(100deg, var(--red) 0%, rgba(179, 31, 42, 0.7) 34%, transparent 86%);
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+    }
+
+    .page-banner::after {
+      bottom: 0;
+      background: linear-gradient(280deg, #75848a 0%, rgba(117, 132, 138, 0.62) 36%, transparent 88%);
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .banner-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .page-banner h1 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .page-banner span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .summary-card {
+      min-width: 230px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .summary-card small {
+      display: block;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 18px;
+      color: var(--ink);
+    }
+
+    .status-line {
+      min-height: 22px;
+      margin: 18px 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status-line.error {
+      color: #b42318;
+    }
+
+    .status-line.success {
+      color: var(--green);
+    }
+
+    .status-line.centered {
+      text-align: center;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: var(--ink);
+      font-size: 19px;
+      line-height: 1.2;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 4px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--red);
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-title-row .section-title {
+      margin-bottom: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    .field-span-2 {
+      grid-column: span 2;
+    }
+
+    .event-grid,
+    .participant-form-grid {
+      gap: 12px;
+    }
+
+    .participant-form-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: end;
+    }
+
+    .manual-posto {
+      order: 1;
+      grid-column: span 3;
+    }
+    .manual-re {
+      order: 2;
+      grid-column: span 3;
+    }
+    .manual-cpf {
+      order: 3;
+      grid-column: span 3;
+    }
+    .manual-situacao {
+      order: 4;
+      grid-column: span 3;
+    }
+    .manual-nome {
+      order: 5;
+      grid-column: span 6;
+    }
+    .manual-email {
+      order: 6;
+      grid-column: span 3;
+    }
+    .manual-telefone {
+      order: 7;
+      grid-column: span 3;
+    }
+    .manual-opm {
+      order: 8;
+      grid-column: span 3;
+    }
+    .manual-ingresso {
+      order: 9;
+      grid-column: span 2;
+    }
+    .manual-estado-civil {
+      order: 10;
+      grid-column: span 2;
+    }
+    .manual-sexo {
+      order: 11;
+      grid-column: span 2;
+    }
+    .manual-nascimento {
+      order: 12;
+      grid-column: span 3;
+    }
+    .manual-cep {
+      order: 13;
+      grid-column: span 2;
+    }
+    .manual-rua {
+      order: 14;
+      grid-column: span 5;
+    }
+    .manual-numero {
+      order: 15;
+      grid-column: span 2;
+    }
+    .manual-complemento {
+      order: 16;
+      grid-column: span 3;
+    }
+    .manual-bairro {
+      order: 17;
+      grid-column: span 4;
+    }
+    .manual-cidade {
+      order: 18;
+      grid-column: span 5;
+    }
+    .manual-estado {
+      order: 19;
+      grid-column: span 2;
+    }
+
+    .manual-futuro {
+      display: none;
+    }
+
+    .event-grid input,
+    .event-grid select,
+    .event-grid textarea,
+    .participant-form-grid input,
+    .participant-form-grid select,
+    .participant-form-grid textarea {
+      min-height: 40px;
+      padding: 9px 11px;
+    }
+
+    .event-grid textarea {
+      min-height: 76px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .participant-actions {
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .participant-actions-main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-primary {
+      min-height: 44px;
+      padding: 11px 16px;
+      border-radius: var(--radius);
+      background: var(--blue);
+      color: #ffffff;
+      box-shadow: 0 10px 20px rgba(49, 95, 114, 0.16);
+    }
+
+    .btn-secondary {
+      min-height: 44px;
+      padding: 11px 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+    }
+
+    .btn-transparent {
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    .event-cancel-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .btn-danger {
+      min-height: 38px;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(18, 32, 39, 0.38);
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(460px, 100%);
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 24px 60px rgba(18, 32, 39, 0.24);
+    }
+
+    .modal-box h2 {
+      margin: 0 0 10px;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .modal-box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .event-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .saving-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 28px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .saving-inline.success {
+      color: var(--green);
+    }
+
+    .saving-inline.error {
+      color: #b42318;
+    }
+
+    .saving-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(49, 95, 114, 0.18);
+      border-top-color: var(--blue);
+      border-radius: 999px;
+      animation: girar 0.8s linear infinite;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .link-box {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-soft);
+    }
+
+    .link-box input {
+      font-size: 13px;
+    }
+
+    .participant-panel {
+      display: none;
+    }
+
+    .quantity-panel {
+      display: none;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: var(--radius);
+      font-size: 14px;
+    }
+
+    .mini-table th,
+    .mini-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .mini-table th {
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .empty-state {
+      padding: 16px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .required-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+      }
+
+      .side-nav {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .banner-content,
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .field-span-2 {
+        grid-column: 1 / -1;
+      }
+
+      .participant-form-grid > div,
+      .manual-nome {
+        grid-column: 1 / -1;
+      }
+
+      .banner-content {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 620px) {
+      body {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .side-nav {
+        grid-template-columns: 1fr;
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        font-size: 16px;
+        min-height: 52px;
+        padding: 13px 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Eventos coletivos">
+      <div class="brand">
+        <strong>Eventos Coletivos</strong>
+        <span>Workshop, PROSEN e Palestras</span>
+      </div>
+
+      <nav class="side-nav">
+        <button id="nav-workshop" type="button" class="active" onclick="selecionarEvento('workshop')">Workshop</button>
+        <button id="nav-prosen" type="button" onclick="selecionarEvento('prosen')">PROSEN</button>
+        <button id="nav-palestra" type="button" onclick="selecionarEvento('palestra')">Palestras</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="page-banner">
+        <div class="banner-content">
+          <div>
+            <p class="eyebrow">Eventos Coletivos</p>
+            <h1 id="tituloPagina">Workshop</h1>
+            <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+          </div>
+          <div class="summary-card">
+            <small>Respons&aacute;vel</small>
+            <strong id="resumoResponsavel">Carregando</strong>
+            <span id="resumoNaps">NAPS n&atilde;o informado</span>
+          </div>
+        </div>
+      </header>
+
+      <div id="statusTela" class="status-line"></div>
+
+      <section class="section" aria-label="Dados do evento">
+        <h2 class="section-title">Identifica&ccedil;&atilde;o do Evento</h2>
+
+        <div class="grid-3 event-grid">
+          <div>
+            <label for="tipoEvento">Tipo de evento</label>
+            <input id="tipoEvento" type="text" value="Workshop" readonly>
+          </div>
+
+          <div>
+            <label for="dataEvento">Data do evento</label>
+            <input id="dataEvento" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)" required>
+          </div>
+
+          <div>
+            <label for="napsAtendimento">NAPS</label>
+            <input id="napsAtendimento" type="text" readonly>
+          </div>
+
+          <div class="field-span-2">
+            <label for="tema">Tema</label>
+            <input id="tema" type="text" placeholder="Tema do evento" oninput="converterMaiusculasSemAcento(this)">
+          </div>
+
+          <div>
+            <label for="motivo">Motivo</label>
+            <input id="motivo" type="text" placeholder="Motivo ou objetivo principal" oninput="converterMaiusculasSemAcento(this)">
+          </div>
+
+          <div id="quantityPanel" class="quantity-panel">
+            <label for="quantidadeInformada">Quantidade de participantes</label>
+            <input id="quantidadeInformada" type="number" min="1" step="1" placeholder="Ex.: 80">
+          </div>
+
+          <div id="modalidadePanel" class="quantity-panel">
+            <label for="modalidadeEvento">Modalidade</label>
+            <select id="modalidadeEvento">
+              <option value="">Selecione</option>
+              <option value="presencial">Presencial</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+
+          <div class="field-full">
+            <label for="observacoes">Observa&ccedil;&otilde;es</label>
+            <textarea id="observacoes" placeholder="Informa&ccedil;&otilde;es relevantes do evento"></textarea>
+            <div class="event-cancel-row">
+              <button id="btnCancelarEvento" type="button" class="btn-transparent" onclick="cancelarEvento()" style="display:none;">Cancelar evento</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="participantPanel" class="section participant-panel" aria-label="Participantes do evento">
+        <h2 class="section-title">Participantes</h2>
+        <p class="required-note">Use o cadastro manual quando o respons&aacute;vel for preencher por uma pessoa. Os cadastros enviados pelo link aparecem na lista abaixo.</p>
+
+        <div class="grid-3 participant-form-grid">
+          <div class="manual-posto">
+            <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
+            <select id="postoGraduacao">
+              <option value="">Selecione</option>
+              <option>Sd PM</option>
+              <option>Cb PM</option>
+              <option>3&ordm; Sgt PM</option>
+              <option>2&ordm; Sgt PM</option>
+              <option>1&ordm; Sgt PM</option>
+              <option>Subten PM</option>
+              <option>Asp of PM</option>
+              <option>2&ordm; Ten PM</option>
+              <option>1&ordm; Ten PM</option>
+              <option>Cap PM</option>
+              <option>Maj PM</option>
+              <option>Ten Cel PM</option>
+              <option>Cel PM</option>
+            </select>
+          </div>
+          <div class="manual-re">
+            <label for="re">R.E.</label>
+            <input id="re" type="text" placeholder="000000-0" oninput="mascaraRE(this)">
+          </div>
+          <div class="manual-cpf">
+            <label for="cpf">CPF</label>
+            <input id="cpf" type="text" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+          </div>
+          <div class="manual-nome">
+            <label for="nome">Nome</label>
+            <input id="nome" type="text" oninput="converterMaiusculasSemAcento(this)" required>
+          </div>
+          <div class="manual-situacao">
+            <label for="situacaoStatus">Situa&ccedil;&atilde;o/Status</label>
+            <select id="situacaoStatus">
+              <option value="">Selecione</option>
+              <option>agregado(a)</option>
+              <option>ativo administrativo</option>
+              <option>ativo operacional</option>
+              <option>exonerado(a)</option>
+              <option>inativo</option>
+            </select>
+          </div>
+          <div class="manual-email">
+            <label for="email">E-mail</label>
+            <input id="email" type="email" list="sugestoesEmail" oninput="sugerirDominioEmail(this)">
+            <datalist id="sugestoesEmail"></datalist>
+          </div>
+          <div class="manual-telefone">
+            <label for="telefone">Telefone</label>
+            <input id="telefone" type="text" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
+          </div>
+          <div class="manual-ingresso">
+            <label for="dataIngresso">Data de ingresso</label>
+            <input id="dataIngresso" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)">
+          </div>
+          <div class="manual-nascimento">
+            <label for="dataNascimento">Data de nascimento</label>
+            <input id="dataNascimento" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)">
+          </div>
+          <div class="manual-sexo">
+            <label for="sexo">Sexo</label>
+            <select id="sexo">
+              <option value="">Selecione</option>
+              <option>masculino</option>
+              <option>feminino</option>
+            </select>
+          </div>
+          <div class="manual-opm">
+            <label for="opmAtual">OPM atual</label>
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this)">
+            <datalist id="listaOPM">
+  <option value="1.BAEP">1.BAEP</option>
+<option value="1.BPAMB">1.BPAMB</option>
+<option value="1.BPCHQ">1.BPCHQ</option>
+<option value="1.BPM/I">1.BPM/I</option>
+<option value="1.BPM/M">1.BPM/M</option>
+<option value="1.BPRV">1.BPRV</option>
+<option value="1.BPTRAN">1.BPTRAN</option>
+<option value="1.EM/PM">1.EM/PM</option>
+<option value="1.GB">1.GB</option>
+<option value="10.BAEP">10.BAEP</option>
+<option value="10.BPM/I">10.BPM/I</option>
+<option value="10.BPM/M">10.BPM/M</option>
+<option value="10.GB">10.GB</option>
+<option value="11.BAEP">11.BAEP</option>
+<option value="11.BPM/I">11.BPM/I</option>
+<option value="11.BPM/M">11.BPM/M</option>
+<option value="11.GB">11.GB</option>
+<option value="12.BAEP">12.BAEP</option>
+<option value="12.BPM/I">12.BPM/I</option>
+<option value="12.BPM/M">12.BPM/M</option>
+<option value="12.GB">12.GB</option>
+<option value="13.BAEP">13.BAEP</option>
+<option value="13.BPM/I">13.BPM/I</option>
+<option value="13.BPM/M">13.BPM/M</option>
+<option value="13.GB">13.GB</option>
+<option value="14.BAEP">14.BAEP</option>
+<option value="14.BPM/I">14.BPM/I</option>
+<option value="14BPM/M">14BPM/M</option>
+<option value="14.GB">14.GB</option>
+<option value="15.BAEP">15.BAEP</option>
+<option value="15.BPM/I">15.BPM/I</option>
+<option value="15.BPM/M">15.BPM/M</option>
+<option value="15.GB">15.GB</option>
+<option value="16.BPM/I">16.BPM/I</option>
+<option value="16.BPM/M">16.BPM/M</option>
+<option value="16.GB">16.GB</option>
+<option value="17.BPM/I">17.BPM/I</option>
+<option value="17.BPM/M">17.BPM/M</option>
+<option value="17.GB">17.GB</option>
+<option value="18.BPM/I">18.BPM/I</option>
+<option value="18.BPM/M">18.BPM/M</option>
+<option value="18.GB">18.GB</option>
+<option value="19.BPM/I">19.BPM/I</option>
+<option value="19.BPM/M">19.BPM/M</option>
+<option value="19.GB">19.GB</option>
+<option value="2.BAEP">2.BAEP</option>
+<option value="2.BPAMB">2.BPAMB</option>
+<option value="2.BPCHQ">2.BPCHQ</option>
+<option value="2.BPM/I">2.BPM/I</option>
+<option value="2.BPM/M">2.BPM/M</option>
+<option value="2.BPRV">2.BPRV</option>
+<option value="2.BPTRAN">2.BPTRAN</option>
+<option value="2.EM/PM">2.EM/PM</option>
+<option value="2.GB">2.GB</option>
+<option value="20.BPM/I">20.BPM/I</option>
+<option value="20.BPM/M">20.BPM/M</option>
+<option value="20.GB">20.GB</option>
+<option value="21.BPM/I">21.BPM/I</option>
+<option value="21.BPM/M">21.BPM/M</option>
+<option value="22.BPM/I">22.BPM/I</option>
+<option value="22.BPM/M">22.BPM/M</option>
+<option value="23.BPM/I">23.BPM/I</option>
+<option value="23.BPM/M">23.BPM/M</option>
+<option value="24.BPM/I">24.BPM/I</option>
+<option value="24.BPM/M">24.BPM/M</option>
+<option value="25.BPM/I">25.BPM/I</option>
+<option value="25.BPM/M">25.BPM/M</option>
+<option value="26.BPM/I">26.BPM/I</option>
+<option value="26.BPM/M">26.BPM/M</option>
+<option value="27.BPM/I">27.BPM/I</option>
+<option value="27.BPM/M">27.BPM/M</option>
+<option value="28.BPM/I">28.BPM/I</option>
+<option value="28.BPM/M">28.BPM/M</option>
+<option value="29.BPM/I">29.BPM/I</option>
+<option value="29.BPM/M">29.BPM/M</option>
+<option value="3.BAEP">3.BAEP</option>
+<option value="3.BPAMB">3.BPAMB</option>
+<option value="3.BPCHQ">3.BPCHQ</option>
+<option value="3.BPM/I">3.BPM/I</option>
+<option value="3.BPM/M">3.BPM/M</option>
+<option value="3.GB">3.GB</option>
+<option value="30.BPM/I">30.BPM/I</option>
+<option value="30.BPM/M">30.BPM/M</option>
+<option value="31.BPM/I">31.BPM/I</option>
+<option value="31.BPM/M">31.BPM/M</option>
+<option value="32.BPM/I">32.BPM/I</option>
+<option value="32.BPM/M">32.BPM/M</option>
+<option value="33.BPM/I">33.BPM/I</option>
+<option value="33.BPM/M">33.BPM/M</option>
+<option value="34.BPM/I">34.BPM/I</option>
+<option value="35.BPM/I">35.BPM/I</option>
+<option value="35.BPM/M">35.BPM/M</option>
+<option value="36.BPM/I">36.BPM/I</option>
+<option value="36.BPM/M">36.BPM/M</option>
+<option value="37.BPM/I">37.BPM/I</option>
+<option value="37.BPM/M">37.BPM/M</option>
+<option value="38.BPM/I">38.BPM/I</option>
+<option value="38.BPM/M">38.BPM/M</option>
+<option value="39.BPM/I">39.BPM/I</option>
+<option value="39.BPM/M">39.BPM/M</option>
+<option value="4.BAEP">4.BAEP</option>
+<option value="4.BPAMB">4.BPAMB</option>
+<option value="4.BPCHQ">4.BPCHQ</option>
+<option value="4.GB">4.GB</option>
+<option value="40.BPM/I">40.BPM/I</option>
+<option value="40.BPM/M">40.BPM/M</option>
+<option value="41.BPM/I">41.BPM/I</option>
+<option value="42.BPM/I">42.BPM/I</option>
+<option value="43.BPM/I">43.BPM/I</option>
+<option value="43.BPM/M">43.BPM/M</option>
+<option value="44.BPM/I">44.BPM/I</option>
+<option value="44.BPM/M">44.BPM/M</option>
+<option value="45.BPM/I">45.BPM/I</option>
+<option value="46.BPM/M">46.BPM/M</option>
+<option value="47.BPM/I">47.BPM/I</option>
+<option value="48.BPM/I">48.BPM/I</option>
+<option value="48.BPM/M">48.BPM/M</option>
+<option value="49.BPM/I">49.BPM/I</option>
+<option value="49.BPM/M">49.BPM/M</option>
+<option value="5.BAEP">5.BAEP</option>
+<option value="5.BPAMB">5.BPAMB</option>
+<option value="5.BPCHQ">5.BPCHQ</option>
+<option value="5.BPM/I">5.BPM/I</option>
+<option value="5.BPM/M">5.BPM/M</option>
+<option value="5.BPRV">5.BPRV</option>
+<option value="5.GB">5.GB</option>
+<option value="50.BPM/M">50.BPM/M</option>
+<option value="51.BPM/I">51.BPM/I</option>
+<option value="52.BPM/I">52.BPM/I</option>
+<option value="53.BPM/I">53.BPM/I</option>
+<option value="54.BPM/I">54.BPM/I</option>
+<option value="55.BPM/I">55.BPM/I</option>
+<option value="6.BAEP">6.BAEP</option>
+<option value="6.BPM/I">6.BPM/I</option>
+<option value="6.BPM/M">6.BPM/M</option>
+<option value="6.BPRV">6.BPRV</option>
+<option value="6.EM/PM">6.EM/PM</option>
+<option value="6.GB">6.GB</option>
+<option value="7.BAEP">7.BAEP</option>
+<option value="7.BPM/I">7.BPM/I</option>
+<option value="7.BPM/M">7.BPM/M</option>
+<option value="7.GB">7.GB</option>
+<option value="8.BAEP">8.BAEP</option>
+<option value="8.BPM/I">8.BPM/I</option>
+<option value="8.BPM/M">8.BPM/M</option>
+<option value="8.GB">8.GB</option>
+<option value="9.BAEP">9.BAEP</option>
+<option value="9.BPM/I">9.BPM/I</option>
+<option value="9.BPM/M">9.BPM/M</option>
+<option value="9.GB">9.GB</option>
+<option value="APMAL">APMAL</option>
+<option value="APMBB">APMBB</option>
+<option value="APMCG">APMCG</option>
+<option value="APMCGE">APMCGE</option>
+<option value="APMCMSP">APMCMSP</option>
+<option value="APMPGE">APMPGE</option>
+<option value="APMPGJ">APMPGJ</option>
+<option value="APMPMSP">APMPMSP</option>
+<option value="APMSAP">APMSAP</option>
+<option value="APMSEFAZ">APMSEFAZ</option>
+<option value="APMSJC">APMSJC</option>
+<option value="APMSSP">APMSSP</option>
+<option value="APMTCE">APMTCE</option>
+<option value="APMTJ">APMTJ</option>
+<option value="APMTJM">APMTJM</option>
+<option value="C COM SOC">C COM SOC</option>
+<option value="C MED">C MED</option>
+<option value="C MIL">C MIL</option>
+<option value="C MUS">C MUS</option>
+<option value="C ODONT">C ODONT</option>
+<option value="CAES">CAES</option>
+<option value="CAJ">CAJ</option>
+<option value="CAPS">CAPS</option>
+<option value="CAVPM">CAVPM</option>
+<option value="CBI-1">CBI-1</option>
+<option value="CBI-2">CBI-2</option>
+<option value="CBI-3">CBI-3</option>
+<option value="CBM">CBM</option>
+<option value="CCB">CCB</option>
+<option value="CAIF">CAIF</option>
+<option value="CIAP">CIAP</option>
+<option value="CIPM">CIPM</option>
+<option value="CMB">CMB</option>
+<option value="CMI">CMI</option>
+<option value="CMM">CMM</option>
+<option value="CMT GERAL">CMT GERAL</option>
+<option value="COORD OP PM">COORD OP PM</option>
+<option value="COPOM">COPOM</option>
+<option value="CORREG PM">CORREG PM</option>
+<option value="CPA/M-1">CPA/M-1</option>
+<option value="CPA/M-10">CPA/M-10</option>
+<option value="CPA/M-11">CPA/M-11</option>
+<option value="CPA/M-12">CPA/M-12</option>
+<option value="CPA/M-2">CPA/M-2</option>
+<option value="CPA/M-3">CPA/M-3</option>
+<option value="CPA/M-4">CPA/M-4</option>
+<option value="CPA/M-5">CPA/M-5</option>
+<option value="CPA/M-6">CPA/M-6</option>
+<option value="CPA/M-7">CPA/M-7</option>
+<option value="CPA/M-8">CPA/M-8</option>
+<option value="CPA/M-9">CPA/M-9</option>
+<option value="CPAMB">CPAMB</option>
+<option value="CPC">CPC</option>
+<option value="CPCHQ">CPCHQ</option>
+<option value="CPD">CPD</option>
+<option value="CPI-1">CPI-1</option>
+<option value="CPI-10">CPI-10</option>
+<option value="CPI-2">CPI-2</option>
+<option value="CPI-3">CPI-3</option>
+<option value="CPI-4">CPI-4</option>
+<option value="CPI-5">CPI-5</option>
+<option value="CPI-6">CPI-6</option>
+<option value="CPI-7">CPI-7</option>
+<option value="CPI-8">CPI-8</option>
+<option value="CPI-9">CPI-9</option>
+<option value="CPM">CPM</option>
+<option value="CPRV">CPRV</option>
+<option value="CPTRAN">CPTRAN</option>
+<option value="CRPM">CRPM</option>
+<option value="CSM/MOPB">CSM/MOPB</option>
+<option value="DEC">DEC</option>
+<option value="DF">DF</option>
+<option value="DL">DL</option>
+<option value="DP">DP</option>
+<option value="DPCDH">DPCDH</option>
+<option value="DS">DS</option>
+<option value="DAS/CG">DAS/CG</option>
+<option value="DTIC">DTIC</option>
+<option value="EEF">EEF</option>
+<option value="EM/E">EM/E</option>
+<option value="EM/PM">EM/PM</option>
+<option value="ESB">ESB</option>
+<option value="ESSD">ESSD</option>
+<option value="ESSGT">ESSGT</option>
+<option value="GAB CMT G">GAB CMT G</option>
+<option value="GBMAR">GBMAR</option>
+<option value="GOV">GOV</option>
+<option value="PMRG">PMRG</option>
+<option value="RPMON">RPMON</option>
+<option value="SSP">SSP</option>
+<option value="SUBCMT PM">SUBCMT PM</option>
+</datalist>
+          </div>
+          <div class="manual-futuro">
+            <label for="dataInatividade">Data de inatividade</label>
+            <input id="dataInatividade" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)">
+          </div>
+          <div class="manual-estado-civil">
+            <label for="estadoCivil">Estado civil</label>
+            <select id="estadoCivil">
+              <option value="">Selecione</option>
+              <option>solteiro(a)</option>
+              <option>casado(a)</option>
+              <option>divorciado(a)</option>
+              <option>vi&uacute;vo(a)</option>
+              <option>uni&atilde;o est&aacute;vel</option>
+            </select>
+          </div>
+          <div class="manual-futuro">
+            <label for="numeroFilhos">N&uacute;mero de filhos</label>
+            <input id="numeroFilhos" type="number" min="0" step="1" value="0">
+          </div>
+          <div class="manual-cep">
+            <label for="cep">CEP</label>
+            <input id="cep" type="text" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCepParticipante()">
+          </div>
+          <div class="manual-rua">
+            <label for="rua">Rua</label>
+            <input id="rua" type="text">
+          </div>
+          <div class="manual-bairro">
+            <label for="bairro">Bairro</label>
+            <input id="bairro" type="text">
+          </div>
+          <div class="manual-cidade">
+            <label for="cidade">Cidade</label>
+            <input id="cidade" type="text">
+          </div>
+          <div class="manual-estado">
+            <label for="estado">Estado</label>
+            <input id="estado" type="text">
+          </div>
+          <div class="manual-numero">
+            <label for="numero">N&uacute;mero</label>
+            <input id="numero" type="text">
+          </div>
+          <div class="manual-complemento">
+            <label for="complemento">Complemento</label>
+            <input id="complemento" type="text">
+          </div>
+        </div>
+
+        <div id="linkActions" class="actions participant-actions">
+          <div class="participant-actions-main">
+            <button id="btnGerarLink" type="button" class="btn-primary" onclick="gerarLinkParticipantes()">Gerar link para participantes</button>
+            <button type="button" class="btn-primary" onclick="adicionarParticipanteManual()">Adicionar participante manual</button>
+            <span id="statusGerarLink" class="saving-inline"></span>
+          </div>
+          <button type="button" class="btn-transparent" onclick="limparFormularioParticipante()">Limpar participante</button>
+        </div>
+
+        <div id="linkBox" class="link-box">
+          <label for="linkParticipante">Link para enviar aos participantes</label>
+          <div class="grid-2">
+            <input id="linkParticipante" type="text" readonly>
+            <button id="btnCopiarLink" type="button" class="btn-secondary" onclick="copiarLinkParticipante()">Copiar link</button>
+          </div>
+          <p class="required-note">O participante preenche somente os dados cadastrais. O respons&aacute;vel valida tudo ao salvar o evento.</p>
+        </div>
+      </section>
+
+      <section id="listaPanel" class="section participant-panel" aria-label="Lista de participantes">
+        <div class="section-title-row">
+          <h2 class="section-title">Lista tempor&aacute;ria</h2>
+          <button id="btnAtualizarParticipantes" type="button" class="btn-secondary" onclick="atualizarParticipantesDoLink()">Atualizar participantes</button>
+        </div>
+        <div id="listaParticipantes"></div>
+      </section>
+
+      <section class="section" aria-label="Finalizar evento">
+        <h2 class="section-title">Finalizar</h2>
+        <div class="actions">
+          <span id="contadorEvento" class="event-pill">0 participantes</span>
+          <button id="btnSalvarEvento" type="button" class="btn-primary" onclick="salvarEvento()">Salvar Workshop</button>
+          <span id="statusSalvarEvento" class="saving-inline"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalCancelarEvento" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloModalCancelarEvento">
+    <div class="modal-box">
+      <h2 id="tituloModalCancelarEvento">Cancelar evento em aberto?</h2>
+      <p>Este evento ainda n&atilde;o foi salvo. Ao cancelar, ele ficar&aacute; registrado como cancelado e n&atilde;o contar&aacute; nos relat&oacute;rios.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="fecharModalCancelarEvento()">Manter evento</button>
+        <button id="btnConfirmarCancelamentoEvento" type="button" class="btn-danger" onclick="confirmarCancelamentoEvento()">Cancelar evento</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const webAppUrl = "<?= webAppUrl ?>";
+    let tokenGoogle = "<?= tokenGoogleInicial ?>";
+    let usuarioLogado = <?!= usuarioInicialJson ?>;
+    let tipoEventoInicial = "<?= tipoEventoInicial ?>";
+    let tipoEventoAtual = "workshop";
+    let idEventoAtual = "";
+    let tokenEventoAtual = "";
+    let linkParticipanteAtual = "";
+    let participantesManuais = [];
+    let participantesLink = [];
+    let eventoRascunhoAberto = false;
+
+    const rotulosEvento = {
+      workshop: "Workshop",
+      prosen: "PROSEN",
+      palestra: "Palestra"
+    };
+
+    window.addEventListener("load", function() {
+      const hoje = new Date();
+      document.getElementById("dataEvento").value = formatarDataBrasilInput(hoje);
+
+      if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
+        mostrarStatus("Abra Eventos Coletivos pelo menu do formulario.", "error");
+        bloquearTela();
+        return;
+      }
+
+      document.getElementById("resumoResponsavel").innerText = usuarioLogado.nome || usuarioLogado.email || "Responsavel";
+      document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
+      document.getElementById("napsAtendimento").value = usuarioLogado.naps || "";
+      selecionarEvento(rotulosEvento[tipoEventoInicial] ? tipoEventoInicial : "workshop");
+      registrarLimpezaStatusAoEditarEvento();
+      carregarRascunhoEventoAberto();
+    });
+
+    function selecionarEvento(tipo, preservarEstado) {
+      if (eventoRascunhoAberto && preservarEstado !== true && tipo !== tipoEventoAtual) {
+        atualizarNavegacaoEvento();
+        mostrarStatus("Finalize o evento em aberto antes de iniciar outro.", "error");
+        return;
+      }
+
+      if (tipo !== tipoEventoAtual && preservarEstado !== true) {
+        resetarEstadoEvento();
+      }
+
+      tipoEventoAtual = tipo;
+      const usaParticipantes = tipoEventoAtual !== "palestra";
+      const usaModalidade = tipoEventoAtual === "palestra";
+      const rotulo = rotulosEvento[tipoEventoAtual] || "Evento";
+
+      atualizarNavegacaoEvento();
+
+      document.getElementById("tituloPagina").innerText = rotulo;
+      document.getElementById("tipoEvento").value = rotulo;
+      document.getElementById("participantPanel").style.display = usaParticipantes ? "block" : "none";
+      document.getElementById("listaPanel").style.display = usaParticipantes ? "block" : "none";
+      document.getElementById("linkActions").style.display = usaParticipantes ? "flex" : "none";
+      document.getElementById("quantityPanel").style.display = usaParticipantes ? "none" : "block";
+      document.getElementById("modalidadePanel").style.display = usaModalidade ? "block" : "none";
+      if (!usaModalidade) document.getElementById("modalidadeEvento").value = "";
+      document.getElementById("btnSalvarEvento").innerText = "Salvar " + rotulo;
+      atualizarContador();
+      renderizarParticipantes();
+      atualizarBotaoCancelarEvento();
+    }
+
+    function atualizarNavegacaoEvento() {
+      ["workshop", "prosen", "palestra"].forEach(function(item) {
+        const botao = document.getElementById("nav-" + item);
+        if (botao) botao.classList.toggle("active", item === tipoEventoAtual);
+      });
+    }
+
+    function resetarEstadoEvento() {
+      idEventoAtual = "";
+      tokenEventoAtual = "";
+      linkParticipanteAtual = "";
+      participantesManuais = [];
+      participantesLink = [];
+      eventoRascunhoAberto = false;
+      document.getElementById("linkParticipante").value = "";
+      document.getElementById("linkBox").style.display = "none";
+      document.getElementById("quantidadeInformada").value = "";
+      document.getElementById("modalidadeEvento").value = "";
+      atualizarBotaoCancelarEvento();
+    }
+
+    function limparIdentificacaoEvento() {
+      document.getElementById("dataEvento").value = formatarDataBrasilInput(new Date());
+      document.getElementById("tema").value = "";
+      document.getElementById("motivo").value = "";
+      document.getElementById("observacoes").value = "";
+      document.getElementById("quantidadeInformada").value = "";
+      document.getElementById("modalidadeEvento").value = "";
+      document.getElementById("napsAtendimento").value = usuarioLogado ? usuarioLogado.naps || "" : "";
+    }
+
+    function registrarLimpezaStatusAoEditarEvento() {
+      document.querySelectorAll(".event-grid input, .event-grid select, .event-grid textarea, .participant-form-grid input, .participant-form-grid select").forEach(function(campo) {
+        campo.addEventListener("input", limparStatusDeOperacaoAnterior);
+        campo.addEventListener("change", limparStatusDeOperacaoAnterior);
+      });
+    }
+
+    function limparStatusDeOperacaoAnterior() {
+      mostrarStatus("", "");
+      definirStatusSalvarEvento(false, "");
+      definirStatusGerarLink(false, "");
+    }
+
+    function atualizarBotaoCancelarEvento() {
+      const botao = document.getElementById("btnCancelarEvento");
+
+      if (!botao) return;
+
+      botao.style.display = eventoRascunhoAberto ? "inline-flex" : "none";
+    }
+
+    function bloquearTela() {
+      document.querySelectorAll("button, input, select, textarea").forEach(function(campo) {
+        campo.disabled = true;
+      });
+    }
+
+    function montarDadosEvento() {
+      return {
+        idEvento: idEventoAtual,
+        tokenEvento: tokenEventoAtual,
+        tipoEvento: tipoEventoAtual,
+        dataEvento: valorDataCampo("dataEvento"),
+        napsAtendimento: document.getElementById("napsAtendimento").value,
+        responsavelNome: usuarioLogado ? usuarioLogado.nome : "",
+        responsavelEmail: usuarioLogado ? usuarioLogado.email : "",
+        tema: document.getElementById("tema").value,
+        motivo: document.getElementById("motivo").value,
+        quantidadeInformada: document.getElementById("quantidadeInformada").value,
+        modalidadeEvento: document.getElementById("modalidadeEvento").value,
+        observacoes: document.getElementById("observacoes").value
+      };
+    }
+
+    function carregarRascunhoEventoAberto() {
+      setCarregando(true, "Verificando evento em aberto...");
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+
+          if (!retorno || !retorno.encontrado) {
+            mostrarStatus("Pronto para iniciar um evento coletivo.", "");
+            return;
+          }
+
+          preencherRascunhoEvento(retorno);
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .obterRascunhoEventoColetivo(tokenGoogle);
+    }
+
+    function preencherRascunhoEvento(rascunho) {
+      const tipo = rascunho.tipoEvento || tipoEventoAtual;
+
+      eventoRascunhoAberto = true;
+      idEventoAtual = rascunho.idEvento || "";
+      tokenEventoAtual = rascunho.tokenEvento || "";
+      linkParticipanteAtual = rascunho.linkParticipante || "";
+      participantesManuais = [];
+      participantesLink = rascunho.participantes || [];
+
+      selecionarEvento(tipo, true);
+
+      document.getElementById("dataEvento").value = rascunho.dataEvento || document.getElementById("dataEvento").value;
+      document.getElementById("napsAtendimento").value = rascunho.napsAtendimento || usuarioLogado.naps || "";
+      document.getElementById("tema").value = rascunho.tema || "";
+      document.getElementById("motivo").value = rascunho.motivo || "";
+      document.getElementById("quantidadeInformada").value = rascunho.quantidadeInformada || "";
+      document.getElementById("modalidadeEvento").value = rascunho.modalidade || "";
+      document.getElementById("observacoes").value = rascunho.observacoes || "";
+      document.getElementById("linkParticipante").value = linkParticipanteAtual;
+      document.getElementById("linkBox").style.display = linkParticipanteAtual ? "block" : "none";
+
+      renderizarParticipantes();
+      atualizarContador();
+      atualizarBotaoCancelarEvento();
+      mostrarStatus("Evento em aberto carregado. Finalize este evento antes de iniciar outro.", "success");
+    }
+
+    function gerarLinkParticipantes() {
+      if (tipoEventoAtual === "palestra") return;
+      if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) return;
+
+      if (!valorCampo("tema")) {
+        mostrarStatus("Informe o tema do evento antes de gerar o link.", "error");
+        document.getElementById("tema").focus();
+        return;
+      }
+
+      definirStatusGerarLink(true, "Gerando link...");
+      setCarregando(true, "Preparando link do evento...");
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+          definirStatusGerarLink(false, "Link gerado.", "success");
+          idEventoAtual = retorno.idEvento || idEventoAtual;
+          tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
+          linkParticipanteAtual = retorno.linkParticipante || "";
+          eventoRascunhoAberto = true;
+          document.getElementById("linkParticipante").value = linkParticipanteAtual;
+          document.getElementById("linkBox").style.display = "block";
+          atualizarBotaoCancelarEvento();
+          atualizarParticipantesDoLink(true);
+          mostrarStatus(retorno.mensagem || "Link preparado.", "success");
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          definirStatusGerarLink(false, obterMensagemErro(erro), "error");
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .criarRascunhoEventoColetivo(montarDadosEvento(), tokenGoogle);
+    }
+
+    function copiarLinkParticipante() {
+      const campo = document.getElementById("linkParticipante");
+      const botao = document.getElementById("btnCopiarLink");
+
+      campo.select();
+      document.execCommand("copy");
+      if (botao) {
+        botao.innerText = "Copiado";
+        setTimeout(function() {
+          botao.innerText = "Copiar link";
+        }, 1800);
+      }
+      mostrarStatus("Link copiado.", "success");
+    }
+
+    function adicionarParticipanteManual() {
+      if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], [])) return;
+
+      const participante = lerFormularioParticipante();
+
+      if (!participante.nome) {
+        mostrarStatus("Informe o nome do participante.", "error");
+        return;
+      }
+
+      if (!participante.cpf && !participante.re) {
+        mostrarStatus("Informe CPF ou R.E. do participante.", "error");
+        return;
+      }
+
+      setCarregando(true, "Adicionando participante ao rascunho...");
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+          idEventoAtual = retorno.idEvento || idEventoAtual;
+          tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
+          linkParticipanteAtual = retorno.linkParticipante || linkParticipanteAtual;
+          eventoRascunhoAberto = true;
+          participantesManuais = [];
+          participantesLink = retorno.participantes || [];
+          document.getElementById("linkParticipante").value = linkParticipanteAtual;
+          document.getElementById("linkBox").style.display = linkParticipanteAtual ? "block" : "none";
+          limparFormularioParticipante();
+          renderizarParticipantes();
+          atualizarContador();
+          atualizarBotaoCancelarEvento();
+          mostrarStatus(retorno.mensagem || "Participante adicionado a lista temporaria.", "success");
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .registrarParticipanteEventoManual(montarDadosEvento(), participante, tokenGoogle);
+    }
+
+    function cancelarEvento() {
+      if (!eventoRascunhoAberto && !idEventoAtual && !tokenEventoAtual) {
+        mostrarStatus("Nao ha evento em aberto para cancelar.", "error");
+        return;
+      }
+
+      abrirModalCancelarEvento();
+    }
+
+    function abrirModalCancelarEvento() {
+      const modal = document.getElementById("modalCancelarEvento");
+
+      if (modal) modal.classList.add("active");
+    }
+
+    function fecharModalCancelarEvento() {
+      const modal = document.getElementById("modalCancelarEvento");
+
+      if (modal) modal.classList.remove("active");
+    }
+
+    function confirmarCancelamentoEvento() {
+      fecharModalCancelarEvento();
+      setCarregando(true, "Cancelando evento...");
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+          definirStatusSalvarEvento(false, "");
+          definirStatusGerarLink(false, "");
+          resetarEstadoEvento();
+          limparIdentificacaoEvento();
+          limparFormularioParticipante();
+          renderizarParticipantes();
+          atualizarContador();
+          atualizarBotaoCancelarEvento();
+          mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Evento cancelado com sucesso.", "success", true);
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .cancelarEventoColetivo(montarDadosEvento(), tokenGoogle);
+    }
+
+    function lerFormularioParticipante() {
+      return {
+        postoGraduacao: valorCampo("postoGraduacao"),
+        re: valorCampo("re"),
+        cpf: valorCampo("cpf"),
+        nome: valorCampo("nome"),
+        situacaoStatus: valorCampo("situacaoStatus"),
+        email: valorCampo("email"),
+        telefone: valorCampo("telefone"),
+        dataIngresso: valorDataCampo("dataIngresso"),
+        dataNascimento: valorDataCampo("dataNascimento"),
+        sexo: valorCampo("sexo"),
+        opmAtual: valorCampo("opmAtual"),
+        dataInatividade: valorDataCampo("dataInatividade"),
+        estadoCivil: valorCampo("estadoCivil"),
+        numeroFilhos: valorCampo("numeroFilhos"),
+        cep: valorCampo("cep"),
+        rua: valorCampo("rua"),
+        bairro: valorCampo("bairro"),
+        cidade: valorCampo("cidade"),
+        estado: valorCampo("estado"),
+        numero: valorCampo("numero"),
+        complemento: valorCampo("complemento")
+      };
+    }
+
+    function valorCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? campo.value.trim() : "";
+    }
+
+    function valorDataCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? converterDataBrasilParaISO(campo.value) : "";
+    }
+
+    function converterMaiusculasSemAcento(campo) {
+      campo.value = String(campo.value || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function sugerirDominioEmail(campo) {
+      const lista = document.getElementById("sugestoesEmail");
+
+      if (!lista) return;
+
+      const dominio = "policiamilitar.sp.gov.br";
+      const valor = String((campo && campo.value) || "").trim();
+      const partes = valor.split("@");
+
+      if (partes.length !== 2 || !partes[0]) {
+        lista.innerHTML = "";
+        return;
+      }
+
+      const usuario = partes[0];
+      const dominioDigitado = partes[1].toLowerCase();
+
+      if (dominioDigitado && dominio.indexOf(dominioDigitado) !== 0) {
+        lista.innerHTML = "";
+        return;
+      }
+
+      const sugestao = usuario + "@" + dominio;
+
+      if (valor.toLowerCase() === sugestao.toLowerCase()) {
+        lista.innerHTML = "";
+        return;
+      }
+
+      lista.innerHTML = '<option value="' + escaparAttr(sugestao) + '"></option>';
+    }
+
+    function mascaraRE(campo) {
+      let valor = campo.value.toUpperCase().replace(/[^0-9A]/g, "");
+      let numerosAntesHifen = "";
+      let digitoFinal = "";
+
+      for (let i = 0; i < valor.length; i++) {
+        const caractere = valor.charAt(i);
+
+        if (numerosAntesHifen.length < 6) {
+          if (/[0-9]/.test(caractere)) numerosAntesHifen += caractere;
+          continue;
+        }
+
+        if (!digitoFinal && /[0-9A]/.test(caractere)) {
+          digitoFinal = caractere;
+          break;
+        }
+      }
+
+      campo.value = digitoFinal ? numerosAntesHifen + "-" + digitoFinal : numerosAntesHifen;
+    }
+
+    function mascaraCPF(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 11);
+
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+      campo.value = valor;
+    }
+
+    function mascaraTelefone(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 11);
+
+      if (valor.length <= 10) {
+        valor = valor.replace(/(\d{2})(\d)/, "($1) $2");
+        valor = valor.replace(/(\d{4})(\d)/, "$1-$2");
+      } else {
+        valor = valor.replace(/(\d{2})(\d)/, "($1) $2");
+        valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+      }
+
+      campo.value = valor;
+    }
+
+    function mascaraCEP(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+
+      valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+
+      campo.value = valor;
+    }
+
+    function mascaraDataBrasil(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+
+      campo.value = valor;
+    }
+
+    function validarAnoDataCampo(campo) {
+      if (!campo.value) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      if (dataBrasilValida(campo.value)) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      campo.style.border = "2px solid #d32f2f";
+      return false;
+    }
+
+    function validarDatasFormulario(ids, obrigatorios) {
+      const obrigatoriosMapa = {};
+      let valido = true;
+
+      (obrigatorios || []).forEach(function(id) {
+        obrigatoriosMapa[id] = true;
+      });
+
+      ids.forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        if (obrigatoriosMapa[id] && !campo.value.trim()) {
+          campo.style.border = "2px solid #d32f2f";
+          valido = false;
+          return;
+        }
+
+        if (!validarAnoDataCampo(campo)) {
+          valido = false;
+        }
+      });
+
+      if (!valido) {
+        mostrarStatus("Confira as datas no formato dd/mm/aaaa.", "error");
+      }
+
+      return valido;
+    }
+
+    function dataBrasilValida(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return false;
+
+      const dia = Number(partes[1]);
+      const mes = Number(partes[2]);
+      const ano = Number(partes[3]);
+
+      if (ano < 1 || ano > 9999 || mes < 1 || mes > 12 || dia < 1) return false;
+
+      const data = new Date(ano, mes - 1, dia);
+
+      return data.getFullYear() === ano &&
+        data.getMonth() === mes - 1 &&
+        data.getDate() === dia;
+    }
+
+    function converterDataBrasilParaISO(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return "";
+
+      return partes[3] + "-" + partes[2] + "-" + partes[1];
+    }
+
+    function formatarDataBrasilInput(data) {
+      const dia = String(data.getDate()).padStart(2, "0");
+      const mes = String(data.getMonth() + 1).padStart(2, "0");
+      const ano = String(data.getFullYear()).padStart(4, "0");
+
+      return dia + "/" + mes + "/" + ano;
+    }
+
+    function limparErroVisualCampo(campo) {
+      campo.style.border = "1px solid var(--line)";
+    }
+
+    function buscarCepParticipante() {
+      const cep = document.getElementById("cep").value.replace(/\D/g, "");
+
+      if (cep.length !== 8) return;
+
+      fetch("https://viacep.com.br/ws/" + cep + "/json/")
+        .then(function(resposta) {
+          return resposta.json();
+        })
+        .then(function(dados) {
+          if (!dados.erro) {
+            document.getElementById("rua").value = dados.logradouro || "";
+            document.getElementById("bairro").value = dados.bairro || "";
+            document.getElementById("cidade").value = dados.localidade || "";
+            document.getElementById("estado").value = dados.uf || "";
+          } else {
+            mostrarStatus("CEP nao encontrado.", "error");
+          }
+        })
+        .catch(function() {
+          mostrarStatus("Erro ao buscar CEP.", "error");
+        });
+    }
+
+    function limparFormularioParticipante() {
+      [
+        "postoGraduacao", "re", "cpf", "nome", "situacaoStatus", "email", "telefone",
+        "dataIngresso", "dataNascimento", "sexo", "opmAtual", "dataInatividade",
+        "estadoCivil", "cep", "rua", "bairro", "cidade", "estado", "numero", "complemento"
+      ].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo) campo.value = "";
+      });
+
+      document.getElementById("numeroFilhos").value = "0";
+    }
+
+    function removerParticipanteManual(indice) {
+      participantesManuais.splice(indice, 1);
+      renderizarParticipantes();
+      atualizarContador();
+    }
+
+    function atualizarParticipantesDoLink(silencioso) {
+      const modoSilencioso = silencioso === true;
+      const chaveEvento = idEventoAtual || tokenEventoAtual;
+
+      if (!chaveEvento) {
+        mostrarStatus("Gere o link do evento antes de atualizar os participantes.", "error");
+        return;
+      }
+
+      if (!modoSilencioso) {
+        setCarregando(true, "Atualizando participantes enviados pelo link...");
+      }
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          if (!modoSilencioso) setCarregando(false);
+          idEventoAtual = retorno.idEvento || idEventoAtual;
+          tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
+          participantesLink = retorno.participantes || [];
+          renderizarParticipantes();
+          atualizarContador();
+
+          if (!modoSilencioso) {
+            const total = participantesLink.length;
+            mostrarStatus(
+              total > 0
+                ? "Participantes atualizados: " + total + "."
+                : "Nenhum participante enviado pelo link ainda.",
+              total > 0 ? "success" : ""
+            );
+          }
+        })
+        .withFailureHandler(function(erro) {
+          if (!modoSilencioso) setCarregando(false);
+          if (!modoSilencioso) mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .listarParticipantesEvento(chaveEvento, tokenGoogle);
+    }
+
+    function salvarEvento() {
+      if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) return;
+
+      const dadosEvento = montarDadosEvento();
+
+      if (tipoEventoAtual === "palestra" && !dadosEvento.modalidadeEvento) {
+        mostrarStatus("Informe a modalidade da palestra.", "error");
+        document.getElementById("modalidadeEvento").focus();
+        return;
+      }
+
+      if (tipoEventoAtual !== "palestra" && participantesManuais.length + participantesLink.length < 1) {
+        mostrarStatus("Inclua ao menos um participante ou aguarde os envios pelo link.", "error");
+        return;
+      }
+
+      definirStatusSalvarEvento(true, "Salvando " + (rotulosEvento[tipoEventoAtual] || "evento") + "...");
+      setCarregando(true, "Salvando " + (rotulosEvento[tipoEventoAtual] || "evento") + "...");
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+          definirStatusSalvarEvento(false, "Salvo com sucesso.", "success");
+          resetarEstadoEvento();
+          limparIdentificacaoEvento();
+          renderizarParticipantes();
+          atualizarContador();
+          atualizarBotaoCancelarEvento();
+          mostrarStatus("Pronto para iniciar um evento coletivo.", "success", true);
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          definirStatusSalvarEvento(false, obterMensagemErro(erro), "error");
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .salvarEventoColetivo(dadosEvento, participantesManuais, tokenGoogle);
+    }
+
+    function renderizarParticipantes() {
+      const destino = document.getElementById("listaParticipantes");
+
+      if (tipoEventoAtual === "palestra") {
+        destino.innerHTML = "";
+        return;
+      }
+
+      const linhas = [];
+      participantesManuais.forEach(function(item, indice) {
+        linhas.push({
+          origem: "manual",
+          nome: item.nome,
+          re: item.re,
+          cpf: item.cpf,
+          status: "na lista",
+          acao: '<button type="button" class="btn-danger" onclick="removerParticipanteManual(' + indice + ')">Remover</button>'
+        });
+      });
+
+      participantesLink.forEach(function(item) {
+        linhas.push({
+          origem: "rascunho",
+          nome: item.nome,
+          re: item.re,
+          cpf: item.cpf,
+          status: item.status || "pendente",
+          acao: ""
+        });
+      });
+
+      if (linhas.length === 0) {
+        destino.innerHTML = '<div class="empty-state">Nenhum participante listado ainda.</div>';
+        return;
+      }
+
+      destino.innerHTML =
+        '<table class="mini-table">' +
+        '<thead><tr><th>Origem</th><th>Nome</th><th>R.E.</th><th>CPF</th><th>Status</th><th></th></tr></thead>' +
+        '<tbody>' +
+        linhas.map(function(item) {
+          return '<tr>' +
+            '<td>' + escaparHtml(item.origem) + '</td>' +
+            '<td>' + escaparHtml(item.nome) + '</td>' +
+            '<td>' + escaparHtml(item.re) + '</td>' +
+            '<td>' + escaparHtml(item.cpf) + '</td>' +
+            '<td>' + escaparHtml(item.status) + '</td>' +
+            '<td>' + item.acao + '</td>' +
+            '</tr>';
+        }).join("") +
+        '</tbody></table>';
+    }
+
+    function atualizarContador() {
+      const total = tipoEventoAtual === "palestra"
+        ? Number(document.getElementById("quantidadeInformada").value || 0)
+        : participantesManuais.length + participantesLink.length;
+
+      document.getElementById("contadorEvento").innerText = total + (total === 1 ? " participante" : " participantes");
+    }
+
+    document.getElementById("quantidadeInformada").addEventListener("input", atualizarContador);
+
+    function setCarregando(carregando, mensagem) {
+      document.getElementById("btnGerarLink").disabled = carregando;
+      document.getElementById("btnAtualizarParticipantes").disabled = carregando;
+      document.getElementById("btnSalvarEvento").disabled = carregando;
+      document.getElementById("btnCancelarEvento").disabled = carregando;
+      document.getElementById("btnConfirmarCancelamentoEvento").disabled = carregando;
+
+      if (mensagem) mostrarStatus(mensagem, "");
+    }
+
+    function definirStatusSalvarEvento(salvando, texto, tipo) {
+      const el = document.getElementById("statusSalvarEvento");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = salvando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Salvando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusGerarLink(gerando, texto, tipo) {
+      const el = document.getElementById("statusGerarLink");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = gerando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Gerando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function mostrarStatus(mensagem, tipo, centralizado) {
+      const el = document.getElementById("statusTela");
+      el.className = "status-line" + (tipo ? " " + tipo : "") + (centralizado ? " centered" : "");
+      el.innerText = mensagem || "";
+    }
+
+    function obterMensagemErro(erro) {
+      return erro && erro.message ? erro.message : "Nao foi possivel concluir a operacao.";
+    }
+
+    function escaparHtml(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escaparAttr(valor) {
+      return escaparHtml(valor);
+    }
+  </script>
+</body>
+</html>
+
