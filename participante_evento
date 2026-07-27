@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<!--
+  SAIC - Cadastro publico de participante
+  Aberto por token do evento coletivo. Nao exige conta Google.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Participante - Evento Coletivo</title>
+  <style>
+    :root {
+      --bg: #eef4f7;
+      --surface: #ffffff;
+      --ink: #263033;
+      --muted: #66747c;
+      --line: #d8e4e8;
+      --red: #b31f2a;
+      --blue: #315f72;
+      --green: #2f7d55;
+      --shadow: 0 18px 38px rgba(31, 48, 56, 0.10);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .page {
+      width: min(980px, calc(100% - 28px));
+      margin: 24px auto;
+    }
+
+    .banner {
+      position: relative;
+      overflow: hidden;
+      padding: 26px 28px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #ffffff 0%, #eef6f8 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .banner::before,
+    .banner::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 8px;
+    }
+
+    .banner::before {
+      top: 0;
+      background: linear-gradient(100deg, var(--red) 0%, rgba(179, 31, 42, 0.7) 34%, transparent 86%);
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+    }
+
+    .banner::after {
+      bottom: 0;
+      background: linear-gradient(280deg, #75848a 0%, rgba(117, 132, 138, 0.62) 36%, transparent 88%);
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(28px, 5vw, 42px);
+      line-height: 1.08;
+    }
+
+    .subtitle {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .status {
+      min-height: 22px;
+      margin: 16px 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .status.error {
+      color: #b42318;
+    }
+
+    .status.success {
+      color: var(--green);
+    }
+
+    .card {
+      margin-top: 16px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .event-info {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .info-box {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f7fbfc;
+    }
+
+    .info-box small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: var(--ink);
+      font-size: 19px;
+      line-height: 1.2;
+    }
+
+    h2::before {
+      content: "";
+      width: 4px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--red);
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(49, 95, 114, 0.14);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mobile-wizard,
+    .mobile-only {
+      display: none;
+    }
+
+    .btn-primary {
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: var(--radius);
+      background: var(--blue);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .btn-secondary {
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 1px solid #c7d7dc;
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--blue);
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .btn-primary:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    .saving-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 28px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .saving-inline.success {
+      color: var(--green);
+    }
+
+    .saving-inline.error {
+      color: #b42318;
+    }
+
+    .saving-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(49, 95, 114, 0.18);
+      border-top-color: var(--blue);
+      border-radius: 999px;
+      animation: girar 0.8s linear infinite;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 780px), (max-device-width: 780px), (hover: none) and (pointer: coarse) {
+      body {
+        overflow-x: hidden;
+        background: #edf4f6;
+      }
+
+      .page {
+        width: min(520px, calc(100% - 28px));
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 0 12px 20px;
+        zoom: 1.55;
+      }
+
+      .banner {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        margin: 0 -12px 12px;
+        padding: 18px 18px 20px;
+        border: 0;
+        border-radius: 0 0 22px 22px;
+        background: linear-gradient(145deg, #ffffff 0%, #eef7f9 62%, #e3eef2 100%);
+        box-shadow: 0 12px 26px rgba(24, 46, 54, 0.14);
+      }
+
+      .banner::before,
+      .banner::after {
+        height: 5px;
+      }
+
+      .eyebrow {
+        margin-bottom: 6px;
+        font-size: 11px;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+
+      .status {
+        display: none;
+        flex: 0 0 auto;
+        min-height: 0;
+        margin: 0 0 6px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: #ffffff;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+
+      .status.error,
+      .status.success {
+        display: block;
+      }
+
+      .card {
+        margin-top: 12px;
+        padding: 14px;
+        border-radius: 18px;
+        box-shadow: 0 10px 24px rgba(24, 46, 54, 0.10);
+      }
+
+      .event-info {
+        display: none;
+      }
+
+      .mobile-wizard {
+        display: block;
+        margin: 4px 0 14px;
+        padding: 14px;
+        border: 1px solid #dbe7eb;
+        border-radius: 16px;
+        background: #f7fbfc;
+      }
+
+      .wizard-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .wizard-count {
+        min-width: 48px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--blue);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .wizard-title {
+        color: var(--ink);
+        font-size: 17px;
+        font-weight: 900;
+        text-align: right;
+      }
+
+      .wizard-progress {
+        height: 8px;
+        margin-top: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #dce9ed;
+      }
+
+      .wizard-progress span {
+        display: block;
+        width: 25%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--red), var(--blue));
+        transition: width 0.2s ease;
+      }
+
+      .info-box {
+        min-height: 72px;
+        padding: 11px 12px;
+        border-radius: 14px;
+        background: #f7fbfc;
+      }
+
+      .info-box small {
+        font-size: 11px;
+      }
+
+      .info-box strong {
+        font-size: 14px;
+        overflow-wrap: anywhere;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      h2 {
+        margin-top: 22px;
+        margin-bottom: 12px;
+        font-size: 16px;
+        line-height: 1.2;
+      }
+
+      .section-heading {
+        display: none;
+      }
+
+      .desktop-data-inatividade {
+        display: none;
+      }
+
+      .grid-3 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      #conteudo[data-etapa="3"] .grid-dados-participante,
+      #conteudo:not([data-etapa="3"]) .grid-endereco-participante {
+        display: none;
+      }
+
+      .campo-participante {
+        display: none;
+      }
+
+      #conteudo[data-etapa="1"] .etapa-1,
+      #conteudo[data-etapa="2"] .etapa-2,
+      #conteudo[data-etapa="3"] .etapa-3,
+      #conteudo[data-etapa="4"] .etapa-4 {
+        display: block;
+      }
+
+      .mobile-oculto {
+        display: none !important;
+      }
+
+      .ordem-1 { order: 1; }
+      .ordem-2 { order: 2; }
+      .ordem-3 { order: 3; }
+      .ordem-4 { order: 4; }
+      .ordem-5 { order: 5; }
+      .ordem-6 { order: 6; }
+      .ordem-7 { order: 7; }
+
+      .grid-3 > div {
+        padding: 10px;
+        border: 1px solid #dbe7eb;
+        border-radius: 16px;
+        background: #f9fcfd;
+      }
+
+      label {
+        margin-bottom: 8px;
+        font-size: 14px;
+        line-height: 1.25;
+      }
+
+      input,
+      select,
+      button {
+        min-height: 56px;
+        padding: 13px 14px;
+        border-radius: 13px;
+      }
+
+      input,
+      select {
+        font-size: 17px;
+      }
+
+      button {
+        font-size: 16px;
+      }
+
+      input,
+      select {
+        border-color: #cfdde2;
+        background: #ffffff;
+        font-weight: 700;
+      }
+
+      input:focus,
+      select:focus {
+        box-shadow: 0 0 0 4px rgba(49, 95, 114, 0.16);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1.3fr;
+        gap: 12px;
+        position: sticky;
+        bottom: 0;
+        z-index: 18;
+        margin: 20px -14px -14px;
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+        border-top: 1px solid #dbe7eb;
+        border-radius: 0 0 18px 18px;
+        background: rgba(249, 252, 253, 0.96);
+        backdrop-filter: blur(10px);
+      }
+
+      #conteudo[data-etapa="1"] .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .mobile-only {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #btnEnviar {
+        display: none;
+      }
+
+      #conteudo[data-etapa="1"] #btnVoltarEtapa,
+      #conteudo[data-etapa="4"] #btnAvancarEtapa {
+        display: none;
+      }
+
+      #conteudo[data-etapa="4"] #btnEnviar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-primary {
+        width: 100%;
+        min-height: 58px;
+        border-radius: 15px;
+        box-shadow: 0 12px 24px rgba(49, 95, 114, 0.22);
+      }
+
+      .btn-secondary {
+        width: 100%;
+        min-height: 58px;
+        border-radius: 15px;
+      }
+
+      .saving-inline {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 22px;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .note {
+        display: none;
+      }
+
+      @supports not (zoom: 1) {
+        .page {
+          transform: scale(1.55);
+          transform-origin: top center;
+          margin-bottom: 260px;
+        }
+      }
+    }
+
+    @media (max-width: 430px), (max-device-width: 430px) {
+      .event-info {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .banner {
+        border-radius: 0 0 18px 18px;
+      }
+
+      .card {
+        border-radius: 16px;
+      }
+
+      .info-box {
+        min-height: 68px;
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header class="banner">
+      <p class="eyebrow">Evento Coletivo</p>
+      <h1 id="tituloEvento">Cadastro de Participante</h1>
+      <span class="subtitle">Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+    </header>
+
+    <div id="statusPagina" class="status">Carregando evento...</div>
+
+    <section id="conteudo" class="card" data-etapa="1" style="display:none;">
+      <div class="event-info">
+        <div class="info-box">
+          <small>Tipo</small>
+          <strong id="infoTipo">-</strong>
+        </div>
+        <div class="info-box">
+          <small>Data</small>
+          <strong id="infoData">-</strong>
+        </div>
+        <div class="info-box">
+          <small>NAPS</small>
+          <strong id="infoNaps">-</strong>
+        </div>
+        <div class="info-box">
+          <small>Tema</small>
+          <strong id="infoTema">-</strong>
+        </div>
+      </div>
+
+      <div class="mobile-wizard" aria-live="polite">
+        <div class="wizard-row">
+          <span id="contadorEtapaMobile" class="wizard-count">1/4</span>
+          <strong id="tituloEtapaMobile" class="wizard-title">Identifica&ccedil;&atilde;o</strong>
+        </div>
+        <div class="wizard-progress"><span id="barraEtapaMobile"></span></div>
+      </div>
+
+      <h2 class="section-heading">Dados Pessoais e Funcionais</h2>
+      <div class="grid-3 grid-dados-participante">
+        <div class="campo-participante etapa-2 ordem-1">
+          <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
+          <select id="postoGraduacao">
+            <option value="">Selecione</option>
+            <option>Sd PM</option>
+            <option>Cb PM</option>
+            <option>3&ordm; Sgt PM</option>
+            <option>2&ordm; Sgt PM</option>
+            <option>1&ordm; Sgt PM</option>
+            <option>Subten PM</option>
+            <option>Asp of PM</option>
+            <option>2&ordm; Ten PM</option>
+            <option>1&ordm; Ten PM</option>
+            <option>Cap PM</option>
+            <option>Maj PM</option>
+            <option>Ten Cel PM</option>
+            <option>Cel PM</option>
+          </select>
+        </div>
+        <div class="campo-participante etapa-2 ordem-2">
+          <label for="re">R.E.</label>
+          <input id="re" type="text" placeholder="000000-0" oninput="mascaraRE(this)">
+        </div>
+        <div class="campo-participante etapa-1 ordem-2">
+          <label for="cpf">CPF</label>
+          <input id="cpf" type="text" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+        </div>
+        <div class="field-full campo-participante etapa-1 ordem-1">
+          <label for="nome">Nome</label>
+          <input id="nome" type="text" oninput="converterMaiusculasSemAcento(this)" required>
+        </div>
+        <div class="campo-participante etapa-2 ordem-4">
+          <label for="situacaoStatus">Situa&ccedil;&atilde;o/Status</label>
+          <select id="situacaoStatus">
+            <option value="">Selecione</option>
+            <option>agregado(a)</option>
+            <option>ativo administrativo</option>
+            <option>ativo operacional</option>
+            <option>exonerado(a)</option>
+            <option>inativo</option>
+          </select>
+        </div>
+        <div class="campo-participante etapa-4 ordem-2">
+          <label for="email">E-mail</label>
+          <input id="email" type="email" list="sugestoesEmail" oninput="sugerirDominioEmail(this)">
+          <datalist id="sugestoesEmail"></datalist>
+        </div>
+        <div class="campo-participante etapa-4 ordem-1">
+          <label for="telefone">Telefone</label>
+          <input id="telefone" type="text" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
+        </div>
+        <div class="campo-participante etapa-2 ordem-5">
+          <label for="dataIngresso">Data de ingresso</label>
+          <input id="dataIngresso" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)">
+        </div>
+        <div class="campo-participante etapa-1 ordem-4">
+          <label for="dataNascimento">Data de nascimento</label>
+          <input id="dataNascimento" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)">
+        </div>
+        <div class="campo-participante etapa-1 ordem-3">
+          <label for="sexo">Sexo</label>
+          <select id="sexo">
+            <option value="">Selecione</option>
+            <option>masculino</option>
+            <option>feminino</option>
+          </select>
+        </div>
+        <div class="campo-participante etapa-2 ordem-3">
+          <label for="opmAtual">OPM atual</label>
+          <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this)">
+          <datalist id="listaOPM">
+  <option value="1.BAEP">1.BAEP</option>
+<option value="1.BPAMB">1.BPAMB</option>
+<option value="1.BPCHQ">1.BPCHQ</option>
+<option value="1.BPM/I">1.BPM/I</option>
+<option value="1.BPM/M">1.BPM/M</option>
+<option value="1.BPRV">1.BPRV</option>
+<option value="1.BPTRAN">1.BPTRAN</option>
+<option value="1.EM/PM">1.EM/PM</option>
+<option value="1.GB">1.GB</option>
+<option value="10.BAEP">10.BAEP</option>
+<option value="10.BPM/I">10.BPM/I</option>
+<option value="10.BPM/M">10.BPM/M</option>
+<option value="10.GB">10.GB</option>
+<option value="11.BAEP">11.BAEP</option>
+<option value="11.BPM/I">11.BPM/I</option>
+<option value="11.BPM/M">11.BPM/M</option>
+<option value="11.GB">11.GB</option>
+<option value="12.BAEP">12.BAEP</option>
+<option value="12.BPM/I">12.BPM/I</option>
+<option value="12.BPM/M">12.BPM/M</option>
+<option value="12.GB">12.GB</option>
+<option value="13.BAEP">13.BAEP</option>
+<option value="13.BPM/I">13.BPM/I</option>
+<option value="13.BPM/M">13.BPM/M</option>
+<option value="13.GB">13.GB</option>
+<option value="14.BAEP">14.BAEP</option>
+<option value="14.BPM/I">14.BPM/I</option>
+<option value="14BPM/M">14BPM/M</option>
+<option value="14.GB">14.GB</option>
+<option value="15.BAEP">15.BAEP</option>
+<option value="15.BPM/I">15.BPM/I</option>
+<option value="15.BPM/M">15.BPM/M</option>
+<option value="15.GB">15.GB</option>
+<option value="16.BPM/I">16.BPM/I</option>
+<option value="16.BPM/M">16.BPM/M</option>
+<option value="16.GB">16.GB</option>
+<option value="17.BPM/I">17.BPM/I</option>
+<option value="17.BPM/M">17.BPM/M</option>
+<option value="17.GB">17.GB</option>
+<option value="18.BPM/I">18.BPM/I</option>
+<option value="18.BPM/M">18.BPM/M</option>
+<option value="18.GB">18.GB</option>
+<option value="19.BPM/I">19.BPM/I</option>
+<option value="19.BPM/M">19.BPM/M</option>
+<option value="19.GB">19.GB</option>
+<option value="2.BAEP">2.BAEP</option>
+<option value="2.BPAMB">2.BPAMB</option>
+<option value="2.BPCHQ">2.BPCHQ</option>
+<option value="2.BPM/I">2.BPM/I</option>
+<option value="2.BPM/M">2.BPM/M</option>
+<option value="2.BPRV">2.BPRV</option>
+<option value="2.BPTRAN">2.BPTRAN</option>
+<option value="2.EM/PM">2.EM/PM</option>
+<option value="2.GB">2.GB</option>
+<option value="20.BPM/I">20.BPM/I</option>
+<option value="20.BPM/M">20.BPM/M</option>
+<option value="20.GB">20.GB</option>
+<option value="21.BPM/I">21.BPM/I</option>
+<option value="21.BPM/M">21.BPM/M</option>
+<option value="22.BPM/I">22.BPM/I</option>
+<option value="22.BPM/M">22.BPM/M</option>
+<option value="23.BPM/I">23.BPM/I</option>
+<option value="23.BPM/M">23.BPM/M</option>
+<option value="24.BPM/I">24.BPM/I</option>
+<option value="24.BPM/M">24.BPM/M</option>
+<option value="25.BPM/I">25.BPM/I</option>
+<option value="25.BPM/M">25.BPM/M</option>
+<option value="26.BPM/I">26.BPM/I</option>
+<option value="26.BPM/M">26.BPM/M</option>
+<option value="27.BPM/I">27.BPM/I</option>
+<option value="27.BPM/M">27.BPM/M</option>
+<option value="28.BPM/I">28.BPM/I</option>
+<option value="28.BPM/M">28.BPM/M</option>
+<option value="29.BPM/I">29.BPM/I</option>
+<option value="29.BPM/M">29.BPM/M</option>
+<option value="3.BAEP">3.BAEP</option>
+<option value="3.BPAMB">3.BPAMB</option>
+<option value="3.BPCHQ">3.BPCHQ</option>
+<option value="3.BPM/I">3.BPM/I</option>
+<option value="3.BPM/M">3.BPM/M</option>
+<option value="3.GB">3.GB</option>
+<option value="30.BPM/I">30.BPM/I</option>
+<option value="30.BPM/M">30.BPM/M</option>
+<option value="31.BPM/I">31.BPM/I</option>
+<option value="31.BPM/M">31.BPM/M</option>
+<option value="32.BPM/I">32.BPM/I</option>
+<option value="32.BPM/M">32.BPM/M</option>
+<option value="33.BPM/I">33.BPM/I</option>
+<option value="33.BPM/M">33.BPM/M</option>
+<option value="34.BPM/I">34.BPM/I</option>
+<option value="35.BPM/I">35.BPM/I</option>
+<option value="35.BPM/M">35.BPM/M</option>
+<option value="36.BPM/I">36.BPM/I</option>
+<option value="36.BPM/M">36.BPM/M</option>
+<option value="37.BPM/I">37.BPM/I</option>
+<option value="37.BPM/M">37.BPM/M</option>
+<option value="38.BPM/I">38.BPM/I</option>
+<option value="38.BPM/M">38.BPM/M</option>
+<option value="39.BPM/I">39.BPM/I</option>
+<option value="39.BPM/M">39.BPM/M</option>
+<option value="4.BAEP">4.BAEP</option>
+<option value="4.BPAMB">4.BPAMB</option>
+<option value="4.BPCHQ">4.BPCHQ</option>
+<option value="4.GB">4.GB</option>
+<option value="40.BPM/I">40.BPM/I</option>
+<option value="40.BPM/M">40.BPM/M</option>
+<option value="41.BPM/I">41.BPM/I</option>
+<option value="42.BPM/I">42.BPM/I</option>
+<option value="43.BPM/I">43.BPM/I</option>
+<option value="43.BPM/M">43.BPM/M</option>
+<option value="44.BPM/I">44.BPM/I</option>
+<option value="44.BPM/M">44.BPM/M</option>
+<option value="45.BPM/I">45.BPM/I</option>
+<option value="46.BPM/M">46.BPM/M</option>
+<option value="47.BPM/I">47.BPM/I</option>
+<option value="48.BPM/I">48.BPM/I</option>
+<option value="48.BPM/M">48.BPM/M</option>
+<option value="49.BPM/I">49.BPM/I</option>
+<option value="49.BPM/M">49.BPM/M</option>
+<option value="5.BAEP">5.BAEP</option>
+<option value="5.BPAMB">5.BPAMB</option>
+<option value="5.BPCHQ">5.BPCHQ</option>
+<option value="5.BPM/I">5.BPM/I</option>
+<option value="5.BPM/M">5.BPM/M</option>
+<option value="5.BPRV">5.BPRV</option>
+<option value="5.GB">5.GB</option>
+<option value="50.BPM/M">50.BPM/M</option>
+<option value="51.BPM/I">51.BPM/I</option>
+<option value="52.BPM/I">52.BPM/I</option>
+<option value="53.BPM/I">53.BPM/I</option>
+<option value="54.BPM/I">54.BPM/I</option>
+<option value="55.BPM/I">55.BPM/I</option>
+<option value="6.BAEP">6.BAEP</option>
+<option value="6.BPM/I">6.BPM/I</option>
+<option value="6.BPM/M">6.BPM/M</option>
+<option value="6.BPRV">6.BPRV</option>
+<option value="6.EM/PM">6.EM/PM</option>
+<option value="6.GB">6.GB</option>
+<option value="7.BAEP">7.BAEP</option>
+<option value="7.BPM/I">7.BPM/I</option>
+<option value="7.BPM/M">7.BPM/M</option>
+<option value="7.GB">7.GB</option>
+<option value="8.BAEP">8.BAEP</option>
+<option value="8.BPM/I">8.BPM/I</option>
+<option value="8.BPM/M">8.BPM/M</option>
+<option value="8.GB">8.GB</option>
+<option value="9.BAEP">9.BAEP</option>
+<option value="9.BPM/I">9.BPM/I</option>
+<option value="9.BPM/M">9.BPM/M</option>
+<option value="9.GB">9.GB</option>
+<option value="APMAL">APMAL</option>
+<option value="APMBB">APMBB</option>
+<option value="APMCG">APMCG</option>
+<option value="APMCGE">APMCGE</option>
+<option value="APMCMSP">APMCMSP</option>
+<option value="APMPGE">APMPGE</option>
+<option value="APMPGJ">APMPGJ</option>
+<option value="APMPMSP">APMPMSP</option>
+<option value="APMSAP">APMSAP</option>
+<option value="APMSEFAZ">APMSEFAZ</option>
+<option value="APMSJC">APMSJC</option>
+<option value="APMSSP">APMSSP</option>
+<option value="APMTCE">APMTCE</option>
+<option value="APMTJ">APMTJ</option>
+<option value="APMTJM">APMTJM</option>
+<option value="C COM SOC">C COM SOC</option>
+<option value="C MED">C MED</option>
+<option value="C MIL">C MIL</option>
+<option value="C MUS">C MUS</option>
+<option value="C ODONT">C ODONT</option>
+<option value="CAES">CAES</option>
+<option value="CAJ">CAJ</option>
+<option value="CAPS">CAPS</option>
+<option value="CAVPM">CAVPM</option>
+<option value="CBI-1">CBI-1</option>
+<option value="CBI-2">CBI-2</option>
+<option value="CBI-3">CBI-3</option>
+<option value="CBM">CBM</option>
+<option value="CCB">CCB</option>
+<option value="CAIF">CAIF</option>
+<option value="CIAP">CIAP</option>
+<option value="CIPM">CIPM</option>
+<option value="CMB">CMB</option>
+<option value="CMI">CMI</option>
+<option value="CMM">CMM</option>
+<option value="CMT GERAL">CMT GERAL</option>
+<option value="COORD OP PM">COORD OP PM</option>
+<option value="COPOM">COPOM</option>
+<option value="CORREG PM">CORREG PM</option>
+<option value="CPA/M-1">CPA/M-1</option>
+<option value="CPA/M-10">CPA/M-10</option>
+<option value="CPA/M-11">CPA/M-11</option>
+<option value="CPA/M-12">CPA/M-12</option>
+<option value="CPA/M-2">CPA/M-2</option>
+<option value="CPA/M-3">CPA/M-3</option>
+<option value="CPA/M-4">CPA/M-4</option>
+<option value="CPA/M-5">CPA/M-5</option>
+<option value="CPA/M-6">CPA/M-6</option>
+<option value="CPA/M-7">CPA/M-7</option>
+<option value="CPA/M-8">CPA/M-8</option>
+<option value="CPA/M-9">CPA/M-9</option>
+<option value="CPAMB">CPAMB</option>
+<option value="CPC">CPC</option>
+<option value="CPCHQ">CPCHQ</option>
+<option value="CPD">CPD</option>
+<option value="CPI-1">CPI-1</option>
+<option value="CPI-10">CPI-10</option>
+<option value="CPI-2">CPI-2</option>
+<option value="CPI-3">CPI-3</option>
+<option value="CPI-4">CPI-4</option>
+<option value="CPI-5">CPI-5</option>
+<option value="CPI-6">CPI-6</option>
+<option value="CPI-7">CPI-7</option>
+<option value="CPI-8">CPI-8</option>
+<option value="CPI-9">CPI-9</option>
+<option value="CPM">CPM</option>
+<option value="CPRV">CPRV</option>
+<option value="CPTRAN">CPTRAN</option>
+<option value="CRPM">CRPM</option>
+<option value="CSM/MOPB">CSM/MOPB</option>
+<option value="DEC">DEC</option>
+<option value="DF">DF</option>
+<option value="DL">DL</option>
+<option value="DP">DP</option>
+<option value="DPCDH">DPCDH</option>
+<option value="DS">DS</option>
+<option value="DAS/CG">DAS/CG</option>
+<option value="DTIC">DTIC</option>
+<option value="EEF">EEF</option>
+<option value="EM/E">EM/E</option>
+<option value="EM/PM">EM/PM</option>
+<option value="ESB">ESB</option>
+<option value="ESSD">ESSD</option>
+<option value="ESSGT">ESSGT</option>
+<option value="GAB CMT G">GAB CMT G</option>
+<option value="GBMAR">GBMAR</option>
+<option value="GOV">GOV</option>
+<option value="PMRG">PMRG</option>
+<option value="RPMON">RPMON</option>
+<option value="SSP">SSP</option>
+<option value="SUBCMT PM">SUBCMT PM</option>
+</datalist>
+        </div>
+        <div class="desktop-data-inatividade">
+          <label for="dataInatividade">Data de inatividade</label>
+          <input id="dataInatividade" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)">
+        </div>
+        <div class="campo-participante etapa-1 ordem-5">
+          <label for="estadoCivil">Estado civil</label>
+          <select id="estadoCivil">
+            <option value="">Selecione</option>
+            <option>solteiro(a)</option>
+            <option>casado(a)</option>
+            <option>divorciado(a)</option>
+            <option>vi&uacute;vo(a)</option>
+            <option>uni&atilde;o est&aacute;vel</option>
+          </select>
+        </div>
+        <div class="campo-participante etapa-1 ordem-6 mobile-oculto">
+          <label for="numeroFilhos">N&uacute;mero de filhos</label>
+          <input id="numeroFilhos" type="number" min="0" step="1" value="0">
+        </div>
+      </div>
+
+      <h2 class="section-heading" style="margin-top:26px;">Endere&ccedil;o Residencial</h2>
+      <div class="grid-3 grid-endereco-participante">
+        <div class="campo-participante etapa-3 ordem-1">
+          <label for="cep">CEP</label>
+          <input id="cep" type="text" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCepParticipante()">
+        </div>
+        <div class="campo-participante etapa-3 ordem-2">
+          <label for="rua">Rua</label>
+          <input id="rua" type="text">
+        </div>
+        <div class="campo-participante etapa-3 ordem-3">
+          <label for="numero">N&uacute;mero</label>
+          <input id="numero" type="text">
+        </div>
+        <div class="campo-participante etapa-3 ordem-4">
+          <label for="bairro">Bairro</label>
+          <input id="bairro" type="text">
+        </div>
+        <div class="campo-participante etapa-3 ordem-5">
+          <label for="cidade">Cidade</label>
+          <input id="cidade" type="text">
+        </div>
+        <div class="campo-participante etapa-3 ordem-6">
+          <label for="estado">Estado</label>
+          <input id="estado" type="text">
+        </div>
+        <div class="field-full campo-participante etapa-3 ordem-7">
+          <label for="complemento">Complemento</label>
+          <input id="complemento" type="text">
+        </div>
+      </div>
+
+      <p class="note">Nome e ao menos CPF ou R.E. s&atilde;o obrigat&oacute;rios para envio.</p>
+
+      <div class="actions">
+        <button id="btnVoltarEtapa" type="button" class="btn-secondary mobile-only" onclick="voltarEtapaParticipante()">Voltar</button>
+        <button id="btnAvancarEtapa" type="button" class="btn-primary mobile-only" onclick="avancarEtapaParticipante()">Avan&ccedil;ar</button>
+        <button id="btnEnviar" type="button" class="btn-primary" onclick="enviarCadastro()">Enviar cadastro</button>
+        <span id="statusEnvioCadastro" class="saving-inline"></span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const tokenEvento = "<?= tokenEventoInicial ?>";
+    let eventoAtual = null;
+    let etapaParticipanteAtual = 1;
+    let ultimoCepConsultado = "";
+    let cepParticipanteInexistente = false;
+    const etapasParticipante = [
+      { numero: 1, titulo: "Identifica\u00e7\u00e3o" },
+      { numero: 2, titulo: "Dados Funcionais" },
+      { numero: 3, titulo: "Endere\u00e7o" },
+      { numero: 4, titulo: "Contato" }
+    ];
+
+    window.addEventListener("load", function() {
+      if (!tokenEvento) {
+        mostrarStatus("Link do evento nao informado.", "error");
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(evento) {
+          if (!evento || !evento.encontrado) {
+            mostrarStatus(evento && evento.mensagem ? evento.mensagem : "Evento nao localizado.", "error");
+            return;
+          }
+
+          eventoAtual = evento;
+          preencherEvento(evento);
+          document.getElementById("conteudo").style.display = "block";
+          inicializarEtapasParticipante();
+          mostrarStatus("Preencha seus dados e envie ao responsavel pelo evento.", "");
+        })
+        .withFailureHandler(function(erro) {
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .obterEventoPorTokenPublico(tokenEvento);
+    });
+
+    function preencherEvento(evento) {
+      document.getElementById("tituloEvento").innerText = evento.tipoEventoRotulo || "Cadastro de Participante";
+      document.getElementById("infoTipo").innerText = evento.tipoEventoRotulo || "-";
+      document.getElementById("infoData").innerText = evento.dataEvento || "-";
+      document.getElementById("infoNaps").innerText = evento.napsAtendimento || "-";
+      document.getElementById("infoTema").innerText = evento.tema || "-";
+    }
+
+    function inicializarEtapasParticipante() {
+      irParaEtapaParticipante(1, false);
+
+      window.addEventListener("resize", function() {
+        atualizarEtapaParticipante();
+      });
+    }
+
+    function formularioParticipanteMobile() {
+      return window.matchMedia && window.matchMedia("(max-width: 780px)").matches;
+    }
+
+    function avancarEtapaParticipante() {
+      if (etapaParticipanteAtual < etapasParticipante.length) {
+        irParaEtapaParticipante(etapaParticipanteAtual + 1, true);
+      }
+    }
+
+    function voltarEtapaParticipante() {
+      if (etapaParticipanteAtual > 1) {
+        irParaEtapaParticipante(etapaParticipanteAtual - 1, true);
+      }
+    }
+
+    function irParaEtapaParticipante(numeroEtapa, rolar) {
+      const conteudo = document.getElementById("conteudo");
+      const etapa = Math.max(1, Math.min(etapasParticipante.length, Number(numeroEtapa) || 1));
+      const dadosEtapa = etapasParticipante[etapa - 1];
+
+      etapaParticipanteAtual = etapa;
+
+      if (conteudo) {
+        conteudo.setAttribute("data-etapa", String(etapa));
+      }
+
+      atualizarEtapaParticipante();
+
+      if (rolar !== false && formularioParticipanteMobile() && conteudo) {
+        conteudo.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function atualizarEtapaParticipante() {
+      const dadosEtapa = etapasParticipante[etapaParticipanteAtual - 1] || etapasParticipante[0];
+      const contador = document.getElementById("contadorEtapaMobile");
+      const titulo = document.getElementById("tituloEtapaMobile");
+      const barra = document.getElementById("barraEtapaMobile");
+
+      if (contador) contador.innerText = dadosEtapa.numero + "/" + etapasParticipante.length;
+      if (titulo) titulo.innerText = dadosEtapa.titulo;
+      if (barra) barra.style.width = ((dadosEtapa.numero / etapasParticipante.length) * 100) + "%";
+    }
+
+    function obterEtapaCampoParticipante(id) {
+      const mapa = {
+        cpf: 1,
+        nome: 1,
+        sexo: 1,
+        dataNascimento: 1,
+        estadoCivil: 1,
+        numeroFilhos: 1,
+        postoGraduacao: 2,
+        re: 2,
+        opmAtual: 2,
+        situacaoStatus: 2,
+        dataIngresso: 2,
+        cep: 3,
+        rua: 3,
+        numero: 3,
+        bairro: 3,
+        cidade: 3,
+        estado: 3,
+        complemento: 3,
+        telefone: 4,
+        email: 4
+      };
+
+      return mapa[id] || 1;
+    }
+
+    function irParaCampoParticipante(id) {
+      const campo = document.getElementById(id);
+
+      if (!campo) return;
+
+      if (formularioParticipanteMobile()) {
+        irParaEtapaParticipante(obterEtapaCampoParticipante(id), true);
+      }
+
+      setTimeout(function() {
+        try {
+          campo.focus();
+        } catch (erro) {}
+      }, 160);
+    }
+
+    function enviarCadastro() {
+      const participante = lerFormulario();
+
+      if (!validarCamposObrigatoriosParticipante()) return;
+      if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], ["dataIngresso", "dataNascimento"])) return;
+
+      document.getElementById("btnEnviar").disabled = true;
+      definirStatusEnvioCadastro(true, "Enviando cadastro...");
+      mostrarStatus("Enviando cadastro...", "");
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          mostrarStatus("Cadastro enviado com sucesso. Pronto para novo preenchimento.", "success");
+          definirStatusEnvioCadastro(false, "Pronto para novo preenchimento.", "success");
+          limparFormulario();
+          irParaEtapaParticipante(1, true);
+          document.getElementById("btnEnviar").disabled = false;
+        })
+        .withFailureHandler(function(erro) {
+          document.getElementById("btnEnviar").disabled = false;
+          definirStatusEnvioCadastro(false, obterMensagemErro(erro), "error");
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .registrarParticipanteEventoPublico(tokenEvento, participante);
+    }
+
+    function validarCamposObrigatoriosParticipante() {
+      const campos = [
+        { id: "nome", label: "Nome" },
+        { id: "cpf", label: "CPF" },
+        { id: "sexo", label: "Sexo" },
+        { id: "dataNascimento", label: "Data de nascimento" },
+        { id: "estadoCivil", label: "Estado civil" },
+        { id: "postoGraduacao", label: "Posto/Graduacao" },
+        { id: "re", label: "R.E." },
+        { id: "opmAtual", label: "OPM atual" },
+        { id: "situacaoStatus", label: "Situacao/Status" },
+        { id: "dataIngresso", label: "Data de ingresso" },
+        { id: "cep", label: "CEP" },
+        { id: "rua", label: "Rua" },
+        { id: "numero", label: "Numero" },
+        { id: "bairro", label: "Bairro" },
+        { id: "cidade", label: "Cidade" },
+        { id: "estado", label: "Estado" },
+        { id: "telefone", label: "Telefone" },
+        { id: "email", label: "E-mail" }
+      ];
+
+      for (let i = 0; i < campos.length; i++) {
+        const item = campos[i];
+        const campo = document.getElementById(item.id);
+
+        if (!campo) continue;
+
+        if (!campo.value.trim()) {
+          campo.style.border = "2px solid #d32f2f";
+          mostrarStatus(item.label + " e obrigatorio.", "error");
+          irParaCampoParticipante(item.id);
+          return false;
+        }
+
+        limparErroVisualCampo(campo);
+      }
+
+      const campoCep = document.getElementById("cep");
+      const cepNumeros = campoCep ? campoCep.value.replace(/\D/g, "") : "";
+
+      if (cepNumeros.length !== 8) {
+        if (campoCep) campoCep.style.border = "2px solid #d32f2f";
+        mostrarStatus("Informe um CEP valido.", "error");
+        irParaCampoParticipante("cep");
+        return false;
+      }
+
+      if (cepParticipanteInexistente && cepNumeros === ultimoCepConsultado) {
+        if (campoCep) campoCep.style.border = "2px solid #d32f2f";
+        mostrarStatus("CEP inexistente ou nao encontrado.", "error");
+        irParaCampoParticipante("cep");
+        return false;
+      }
+
+      return true;
+    }
+
+    function lerFormulario() {
+      return {
+        postoGraduacao: valorCampo("postoGraduacao"),
+        re: valorCampo("re"),
+        cpf: valorCampo("cpf"),
+        nome: valorCampo("nome"),
+        situacaoStatus: valorCampo("situacaoStatus"),
+        email: valorCampo("email"),
+        telefone: valorCampo("telefone"),
+        dataIngresso: valorDataCampo("dataIngresso"),
+        dataNascimento: valorDataCampo("dataNascimento"),
+        sexo: valorCampo("sexo"),
+        opmAtual: valorCampo("opmAtual"),
+        dataInatividade: valorDataCampo("dataInatividade"),
+        estadoCivil: valorCampo("estadoCivil"),
+        numeroFilhos: valorCampo("numeroFilhos"),
+        cep: valorCampo("cep"),
+        rua: valorCampo("rua"),
+        bairro: valorCampo("bairro"),
+        cidade: valorCampo("cidade"),
+        estado: valorCampo("estado"),
+        numero: valorCampo("numero"),
+        complemento: valorCampo("complemento")
+      };
+    }
+
+    function valorCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? campo.value.trim() : "";
+    }
+
+    function valorDataCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? converterDataBrasilParaISO(campo.value) : "";
+    }
+
+    function converterMaiusculasSemAcento(campo) {
+      campo.value = String(campo.value || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function sugerirDominioEmail(campo) {
+      const lista = document.getElementById("sugestoesEmail");
+
+      if (!lista) return;
+
+      const dominio = "policiamilitar.sp.gov.br";
+      const valor = String((campo && campo.value) || "").trim();
+      const partes = valor.split("@");
+
+      if (partes.length !== 2 || !partes[0]) {
+        lista.innerHTML = "";
+        return;
+      }
+
+      const usuario = partes[0];
+      const dominioDigitado = partes[1].toLowerCase();
+
+      if (dominioDigitado && dominio.indexOf(dominioDigitado) !== 0) {
+        lista.innerHTML = "";
+        return;
+      }
+
+      const sugestao = usuario + "@" + dominio;
+
+      if (valor.toLowerCase() === sugestao.toLowerCase()) {
+        lista.innerHTML = "";
+        return;
+      }
+
+      lista.innerHTML = '<option value="' + escaparAttr(sugestao) + '"></option>';
+    }
+
+    function mascaraRE(campo) {
+      let valor = campo.value.toUpperCase().replace(/[^0-9A]/g, "");
+      let numerosAntesHifen = "";
+      let digitoFinal = "";
+
+      for (let i = 0; i < valor.length; i++) {
+        const caractere = valor.charAt(i);
+
+        if (numerosAntesHifen.length < 6) {
+          if (/[0-9]/.test(caractere)) numerosAntesHifen += caractere;
+          continue;
+        }
+
+        if (!digitoFinal && /[0-9A]/.test(caractere)) {
+          digitoFinal = caractere;
+          break;
+        }
+      }
+
+      campo.value = digitoFinal ? numerosAntesHifen + "-" + digitoFinal : numerosAntesHifen;
+    }
+
+    function mascaraCPF(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 11);
+
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+      campo.value = valor;
+    }
+
+    function mascaraTelefone(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 11);
+
+      if (valor.length <= 10) {
+        valor = valor.replace(/(\d{2})(\d)/, "($1) $2");
+        valor = valor.replace(/(\d{4})(\d)/, "$1-$2");
+      } else {
+        valor = valor.replace(/(\d{2})(\d)/, "($1) $2");
+        valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+      }
+
+      campo.value = valor;
+    }
+
+    function mascaraCEP(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+      cepParticipanteInexistente = false;
+
+      valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+
+      campo.value = valor;
+    }
+
+    function mascaraDataBrasil(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+
+      campo.value = valor;
+    }
+
+    function validarAnoDataCampo(campo) {
+      if (!campo.value) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      if (dataBrasilValida(campo.value)) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      campo.style.border = "2px solid #d32f2f";
+      return false;
+    }
+
+    function validarDatasFormulario(ids, obrigatorios) {
+      const obrigatoriosMapa = {};
+      let valido = true;
+      let primeiroCampoInvalido = "";
+
+      (obrigatorios || []).forEach(function(id) {
+        obrigatoriosMapa[id] = true;
+      });
+
+      ids.forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        if (obrigatoriosMapa[id] && !campo.value.trim()) {
+          campo.style.border = "2px solid #d32f2f";
+          valido = false;
+          if (!primeiroCampoInvalido) primeiroCampoInvalido = id;
+          return;
+        }
+
+        if (!validarAnoDataCampo(campo)) {
+          valido = false;
+          if (!primeiroCampoInvalido) primeiroCampoInvalido = id;
+        }
+      });
+
+      if (!valido) {
+        mostrarStatus("Confira as datas no formato dd/mm/aaaa.", "error");
+        if (primeiroCampoInvalido) irParaCampoParticipante(primeiroCampoInvalido);
+      }
+
+      return valido;
+    }
+
+    function dataBrasilValida(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return false;
+
+      const dia = Number(partes[1]);
+      const mes = Number(partes[2]);
+      const ano = Number(partes[3]);
+
+      if (ano < 1 || ano > 9999 || mes < 1 || mes > 12 || dia < 1) return false;
+
+      const data = new Date(ano, mes - 1, dia);
+
+      return data.getFullYear() === ano &&
+        data.getMonth() === mes - 1 &&
+        data.getDate() === dia;
+    }
+
+    function converterDataBrasilParaISO(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return "";
+
+      return partes[3] + "-" + partes[2] + "-" + partes[1];
+    }
+
+    function limparErroVisualCampo(campo) {
+      campo.style.border = "1px solid var(--line)";
+    }
+
+    function buscarCepParticipante() {
+      const campoCep = document.getElementById("cep");
+      const cep = campoCep.value.replace(/\D/g, "");
+
+      if (cep.length !== 8) return;
+
+      ultimoCepConsultado = cep;
+      cepParticipanteInexistente = false;
+      fetch("https://viacep.com.br/ws/" + cep + "/json/")
+        .then(function(resposta) {
+          return resposta.json();
+        })
+        .then(function(dados) {
+          if (!dados.erro) {
+            limparErroVisualCampo(campoCep);
+            document.getElementById("rua").value = dados.logradouro || "";
+            document.getElementById("bairro").value = dados.bairro || "";
+            document.getElementById("cidade").value = dados.localidade || "";
+            document.getElementById("estado").value = dados.uf || "";
+          } else {
+            cepParticipanteInexistente = true;
+            campoCep.style.border = "2px solid #d32f2f";
+            ["rua", "bairro", "cidade", "estado"].forEach(function(id) {
+              const campo = document.getElementById(id);
+              if (campo) campo.value = "";
+            });
+            mostrarStatus("CEP inexistente ou nao encontrado.", "error");
+          }
+        })
+        .catch(function() {
+          mostrarStatus("Erro ao buscar CEP.", "error");
+        });
+    }
+
+    function limparFormulario() {
+      [
+        "postoGraduacao", "re", "cpf", "nome", "situacaoStatus", "email", "telefone",
+        "dataIngresso", "dataNascimento", "sexo", "opmAtual", "dataInatividade",
+        "estadoCivil", "cep", "rua", "bairro", "cidade", "estado", "numero", "complemento"
+      ].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo) campo.value = "";
+      });
+
+      document.getElementById("numeroFilhos").value = "0";
+      ultimoCepConsultado = "";
+      cepParticipanteInexistente = false;
+    }
+
+    function mostrarStatus(mensagem, tipo) {
+      const el = document.getElementById("statusPagina");
+      el.className = "status" + (tipo ? " " + tipo : "");
+      el.innerText = mensagem || "";
+    }
+
+    function obterMensagemErro(erro) {
+      return erro && erro.message ? erro.message : "Nao foi possivel concluir a operacao.";
+    }
+
+    function definirStatusEnvioCadastro(enviando, texto, tipo) {
+      const el = document.getElementById("statusEnvioCadastro");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = enviando
+        ? '<span class="saving-spinner"></span><span>' + escaparAttr(texto || "Enviando...") + '</span>'
+        : escaparAttr(texto || "");
+    }
+
+    function escaparAttr(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
+
+
