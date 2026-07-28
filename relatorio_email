@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatorio SAIC</title>
+  <style>
+    :root {
+      --ink: #293033;
+      --muted: #66737b;
+      --line: #dbe5ea;
+      --soft: #eef5f7;
+      --panel: #ffffff;
+      --brand: #2f6f89;
+      --brand-dark: #24576c;
+      --accent: #b62b38;
+      --green: #3f8f65;
+      --violet: #6d5bd0;
+      --cyan: #21a7a4;
+      --orange: #d88932;
+      --slate: #577590;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eaf2f5;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+
+    .page {
+      min-height: 190mm;
+      background: linear-gradient(180deg, #f8fbfc 0%, #ffffff 62%, #f8fbfc 100%);
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      page-break-after: always;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .top-band {
+      position: relative;
+      padding: 22px 28px 16px;
+      background: linear-gradient(100deg, #f7fbfc 0%, #edf6f9 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .top-band::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 62%;
+      height: 5px;
+      background: linear-gradient(90deg, var(--accent), rgba(182, 43, 56, 0));
+    }
+
+    .top-band::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 70%;
+      height: 4px;
+      background: linear-gradient(270deg, #31373a, rgba(49, 55, 58, 0));
+    }
+
+    .header-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      color: var(--ink);
+      font-size: 28px;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .brand-marks {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .brand-marks span,
+    .brand-marks strong {
+      display: grid;
+      min-width: 54px;
+      height: 54px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #fff;
+      color: var(--brand-dark);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .brand-marks strong {
+      min-width: 68px;
+      color: var(--accent);
+      font-size: 12px;
+    }
+
+    .content {
+      padding: 20px 26px 28px;
+    }
+
+    .notice {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .notice strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .notice span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      min-width: 150px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: var(--soft);
+      color: var(--brand-dark);
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 11px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      min-height: 88px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 12px 12px 12px 15px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: var(--brand);
+    }
+
+    .card.warning::before {
+      background: var(--orange);
+    }
+
+    .card.success::before {
+      background: var(--green);
+    }
+
+    .card.event::before {
+      background: var(--violet);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .value {
+      margin-top: 10px;
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .detail {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 13px;
+      align-items: stretch;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 13px;
+      margin-top: 13px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 13px;
+    }
+
+    .panel {
+      min-height: 194px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      padding: 15px;
+    }
+
+    .panel h2 {
+      margin-bottom: 12px;
+      padding-left: 10px;
+      border-left: 4px solid var(--accent);
+      color: #343b3f;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .bars {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 132px 1fr 72px;
+      gap: 8px;
+      align-items: center;
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .bar-row.short {
+      grid-template-columns: 92px 1fr 52px;
+    }
+
+    .track {
+      height: 10px;
+      border-radius: 999px;
+      background: #edf3f5;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), #61a7bd);
+    }
+
+    .bar.c2 {
+      background: linear-gradient(90deg, var(--cyan), #64c9c7);
+    }
+
+    .bar.c3 {
+      background: linear-gradient(90deg, var(--violet), #9789e7);
+    }
+
+    .bar.c4 {
+      background: linear-gradient(90deg, var(--orange), #e7b06b);
+    }
+
+    .bar.c5 {
+      background: linear-gradient(90deg, var(--green), #83bd99);
+    }
+
+    .bar.c6 {
+      background: linear-gradient(90deg, var(--slate), #8ca6ba);
+    }
+
+    .stacked {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stacked-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 78px;
+      gap: 8px;
+      align-items: center;
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .stack-track {
+      display: flex;
+      height: 13px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #edf3f5;
+    }
+
+    .stack-a {
+      background: var(--brand);
+    }
+
+    .stack-f {
+      background: var(--orange);
+    }
+
+    .stack-h {
+      background: var(--green);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px 13px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .legend span {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--brand);
+    }
+
+    .dot.orange {
+      background: var(--orange);
+    }
+
+    .dot.green {
+      background: var(--green);
+    }
+
+    .dot.violet {
+      background: var(--violet);
+    }
+
+    .insights {
+      display: grid;
+      gap: 9px;
+    }
+
+    .insight {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f4f8fa;
+      padding: 10px;
+      color: #3b454a;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 10px;
+    }
+
+    .mini-table th {
+      padding: 8px;
+      background: #eef5f7;
+      color: #3a4347;
+      text-align: left;
+    }
+
+    .mini-table td {
+      padding: 7px 8px;
+      border-top: 1px solid var(--line);
+      color: #3b454a;
+      font-weight: 700;
+    }
+
+    .footer {
+      position: absolute;
+      right: 26px;
+      bottom: 13px;
+      left: 26px;
+      display: flex;
+      justify-content: space-between;
+      color: #7c878d;
+      font-size: 9px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <header class="top-band">
+      <div class="header-grid">
+        <div>
+          <p class="eyebrow">SAIC / SiSMen</p>
+          <h1>Relat&oacute;rio gerencial autom&aacute;tico</h1>
+          <p class="subtitle">Resumo semanal e mensal dos atendimentos</p>
+        </div>
+        <div class="brand-marks" aria-label="Identidade institucional">
+          <span>SSP</span>
+          <span>PM</span>
+          <span>CAPS</span>
+          <strong>SiSMen</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="notice">
+        <div>
+          <strong>Relat&oacute;rio gerado automaticamente</strong>
+          <span>Gerado em <?= dados.geradoEm ?>. Eventos coletivos contam como um atendimento e mant&ecirc;m participantes em indicador separado.</span>
+        </div>
+        <div class="pill">Semana: <?= dados.periodoSemana.rotulo ?></div>
+        <div class="pill">M&ecirc;s: <?= dados.periodoMes.rotulo ?></div>
+      </div>
+
+      <div class="cards">
+        <? dados.cards.forEach(function(card) { ?>
+          <article class="card <?= card.classe ?>">
+            <div class="label"><?= card.titulo ?></div>
+            <div class="value"><?= card.valor ?></div>
+            <div class="detail"><?= card.detalhe ?></div>
+          </article>
+        <? }); ?>
+      </div>
+
+      <div class="grid-main">
+        <section class="panel">
+          <h2>Atendimentos por NAPS</h2>
+          <div class="bars">
+            <? if (dados.topNaps.length === 0) { ?>
+              <div class="insight">Nenhum registro encontrado no per&iacute;odo.</div>
+            <? } ?>
+            <? dados.topNaps.forEach(function(item) { ?>
+              <div class="bar-row">
+                <span><?= item.nome ?></span>
+                <div class="track"><div class="bar <?= item.cor ?>" style="width:<?= item.largura ?>%"></div></div>
+                <strong><?= item.valor ?> / <?= item.percentual ?></strong>
+              </div>
+            <? }); ?>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Leitura gerencial</h2>
+          <div class="insights">
+            <? dados.leitura.forEach(function(texto) { ?>
+              <div class="insight"><?= texto ?></div>
+            <? }); ?>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Atendimentos, faltas e altas por NAPS</h2>
+          <div class="legend">
+            <span><i class="dot"></i> Atendimentos</span>
+            <span><i class="dot orange"></i> Faltas</span>
+            <span><i class="dot green"></i> Altas</span>
+          </div>
+          <div class="stacked">
+            <? if (dados.stackNaps.length === 0) { ?>
+              <div class="insight">Nenhum registro encontrado no per&iacute;odo.</div>
+            <? } ?>
+            <? dados.stackNaps.forEach(function(item) { ?>
+              <div class="stacked-row">
+                <span><?= item.naps ?></span>
+                <div class="stack-track">
+                  <div class="stack-a" style="width:<?= item.larguraAtendimentos ?>%"></div>
+                  <div class="stack-f" style="width:<?= item.larguraFaltas ?>%"></div>
+                  <div class="stack-h" style="width:<?= item.larguraAltas ?>%"></div>
+                </div>
+                <span><?= item.atendimentos ?> / <?= item.faltas ?> / <?= item.altas ?></span>
+              </div>
+            <? }); ?>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Tipos de atendimento</h2>
+          <div class="bars">
+            <? if (dados.topTipos.length === 0) { ?>
+              <div class="insight">Nenhum registro encontrado no per&iacute;odo.</div>
+            <? } ?>
+            <? dados.topTipos.forEach(function(item) { ?>
+              <div class="bar-row">
+                <span><?= item.nome ?></span>
+                <div class="track"><div class="bar <?= item.cor ?>" style="width:<?= item.largura ?>%"></div></div>
+                <strong><?= item.valor ?> / <?= item.percentual ?></strong>
+              </div>
+            <? }); ?>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+      <span>P&aacute;gina 1 de 2</span>
+    </footer>
+  </section>
+
+  <section class="page">
+    <header class="top-band">
+      <div class="header-grid">
+        <div>
+          <p class="eyebrow">Detalhamento do per&iacute;odo</p>
+          <h1>Indicadores complementares</h1>
+          <p class="subtitle">Motivos, OPMs, perfil e compara&ccedil;&otilde;es do per&iacute;odo</p>
+        </div>
+        <div class="brand-marks" aria-label="Identidade institucional">
+          <span>SSP</span>
+          <span>PM</span>
+          <span>CAPS</span>
+          <strong>SiSMen</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="grid-3">
+        <section class="panel">
+          <h2>Motivos</h2>
+          <div class="bars">
+            <? if (dados.topMotivos.length === 0) { ?>
+              <div class="insight">Nenhum registro encontrado no per&iacute;odo.</div>
+            <? } ?>
+            <? dados.topMotivos.forEach(function(item) { ?>
+              <div class="bar-row">
+                <span><?= item.nome ?></span>
+                <div class="track"><div class="bar <?= item.cor ?>" style="width:<?= item.largura ?>%"></div></div>
+                <strong><?= item.valor ?> / <?= item.percentual ?></strong>
+              </div>
+            <? }); ?>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>OPMs mais frequentes</h2>
+          <div class="bars">
+            <? if (dados.topOpms.length === 0) { ?>
+              <div class="insight">Nenhum registro encontrado no per&iacute;odo.</div>
+            <? } ?>
+            <? dados.topOpms.forEach(function(item) { ?>
+              <div class="bar-row short">
+                <span><?= item.nome ?></span>
+                <div class="track"><div class="bar <?= item.cor ?>" style="width:<?= item.largura ?>%"></div></div>
+                <strong><?= item.valor ?></strong>
+              </div>
+            <? }); ?>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Perfil</h2>
+          <div class="bars">
+            <? dados.perfilSituacao.forEach(function(item) { ?>
+              <div class="bar-row">
+                <span><?= item.nome ?></span>
+                <div class="track"><div class="bar <?= item.cor ?>" style="width:<?= item.largura ?>%"></div></div>
+                <strong><?= item.valor ?> / <?= item.percentual ?></strong>
+              </div>
+            <? }); ?>
+            <? dados.perfilSexo.forEach(function(item) { ?>
+              <div class="bar-row">
+                <span><?= item.nome ?></span>
+                <div class="track"><div class="bar <?= item.cor ?>" style="width:<?= item.largura ?>%"></div></div>
+                <strong><?= item.valor ?> / <?= item.percentual ?></strong>
+              </div>
+            <? }); ?>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Faixa et&aacute;ria</h2>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Faixa</th>
+                <th>Quantidade</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <? if (dados.faixaEtaria.length === 0) { ?>
+                <tr><td colspan="3">Nenhum registro encontrado no per&iacute;odo.</td></tr>
+              <? } ?>
+              <? dados.faixaEtaria.forEach(function(item) { ?>
+                <tr>
+                  <td><?= item.nome ?></td>
+                  <td><?= item.valor ?></td>
+                  <td><?= item.percentual ?></td>
+                </tr>
+              <? }); ?>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel">
+          <h2>Tempo de servi&ccedil;o</h2>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Faixa</th>
+                <th>Quantidade</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <? if (dados.tempoServico.length === 0) { ?>
+                <tr><td colspan="3">Nenhum registro encontrado no per&iacute;odo.</td></tr>
+              <? } ?>
+              <? dados.tempoServico.forEach(function(item) { ?>
+                <tr>
+                  <td><?= item.nome ?></td>
+                  <td><?= item.valor ?></td>
+                  <td><?= item.percentual ?></td>
+                </tr>
+              <? }); ?>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Resumo semanal</h2>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th>Semana atual</th>
+                <th>Semana anterior</th>
+                <th>Varia&ccedil;&atilde;o</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Atendimentos</td><td><?= dados.semana.resumo.totalAtendimentos ?></td><td><?= dados.semana.anterior.totalAtendimentos ?></td><td><?= dados.semana.variacaoAtendimentos ?></td></tr>
+              <tr><td>Pessoas</td><td><?= dados.semana.resumo.pessoasDistintas ?></td><td><?= dados.semana.anterior.pessoasDistintas ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.pessoasDistintas, dados.semana.anterior.pessoasDistintas) ?></td></tr>
+              <tr><td>Faltas</td><td><?= dados.semana.resumo.totalFaltas ?></td><td><?= dados.semana.anterior.totalFaltas ?></td><td><?= dados.semana.variacaoFaltas ?></td></tr>
+              <tr><td>Altas</td><td><?= dados.semana.resumo.totalAltas ?></td><td><?= dados.semana.anterior.totalAltas ?></td><td><?= dados.semana.variacaoAltas ?></td></tr>
+              <tr><td>Eventos coletivos</td><td><?= dados.semana.resumo.totalEventosColetivos ?></td><td><?= dados.semana.anterior.totalEventosColetivos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.totalEventosColetivos, dados.semana.anterior.totalEventosColetivos) ?></td></tr>
+              <tr><td>Participantes em eventos</td><td><?= dados.semana.resumo.pessoasEventos ?></td><td><?= dados.semana.anterior.pessoasEventos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.pessoasEventos, dados.semana.anterior.pessoasEventos) ?></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel">
+          <h2>Resumo mensal</h2>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th>M&ecirc;s atual</th>
+                <th>M&ecirc;s anterior</th>
+                <th>Varia&ccedil;&atilde;o</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Atendimentos</td><td><?= dados.mes.resumo.totalAtendimentos ?></td><td><?= dados.mes.anterior.totalAtendimentos ?></td><td><?= dados.mes.variacaoAtendimentos ?></td></tr>
+              <tr><td>Pessoas</td><td><?= dados.mes.resumo.pessoasDistintas ?></td><td><?= dados.mes.anterior.pessoasDistintas ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.pessoasDistintas, dados.mes.anterior.pessoasDistintas) ?></td></tr>
+              <tr><td>Faltas</td><td><?= dados.mes.resumo.totalFaltas ?></td><td><?= dados.mes.anterior.totalFaltas ?></td><td><?= dados.mes.variacaoFaltas ?></td></tr>
+              <tr><td>Altas</td><td><?= dados.mes.resumo.totalAltas ?></td><td><?= dados.mes.anterior.totalAltas ?></td><td><?= dados.mes.variacaoAltas ?></td></tr>
+              <tr><td>Eventos coletivos</td><td><?= dados.mes.resumo.totalEventosColetivos ?></td><td><?= dados.mes.anterior.totalEventosColetivos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.totalEventosColetivos, dados.mes.anterior.totalEventosColetivos) ?></td></tr>
+              <tr><td>Participantes em eventos</td><td><?= dados.mes.resumo.pessoasEventos ?></td><td><?= dados.mes.anterior.pessoasEventos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.pessoasEventos, dados.mes.anterior.pessoasEventos) ?></td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>Relat&oacute;rio enviado para destinat&aacute;rios ativos da aba emails_relatorio</span>
+      <span>P&aacute;gina 2 de 2</span>
+    </footer>
+  </section>
+</body>
+</html>
