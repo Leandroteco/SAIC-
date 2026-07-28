@@ -683,6 +683,177 @@
       white-space: pre-wrap;
     }
 
+    .header-actions {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-ajuda {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #cbd5df;
+      border-radius: 999px;
+      box-shadow: 0 12px 24px rgba(41, 48, 51, 0.12);
+      color: #293033;
+      display: inline-flex;
+      font-size: 18px;
+      font-weight: 900;
+      height: 44px;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      width: 44px;
+    }
+
+    .btn-ajuda:hover {
+      background: #f8fbfd;
+      color: #143f4c;
+    }
+
+    .ajuda-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.44);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 120;
+    }
+
+    .ajuda-overlay.ativo {
+      display: flex;
+    }
+
+    .ajuda-modal {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+      max-height: min(760px, 88vh);
+      max-width: 860px;
+      overflow: hidden;
+      width: min(860px, 94vw);
+    }
+
+    .ajuda-cabecalho {
+      align-items: flex-start;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 16px;
+      justify-content: space-between;
+      padding: 22px 24px;
+    }
+
+    .ajuda-cabecalho span {
+      color: var(--primary);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .ajuda-cabecalho h2 {
+      border: 0;
+      color: #293033;
+      font-size: 26px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .ajuda-fechar {
+      align-items: center;
+      background: #eef3f6;
+      border-radius: 999px;
+      color: #293033;
+      display: inline-flex;
+      font-size: 24px;
+      height: 38px;
+      justify-content: center;
+      line-height: 1;
+      margin: 0;
+      padding: 0;
+      width: 38px;
+    }
+
+    .ajuda-fechar:hover {
+      background: #dfe8ee;
+    }
+
+    .ajuda-conteudo {
+      display: grid;
+      gap: 12px;
+      max-height: calc(min(760px, 88vh) - 84px);
+      overflow: auto;
+      padding: 18px 24px 24px;
+    }
+
+    .ajuda-item {
+      background: #f8fbfd;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .ajuda-item h3 {
+      color: #143f4c;
+      font-size: 15px;
+      font-weight: 900;
+      margin: 0 0 7px;
+    }
+
+    .ajuda-item p {
+      color: #475569;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: #293033;
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 3px solid rgba(49, 95, 114, 0.18);
+      border-radius: 999px;
+      border-top-color: #2f6f89;
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
     @media (max-width: 1180px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { min-height: auto; position: static; }
@@ -720,6 +891,8 @@
       .titulo-responsavel-linha { align-items: flex-start; }
       .responsavel-actions { grid-template-columns: minmax(0, 1fr) auto; }
       .btn-imprimir-ficha { grid-column: 1 / -1; }
+      .ajuda-cabecalho { padding: 18px; }
+      .ajuda-conteudo { padding: 14px; }
     }
 /* Design institucional aplicado a partir do preview aprovado */
 :root {
@@ -847,6 +1020,7 @@ header.preview-institutional-header::after {
 
 .preview-title-block,
 .preview-logo-group,
+.header-actions,
 header.preview-institutional-header .menu {
   position: relative;
   z-index: 1;
@@ -1542,6 +1716,13 @@ body {
   <div id="mensagemLogin" style="margin-top:16px;color:#b42318;font-weight:600;"><?= mensagemLoginInicial ?></div>
 </div>
 
+<div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+  <div class="navegacao-card">
+    <span class="navegacao-spinner"></span>
+    <strong id="navegacaoMensagem">Carregando...</strong>
+  </div>
+</div>
+
 <!-- Conteudo principal: formulario de atendimento exibido apos a autenticacao do usuario. -->
 <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
   <div class="app-shell">
@@ -1590,7 +1771,10 @@ body {
     <span>Sistema de Gestão dos Atendimentos do SiSMen</span>
   </div>
 
-  <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
+  <div class="header-actions">
+    <button type="button" class="btn-ajuda" onclick="abrirAjuda()" title="Ajuda" aria-label="Abrir ajuda">?</button>
+    <div class="menu" title="Opções" onclick="alternarMenu()">☰</div>
+  </div>
 
 <div id="menuOpcoes" class="menu-opcoes" onmouseleave="fecharMenu()">
   <button id="btnMenuRelatorioNaps" onclick="abrirRelatorioNaps()">Relatório NAPS</button>
@@ -1600,6 +1784,86 @@ body {
 </div>
 
 </header>
+
+<!-- Ajuda do usuario: orientacoes rapidas sem chamada para a planilha. -->
+<div id="ajudaOverlay" class="ajuda-overlay" role="dialog" aria-modal="true" aria-labelledby="ajudaTitulo" onclick="fecharAjudaPorFora(event)">
+  <article class="ajuda-modal">
+    <div class="ajuda-cabecalho">
+      <div>
+        <span>Orientações de uso</span>
+        <h2 id="ajudaTitulo">Ajuda do SAIC</h2>
+      </div>
+      <button type="button" class="ajuda-fechar" onclick="fecharAjuda()" aria-label="Fechar ajuda">&times;</button>
+    </div>
+
+    <div class="ajuda-conteudo">
+      <section class="ajuda-item">
+        <h3>Atendimento</h3>
+        <p>O SAIC registra cada atendimento realizado. Sempre que fizer um novo atendimento, preencha ou atualize os dados necessários e clique em salvar. O atendimento só fica registrado depois que aparecer a mensagem de confirmação.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Busca</h3>
+        <p>Antes de preencher tudo novamente, pesquise por R.E., CPF ou nome. Na busca por R.E., o número pode ser digitado sem o dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações que forem necessárias antes de salvar o novo atendimento.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Endereço</h3>
+        <p>Ao preencher o CEP, o sistema tenta completar automaticamente rua, bairro, cidade e estado. Confira os dados preenchidos e complete número e complemento quando houver.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Pessoa vinculada</h3>
+        <p>Use pessoa vinculada quando precisar relacionar outra pessoa ao atendimento principal, como acompanhante, familiar ou pessoa envolvida. Em alguns tipos de atendimento, o próprio sistema identifica a necessidade de pessoa vinculada e libera essa área para preenchimento.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Tipo de atendimento e motivo</h3>
+        <p>Selecione o tipo de atendimento e o motivo conforme o caso. Quando escolher “Outros”, o sistema abrirá um campo específico para explicar do que se trata. Esse campo deve ser preenchido antes de salvar.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Falta e Alta</h3>
+        <p>Use “Registrar como FALTA” quando o atendimento não ocorrer por ausência. Use “Atendimento de ALTA” quando o atendimento representar encerramento ou alta do acompanhamento. Confira a opção escolhida antes de salvar.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Imprimir ficha</h3>
+        <p>Depois que o atendimento for salvo, o botão “Imprimir ficha” fica disponível. Por ele é possível abrir a ficha para imprimir ou salvar em PDF.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Últimos atendimentos</h3>
+        <p>O ícone de relógio ao lado do responsável mostra os três últimos atendimentos lançados pelo usuário. Essa opção ajuda a acessar rapidamente fichas salvas recentemente.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Eventos coletivos</h3>
+        <p>Em Workshop, Prosen e Palestras, o responsável abre o evento, preenche os dados principais e pode cadastrar participantes manualmente ou gerar link para preenchimento individual de cada participante, por smartphone. Os participantes preenchidos pelo link aparecerão em uma lista temporária. O responsável deve conferir, validar essa lista e encerrar o evento ao final.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Cancelar evento coletivo</h3>
+        <p>Se um evento for aberto por engano, ele pode ser cancelado antes do encerramento. Após cancelar, o responsável poderá iniciar um novo evento.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Relatório NAPS</h3>
+        <p>O Relatório NAPS mostra os principais dados da unidade no mês vigente, como atendimentos, faltas, altas, tipos de atendimento, motivos e eventos coletivos.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Conferência dos dados</h3>
+        <p>Antes de salvar, confira principalmente R.E., CPF, tipo de atendimento, motivo, NAPS e dados de contato. Essas informações ajudam na localização futura do cadastro e na geração correta dos relatórios.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Durante o salvamento</h3>
+        <p>Após clicar em salvar, aguarde a mensagem de confirmação. Não feche a página e não inicie outro cadastro enquanto o sistema estiver processando.</p>
+      </section>
+    </div>
+  </article>
+</div>
 
 <!-- Formulario de atendimento: concentra busca, dados pessoais, endereco e salvamento. -->
 <div class="container">
@@ -2400,7 +2664,7 @@ function imprimirFichaPorId(idAtendimento, ocultarBotaoDepois) {
 // Monta o HTML da ficha cadastral usando os dados retornados pelo Apps Script.
 function montarHtmlFichaAtendimento(ficha) {
   const vinculos = ficha.vinculos || [];
-  const primeiroVinculo = vinculos[0] || {};
+  const nomesAcompanhantes = montarNomesAcompanhantesFicha(vinculos);
   const linhasAtendimento = montarLinhasAtendimentoFicha();
   const observacoesFicha = montarObservacoesFichaAtendimento(ficha);
 
@@ -2459,7 +2723,7 @@ function montarHtmlFichaAtendimento(ficha) {
         campoLinhaFicha("Cel.", ficha.telefone) +
         campoLinhaFicha("Tel. OPM", "") +
       "</div>" +
-      "<div class='linha-ficha col-1'>" + campoLinhaFicha("Nome do Cônjuge", primeiroVinculo.nome || "") + "</div>" +
+      "<div class='linha-ficha col-1'>" + campoLinhaFicha("Nome acompanhante", nomesAcompanhantes) + "</div>" +
       "<div class='linha-ficha col-3'>" +
         campoLinhaFicha("Profissão", "") +
         campoLinhaFicha("RG/RE", "") +
@@ -2483,6 +2747,23 @@ function montarHtmlFichaAtendimento(ficha) {
       "<div class='confidencial'>CONFIDENCIAL</div>" +
     "</section>" +
     "</body></html>";
+}
+
+function montarNomesAcompanhantesFicha(vinculos) {
+  const nomes = [];
+  const nomesUsados = {};
+
+  (vinculos || []).forEach(function(vinculo) {
+    const nome = String((vinculo && vinculo.nome) || "").trim();
+    const chave = nome.toLowerCase().replace(/\s+/g, " ");
+
+    if (!nome || nomesUsados[chave]) return;
+
+    nomesUsados[chave] = true;
+    nomes.push(nome);
+  });
+
+  return nomes.join(", ");
 }
 
 function montarObservacoesFichaAtendimento(ficha) {
@@ -3847,8 +4128,16 @@ function bloquearAcessoAdministrativoMenu() {
   return true;
 }
 
+function mostrarCarregamentoNavegacao(texto) {
+  const overlay = document.getElementById("navegacaoOverlay");
+  const mensagem = document.getElementById("navegacaoMensagem");
+
+  if (mensagem) mensagem.innerText = texto || "Carregando...";
+  if (overlay) overlay.style.display = "flex";
+}
+
 // Abre uma pagina autenticada mantendo o token de sessao.
-function abrirPaginaComToken(pagina) {
+function abrirPaginaComToken(pagina, alvo, mensagemCarregando) {
   if (!tokenGoogle || !webAppUrl) {
     const mensagem = document.getElementById("mensagem");
 
@@ -3861,11 +4150,12 @@ function abrirPaginaComToken(pagina) {
   }
 
   fecharMenu();
+  if (mensagemCarregando) mostrarCarregamentoNavegacao(mensagemCarregando);
 
   const form = document.createElement("form");
   form.method = "post";
   form.action = webAppUrl;
-  form.target = "_blank";
+  form.target = alvo || "_blank";
   form.style.display = "none";
 
   const campoToken = document.createElement("input");
@@ -3881,8 +4171,17 @@ function abrirPaginaComToken(pagina) {
   form.appendChild(campoToken);
   form.appendChild(campoDestino);
   document.body.appendChild(form);
-  form.submit();
-  form.remove();
+
+  const enviarFormulario = function() {
+    form.submit();
+    form.remove();
+  };
+
+  if (mensagemCarregando) {
+    setTimeout(enviarFormulario, 80);
+  } else {
+    enviarFormulario();
+  }
 }
 
 // Abre relatorios, dashboard ou mapa mantendo a trava de administrador.
@@ -3923,6 +4222,29 @@ function fecharRecado() {
   document.getElementById("recadoOverlay").style.display = "none";
 }
 
+// Ajuda de uso: abre/fecha orientacoes sem consultar a planilha.
+function abrirAjuda() {
+  const overlay = document.getElementById("ajudaOverlay");
+  if (overlay) overlay.classList.add("ativo");
+}
+
+function fecharAjuda() {
+  const overlay = document.getElementById("ajudaOverlay");
+  if (overlay) overlay.classList.remove("ativo");
+}
+
+function fecharAjudaPorFora(event) {
+  if (event && event.target && event.target.id === "ajudaOverlay") {
+    fecharAjuda();
+  }
+}
+
+document.addEventListener("keydown", function(event) {
+  if (event.key === "Escape") {
+    fecharAjuda();
+  }
+});
+
 // Atalhos do menu administrativo.
 function abrirDashboard() {
   abrirPaginaAdministrativa("dashboard");
@@ -3942,7 +4264,7 @@ function abrirRelatorioNaps() {
 
 function abrirEventosColetivos(tipo) {
   const tipoEvento = tipo ? ":" + tipo : "";
-  abrirPaginaComToken("eventos_coletivos" + tipoEvento);
+  abrirPaginaComToken("eventos_coletivos" + tipoEvento, "_top", "Carregando Eventos Coletivos...");
 }
 
 function limparAvisosBusca() {
