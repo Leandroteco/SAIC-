@@ -3034,16 +3034,9 @@ function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio
   const filtros = normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio);
   const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = estrutura.sheetDados;
-
-  const dados = lerDadosPadrao(sheet, CABECALHOS_DADOS, 1);
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = [];
-
-  for (let i = 1; i < dados.length; i++) {
-    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
-  }
+  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
 
   const filtrosPreparados = prepararFiltrosRelatorio(filtros);
   const filtrados = registros.filter(function(registro) {
@@ -3070,15 +3063,9 @@ function obterDadosDashboard(filtros, idToken) {
   const filtrosDashboard = normalizarFiltrosDashboard(filtros || {});
   const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = estrutura.sheetDados;
-  const dados = lerDadosPadrao(sheet, CABECALHOS_DADOS, 1);
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = [];
-
-  for (let i = 1; i < dados.length; i++) {
-    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
-  }
+  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
 
   const filtrosPreparados = prepararFiltrosRelatorio(filtrosDashboard);
   const filtrados = registros.filter(function(registro) {
@@ -3102,15 +3089,9 @@ function obterDadosRelatorioNaps(filtros, idToken) {
   const filtrosRelatorio = filtros || {};
   const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = estrutura.sheetDados;
-  const dados = lerDadosPadrao(sheet, CABECALHOS_DADOS, 1);
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = [];
-
-  for (let i = 1; i < dados.length; i++) {
-    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
-  }
+  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
 
   const periodo = montarPeriodoRelatorioNaps(new Date());
   const napsUsuario = String(usuario.naps || "").trim();
@@ -3242,7 +3223,11 @@ function montarIndicadoresRelatorioNaps(registros) {
   return {
     registros: resumo.totalRegistros,
     atendimentos: resumo.totalAtendimentos,
+    atendimentosIndividuais: resumo.totalAtendimentosIndividuais,
+    eventosColetivos: resumo.totalEventosColetivos,
     pessoas: resumo.pessoasDistintas,
+    pessoasEventos: resumo.pessoasEventos,
+    pessoasTotal: resumo.pessoasTotalGeral,
     faltas: resumo.totalFaltas,
     altas: resumo.totalAltas
   };
@@ -3251,7 +3236,10 @@ function montarIndicadoresRelatorioNaps(registros) {
 function montarComparativoRelatorioNaps(atual, anterior) {
   const campos = [
     { chave: "atendimentos", rotulo: "Atendimentos" },
+    { chave: "eventosColetivos", rotulo: "Eventos coletivos" },
     { chave: "pessoas", rotulo: "Pessoas" },
+    { chave: "pessoasEventos", rotulo: "Pessoas em eventos" },
+    { chave: "pessoasTotal", rotulo: "Total de pessoas" },
     { chave: "faltas", rotulo: "Faltas" },
     { chave: "altas", rotulo: "Altas" }
   ];
@@ -4013,7 +4001,11 @@ function montarResumoDashboard(registros, filtros) {
 
   return {
     totalAtendimentos: resumoRelatorio.totalAtendimentos,
+    totalAtendimentosIndividuais: resumoRelatorio.totalAtendimentosIndividuais,
+    totalEventosColetivos: resumoRelatorio.totalEventosColetivos,
     pessoasDistintas: resumoRelatorio.pessoasDistintas,
+    pessoasEventos: resumoRelatorio.pessoasEventos,
+    pessoasTotalGeral: resumoRelatorio.pessoasTotalGeral,
     totalFaltas: resumoRelatorio.totalFaltas,
     totalAltas: resumoRelatorio.totalAltas,
     atendimentosEmergenciais: atendimentosEmergenciais,
@@ -4165,6 +4157,8 @@ function montarEvolucaoDashboard(registros, filtros) {
   const inicio = obterDataInicio(filtros.dataInicial);
   const fim = obterDataFim(filtros.dataFinal);
   const contagem = {};
+  const contagemPorNaps = {};
+  const totaisPorNaps = {};
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) return;
@@ -4173,22 +4167,83 @@ function montarEvolucaoDashboard(registros, filtros) {
     if (!data) return;
 
     const chave = obterMesAno(data);
+    const naps = String(registro.naps || "nao informado").trim() || "nao informado";
+
     contagem[chave] = (contagem[chave] || 0) + 1;
+    if (!contagemPorNaps[chave]) contagemPorNaps[chave] = {};
+    contagemPorNaps[chave][naps] = (contagemPorNaps[chave][naps] || 0) + 1;
+    totaisPorNaps[naps] = (totaisPorNaps[naps] || 0) + 1;
   });
 
   if (!inicio || !fim || fim < inicio) {
     return {
-      titulo: "Evolução mensal",
-      agrupamento: "mes",
+      titulo: "Evolução mensal dos NAPS",
+      agrupamento: "mes_naps",
+      labels: [],
+      series: [],
       pontos: []
     };
   }
 
+  const meses = montarChavesMensaisDashboard(inicio, fim);
+
   return {
-    titulo: "Evolução mensal",
-    agrupamento: "mes",
+    titulo: "Evolução mensal dos NAPS",
+    agrupamento: "mes_naps",
+    labels: meses.map(function(chave) {
+      return formatarMesAnoDashboard(new Date(Number(chave.slice(0, 4)), Number(chave.slice(5, 7)) - 1, 1));
+    }),
+    series: montarSeriesMensaisNapsDashboard(meses, contagemPorNaps, totaisPorNaps),
     pontos: montarPontosMensaisDashboard(inicio, fim, contagem)
   };
+}
+
+function montarChavesMensaisDashboard(inicio, fim) {
+  const chaves = [];
+  const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  const limite = new Date(fim.getFullYear(), fim.getMonth(), 1);
+
+  while (cursor <= limite) {
+    chaves.push(obterMesAno(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return chaves;
+}
+
+function montarSeriesMensaisNapsDashboard(meses, contagemPorNaps, totaisPorNaps) {
+  const limiteSeries = 8;
+  const todosNaps = Object.keys(totaisPorNaps).sort(function(a, b) {
+    if (totaisPorNaps[b] !== totaisPorNaps[a]) return totaisPorNaps[b] - totaisPorNaps[a];
+    return normalizar(a).localeCompare(normalizar(b));
+  });
+  const principais = todosNaps.slice(0, limiteSeries);
+  const mapaPrincipais = {};
+  const series = principais.map(function(naps) {
+    mapaPrincipais[naps] = true;
+
+    return {
+      rotulo: naps,
+      valores: meses.map(function(mes) {
+        return Number((contagemPorNaps[mes] && contagemPorNaps[mes][naps]) || 0);
+      })
+    };
+  });
+
+  if (todosNaps.length > limiteSeries) {
+    series.push({
+      rotulo: "Demais NAPS",
+      valores: meses.map(function(mes) {
+        const mapaMes = contagemPorNaps[mes] || {};
+
+        return Object.keys(mapaMes).reduce(function(total, naps) {
+          return mapaPrincipais[naps] ? total : total + Number(mapaMes[naps] || 0);
+        }, 0);
+      })
+    });
+  }
+
+  return series;
 }
 
 function montarPontosDiariosDashboard(inicio, fim, contagem) {
@@ -4445,6 +4500,135 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
   };
 }
 
+function montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail) {
+  const dados = lerDadosPadrao(estrutura.sheetDados, CABECALHOS_DADOS, 1);
+  const registros = [];
+
+  for (let i = 1; i < dados.length; i++) {
+    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
+  }
+
+  Array.prototype.push.apply(registros, montarRegistrosEventosColetivosRelatorio(estrutura));
+
+  return registros;
+}
+
+function montarRegistrosEventosColetivosRelatorio(estrutura) {
+  const sheetEventos = estrutura.sheetEventosColetivos;
+
+  if (!sheetEventos || sheetEventos.getLastRow() < 2) return [];
+
+  const participantesPorEvento = contarParticipantesValidadosPorEventoRelatorio(estrutura.sheetParticipantesEvento);
+  const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2);
+
+  return linhas
+    .filter(function(linha) {
+      return normalizar(linha[10]) === "salvo";
+    })
+    .map(function(linha) {
+      return montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento);
+    })
+    .filter(function(registro) {
+      return registro !== null;
+    });
+}
+
+function contarParticipantesValidadosPorEventoRelatorio(sheetParticipantes) {
+  const contagem = {};
+
+  if (!sheetParticipantes || sheetParticipantes.getLastRow() < 2) return contagem;
+
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+
+  linhas.forEach(function(linha) {
+    const idEvento = String(linha[1] || "").trim();
+
+    if (!idEvento) return;
+    if (normalizar(linha[24]) !== "validado") return;
+
+    contagem[idEvento] = (contagem[idEvento] || 0) + 1;
+  });
+
+  return contagem;
+}
+
+function montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento) {
+  const idEvento = String(linha[0] || "").trim();
+  const tipoEvento = normalizarTipoEventoColetivo(linha[1]);
+  const dataEvento = obterData(linha[2]);
+
+  if (!idEvento || !tipoEvento || !dataEvento) return null;
+
+  const rotuloTipo = obterRotuloTipoEventoColetivo(tipoEvento);
+  const napsRegistro = formatarNapsRelatorio(linha[3] || "nao informado");
+  const responsavelFormatado = formatarResponsavelRelatorio(linha[4]);
+  const tema = limparEspacosRelatorio(linha[6]);
+  const motivo = limparEspacosRelatorio(linha[7]) || tema || rotuloTipo;
+  const quantidadeValidada = obterQuantidadePessoasEventoRelatorio(linha, participantesPorEvento);
+  const modalidade = normalizar(linha[15]);
+
+  return {
+    id: idEvento,
+    origem: "evento_coletivo",
+    eventoColetivo: true,
+    tipoEventoColetivo: tipoEvento,
+    emailCadastro: linha[5] || "",
+    naps: napsRegistro,
+    napsAtendimento: napsRegistro,
+    tipoAtendimento: rotuloTipo,
+    motivo: motivo,
+    re: "",
+    nome: tema ? "Evento coletivo: " + formatarLocalidadeRelatorio(tema) : rotuloTipo,
+    postoGraduacao: "",
+    cpf: "",
+    telefone: "",
+    email: linha[5] || "",
+    dataIngresso: "",
+    dataNascimento: "",
+    idade: null,
+    faixaEtaria: "",
+    sexo: "",
+    opmAtual: "",
+    situacaoStatus: "",
+    dataInatividade: "",
+    estadoCivil: "",
+    numeroFilhos: "",
+    cep: "",
+    rua: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+    numero: "",
+    complemento: "",
+    observacoes: linha[14] || "",
+    responsavel: responsavelFormatado,
+    responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavelFormatado, napsRegistro),
+    dataCadastro: formatarDataBrasil(linha[2]),
+    dataCadastroIso: formatarDataParaInput(linha[2]),
+    dataCadastroData: dataEvento,
+    dataCadastroTimestamp: dataEvento ? dataEvento.getTime() : 0,
+    mesCadastro: obterMesAno(dataEvento),
+    tempoServico: "",
+    endereco: "",
+    vinculos: [],
+    quantidadeVinculos: 0,
+    quantidadePessoasEvento: quantidadeValidada,
+    modalidadeEvento: modalidade
+  };
+}
+
+function obterQuantidadePessoasEventoRelatorio(linhaEvento, participantesPorEvento) {
+  const idEvento = String(linhaEvento[0] || "").trim();
+  const tipoEvento = normalizarTipoEventoColetivo(linhaEvento[1]);
+  const quantidadeValidada = Number(linhaEvento[9] || 0);
+  const quantidadeInformada = Number(linhaEvento[8] || 0);
+
+  if (quantidadeValidada > 0) return quantidadeValidada;
+  if (tipoEventoUsaParticipantes(tipoEvento)) return Number(participantesPorEvento[idEvento] || 0);
+
+  return quantidadeInformada > 0 ? quantidadeInformada : 0;
+}
+
 function montarRotuloResponsavelNapsRelatorio(responsavel, naps) {
   const nomeResponsavel = String(responsavel || "").trim() || "nao informado";
   const nomeNaps = formatarNapsRelatorio(naps);
@@ -4571,6 +4755,9 @@ function montarResumoRelatorio(registros) {
   let totalFaltas = 0;
   let totalAltas = 0;
   let totalAtendimentos = 0;
+  let totalAtendimentosIndividuais = 0;
+  let totalEventosColetivos = 0;
+  let pessoasEventos = 0;
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) {
@@ -4579,6 +4766,14 @@ function montarResumoRelatorio(registros) {
     }
 
     totalAtendimentos++;
+
+    if (registro.eventoColetivo) {
+      totalEventosColetivos++;
+      pessoasEventos += Number(registro.quantidadePessoasEvento || 0);
+      return;
+    }
+
+    totalAtendimentosIndividuais++;
 
     if (ehRegistroAlta(registro)) {
       totalAltas++;
@@ -4610,7 +4805,11 @@ function montarResumoRelatorio(registros) {
   return {
     totalRegistros: registros.length,
     totalAtendimentos: totalAtendimentos,
+    totalAtendimentosIndividuais: totalAtendimentosIndividuais,
+    totalEventosColetivos: totalEventosColetivos,
     pessoasDistintas: Object.keys(pessoas).length,
+    pessoasEventos: pessoasEventos,
+    pessoasTotalGeral: Object.keys(pessoas).length + pessoasEventos,
     totalFaltas: totalFaltas,
     totalAltas: totalAltas,
     retornos: retornos,
@@ -4624,6 +4823,7 @@ function montarResumoRelatorio(registros) {
 function montarDistribuicoesRelatorio(registros) {
   return {
     porMes: contarPorCampo(registros, "mesCadastro"),
+    porMesNaps: contarPorMesNapsRelatorio(registros),
     porNAPS: contarPorCampo(registros, "naps"),
     porTipo: contarPorCampo(registros, "tipoAtendimento"),
     porPostoGraduacao: contarPorCampo(registros, "postoGraduacao"),
@@ -4640,6 +4840,22 @@ function montarDistribuicoesRelatorio(registros) {
     porTempoServico: contarPorCampo(registros, "tempoServico"),
     porParentesco: contarPorVinculo(registros, "parentesco")
   };
+}
+
+function contarPorMesNapsRelatorio(registros) {
+  const contagem = {};
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+
+    const mes = registro.mesCadastro || "sem data";
+    const naps = registro.naps || "nao informado";
+    const chave = mes + "|" + naps;
+
+    contagem[chave] = (contagem[chave] || 0) + 1;
+  });
+
+  return contagem;
 }
 
 function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss) {
@@ -5037,6 +5253,8 @@ function montarDetalhesRelatorio(registros, limite) {
         cidade: registro.cidade,
         estado: registro.estado,
         quantidadeVinculos: registro.quantidadeVinculos,
+        eventoColetivo: registro.eventoColetivo || false,
+        quantidadePessoasEvento: registro.quantidadePessoasEvento || 0,
         vinculos: registro.vinculos
       };
     });
@@ -5070,10 +5288,26 @@ function contarPorCampo(registros, campo) {
   const contagem = {};
 
   registros.forEach(function(registro) {
+    if (registro.eventoColetivo && campoEhPerfilIndividualRelatorio(campo)) return;
+
     adicionarContagemRelatorio(contagem, registro[campo]);
   });
 
   return contagem;
+}
+
+function campoEhPerfilIndividualRelatorio(campo) {
+  return [
+    "postoGraduacao",
+    "opmAtual",
+    "cidade",
+    "bairro",
+    "situacaoStatus",
+    "sexo",
+    "estadoCivil",
+    "faixaEtaria",
+    "tempoServico"
+  ].indexOf(campo) >= 0;
 }
 
 function contarPorVinculo(registros, campo) {
