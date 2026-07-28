@@ -155,6 +155,22 @@
       color: #ffffff;
     }
 
+    .side-nav-separator {
+      height: 1px;
+      margin: 10px 0;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .side-nav button.nav-voltar {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+
+    .side-nav button.nav-voltar:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
     .content {
       min-width: 0;
       padding: 28px;
@@ -586,6 +602,44 @@
       }
     }
 
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: var(--ink);
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 3px solid rgba(49, 95, 114, 0.18);
+      border-radius: 999px;
+      border-top-color: var(--blue);
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
     .link-box {
       display: none;
       margin-top: 14px;
@@ -708,6 +762,13 @@
 </head>
 
 <body>
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+    <div class="navegacao-card">
+      <span class="navegacao-spinner"></span>
+      <strong id="navegacaoMensagem">Carregando...</strong>
+    </div>
+  </div>
+
   <div class="app-shell">
     <aside class="sidebar" aria-label="Eventos coletivos">
       <div class="brand">
@@ -719,6 +780,8 @@
         <button id="nav-workshop" type="button" class="active" onclick="selecionarEvento('workshop')">Workshop</button>
         <button id="nav-prosen" type="button" onclick="selecionarEvento('prosen')">PROSEN</button>
         <button id="nav-palestra" type="button" onclick="selecionarEvento('palestra')">Palestras</button>
+        <div class="side-nav-separator" aria-hidden="true"></div>
+        <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
       </nav>
     </aside>
 
@@ -1284,6 +1347,54 @@
         const botao = document.getElementById("nav-" + item);
         if (botao) botao.classList.toggle("active", item === tipoEventoAtual);
       });
+    }
+
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function voltarAoAtendimento() {
+      if (!tokenGoogle || !webAppUrl) {
+        mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
+        return;
+      }
+
+      const botao = document.getElementById("nav-voltar-atendimento");
+      if (botao) {
+        botao.disabled = true;
+        botao.innerText = "Carregando Atendimento...";
+      }
+
+      mostrarCarregamentoNavegacao("Carregando Atendimento...");
+
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = webAppUrl;
+      form.target = "_top";
+      form.style.display = "none";
+
+      const campoToken = document.createElement("input");
+      campoToken.type = "hidden";
+      campoToken.name = "credential";
+      campoToken.value = tokenGoogle;
+
+      const campoDestino = document.createElement("input");
+      campoDestino.type = "hidden";
+      campoDestino.name = "state";
+      campoDestino.value = "index";
+
+      form.appendChild(campoToken);
+      form.appendChild(campoDestino);
+      document.body.appendChild(form);
+
+      setTimeout(function() {
+        form.submit();
+        form.remove();
+      }, 80);
     }
 
     function resetarEstadoEvento() {
