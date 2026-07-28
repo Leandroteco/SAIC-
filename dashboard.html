@@ -347,7 +347,7 @@
     .metrics-grid {
       display: grid;
       gap: 14px;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
       margin-bottom: 18px;
     }
 
@@ -393,11 +393,17 @@
     .metric:nth-child(3) strong { color: var(--rose); }
     .metric:nth-child(4) strong { color: var(--amber); }
     .metric:nth-child(5) strong { color: var(--purple); }
+    .metric:nth-child(6) strong { color: var(--blue); }
+    .metric:nth-child(7) strong { color: var(--rose); }
+    .metric:nth-child(8) strong { color: var(--amber); }
     .metric:nth-child(1)::before { background: var(--green); }
     .metric:nth-child(2)::before { background: var(--blue); }
     .metric:nth-child(3)::before { background: var(--rose); }
     .metric:nth-child(4)::before { background: var(--amber); }
     .metric:nth-child(5)::before { background: var(--purple); }
+    .metric:nth-child(6)::before { background: var(--blue); }
+    .metric:nth-child(7)::before { background: var(--rose); }
+    .metric:nth-child(8)::before { background: var(--amber); }
 
     .dashboard-grid {
       display: grid;
@@ -1761,6 +1767,18 @@ h3,
           <strong id="metricPessoas">0</strong>
         </div>
         <div class="metric">
+          <span>Eventos coletivos</span>
+          <strong id="metricEventos">0</strong>
+        </div>
+        <div class="metric">
+          <span>Pessoas em eventos</span>
+          <strong id="metricPessoasEventos">0</strong>
+        </div>
+        <div class="metric">
+          <span>Total de pessoas</span>
+          <strong id="metricPessoasTotal">0</strong>
+        </div>
+        <div class="metric">
           <span>Faltas</span>
           <strong id="metricFaltas">0</strong>
         </div>
@@ -2020,6 +2038,9 @@ h3,
     function atualizarMetricas(resumo) {
       document.getElementById("metricTotal").innerText = formatarNumero(resumo.totalAtendimentos);
       document.getElementById("metricPessoas").innerText = formatarNumero(resumo.pessoasDistintas);
+      document.getElementById("metricEventos").innerText = formatarNumero(resumo.totalEventosColetivos);
+      document.getElementById("metricPessoasEventos").innerText = formatarNumero(resumo.pessoasEventos);
+      document.getElementById("metricPessoasTotal").innerText = formatarNumero(resumo.pessoasTotalGeral);
       document.getElementById("metricFaltas").innerText = formatarNumero(resumo.totalFaltas);
       document.getElementById("metricAltas").innerText = formatarNumero(resumo.totalAltas);
       document.getElementById("metricMedia").innerText = String(resumo.mediaDiaria || 0).replace(".", ",");
@@ -2031,6 +2052,9 @@ h3,
       const rankings = dados.rankings || {};
       const atendimentos = Number(resumo.totalAtendimentos || 0);
       const pessoas = Number(resumo.pessoasDistintas || 0);
+      const eventos = Number(resumo.totalEventosColetivos || 0);
+      const pessoasEventos = Number(resumo.pessoasEventos || 0);
+      const pessoasTotal = Number(resumo.pessoasTotalGeral || pessoas + pessoasEventos);
       const faltas = Number(resumo.totalFaltas || 0);
       const altas = Number(resumo.totalAltas || 0);
       const totalComFaltas = atendimentos + faltas;
@@ -2041,10 +2065,10 @@ h3,
       const principalNaps = primeiroNaps(graficosDados);
 
       document.getElementById("insightSintese").innerText = atendimentos > 0
-        ? formatarNumero(atendimentos) + " atendimento(s) para " + formatarNumero(pessoas) + " pessoa(s)"
+        ? formatarNumero(atendimentos) + " atendimento(s), incluindo " + formatarNumero(eventos) + " evento(s), com alcance de " + formatarNumero(pessoasTotal) + " pessoa(s)"
         : "Sem atendimentos no período";
       document.getElementById("insightDestaque").innerText = pessoas > 0
-        ? "Média de " + atendimentosPorPessoa.toFixed(1).replace(".", ",") + " atendimento(s) por pessoa."
+        ? "Média de " + atendimentosPorPessoa.toFixed(1).replace(".", ",") + " atendimento(s) por pessoa. Eventos coletivos somaram " + formatarNumero(pessoasEventos) + " participante(s)."
         : "Ajuste o período ou atualize para analisar a demanda.";
 
       document.getElementById("insightFaltas").innerText = formatarPercentual(taxaFaltas);
@@ -2068,7 +2092,7 @@ h3,
     function renderizarGraficos(graficosDados) {
       const evolucao = graficosDados.evolucao || { pontos: [] };
       document.getElementById("tituloEvolucao").innerText = evolucao.titulo || "Evolução mensal";
-      criarGraficoLinha("evolucao", "graficoEvolucao", evolucao.pontos || []);
+      criarGraficoLinha("evolucao", "graficoEvolucao", evolucao);
 
       criarGraficoNAPSComparativo(graficosDados);
       criarGrafico("tipo", "graficoTipo", "doughnut", graficosDados.porTipo || [], "vazioTipo", "");
@@ -2283,31 +2307,65 @@ h3,
       }).join("");
     }
 
-    function criarGraficoLinha(chave, canvasId, pontos) {
+    function criarGraficoLinha(chave, canvasId, dadosEvolucao) {
       const ctx = document.getElementById(canvasId);
-      const valoresOriginais = pontos.map(function(item) { return Number(item.valor || 0); });
-      const total = somarNumeros(valoresOriginais);
-      const percentuais = calcularPercentuais(valoresOriginais, total);
+      const dadosNormalizados = normalizarDadosEvolucaoDashboard(dadosEvolucao);
+      const labels = dadosNormalizados.labels;
+      const series = dadosNormalizados.series;
 
       destruirGrafico(chave);
       graficos[chave] = new Chart(ctx, {
         type: "line",
         data: {
-          labels: pontos.map(function(item) { return item.rotulo; }),
-          datasets: [{
-            label: "Atendimentos",
-            data: modoGrafico === "percentual" ? percentuais : valoresOriginais,
-            dadosOriginais: valoresOriginais,
-            percentuais: percentuais,
-            borderColor: "#2563eb",
-            backgroundColor: "rgba(37, 99, 235, 0.14)",
-            fill: true,
-            tension: 0.25,
-            pointRadius: 3
-          }]
+          labels: labels,
+          datasets: series.map(function(serie, indice) {
+            const valoresOriginais = serie.valores.map(function(valor) { return Number(valor || 0); });
+            const total = somarNumeros(valoresOriginais);
+            const percentuais = calcularPercentuais(valoresOriginais, total);
+            const cor = cores[indice % cores.length];
+
+            return {
+              label: formatarRotuloDashboard(serie.rotulo, "naps"),
+              data: modoGrafico === "percentual" ? percentuais : valoresOriginais,
+              dadosOriginais: valoresOriginais,
+              percentuais: percentuais,
+              borderColor: cor,
+              backgroundColor: cor + "22",
+              fill: false,
+              tension: 0.25,
+              pointRadius: 3
+            };
+          })
         },
         options: opcoesGrafico({ beginAtZero: true })
       });
+    }
+
+    function normalizarDadosEvolucaoDashboard(dadosEvolucao) {
+      if (dadosEvolucao && Array.isArray(dadosEvolucao.series) && dadosEvolucao.series.length > 0) {
+        return {
+          labels: dadosEvolucao.labels || [],
+          series: dadosEvolucao.series.map(function(serie) {
+            return {
+              rotulo: serie.rotulo || "Total",
+              valores: serie.valores || []
+            };
+          })
+        };
+      }
+
+      const pontos = Array.isArray(dadosEvolucao)
+        ? dadosEvolucao
+        : ((dadosEvolucao && dadosEvolucao.pontos) || []);
+      const valoresOriginais = pontos.map(function(item) { return Number(item.valor || 0); });
+
+      return {
+        labels: pontos.map(function(item) { return item.rotulo; }),
+        series: [{
+          rotulo: "Atendimentos",
+          valores: valoresOriginais
+        }]
+      };
     }
 
     function criarGrafico(chave, canvasId, tipo, lista, idVazio, filtroAlvo) {
@@ -2549,7 +2607,7 @@ h3,
     }
 
     function atualizarNotasGraficos(graficosDados) {
-      const evolucao = (graficosDados.evolucao && graficosDados.evolucao.pontos) || [];
+      const evolucao = obterPontosNotaEvolucao(graficosDados.evolucao);
       const totalEvolucao = somarValores(evolucao);
       const picoEvolucao = primeiroItem(evolucao);
       const principalNaps = primeiroNaps(graficosDados);
@@ -2566,6 +2624,25 @@ h3,
       definirTexto("notaMotivo", montarNotaDistribuicao(graficosDados.porMotivo || [], "motivo"));
       definirTexto("notaOPM", montarNotaDistribuicao(graficosDados.porOPM || [], "OPM", "opm"));
       definirTexto("notaSituacaoSexo", montarNotaSituacaoSexo(graficosDados.porSituacao || [], graficosDados.porSexo || []));
+    }
+
+    function obterPontosNotaEvolucao(evolucao) {
+      if (evolucao && Array.isArray(evolucao.series) && evolucao.series.length > 0) {
+        const labels = evolucao.labels || [];
+
+        return labels.map(function(rotulo, indice) {
+          const valor = evolucao.series.reduce(function(total, serie) {
+            return total + Number((serie.valores || [])[indice] || 0);
+          }, 0);
+
+          return {
+            rotulo: rotulo,
+            valor: valor
+          };
+        });
+      }
+
+      return (evolucao && evolucao.pontos) || [];
     }
 
     function montarNotaDistribuicao(lista, nome, contexto) {
