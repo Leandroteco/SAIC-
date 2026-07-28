@@ -348,7 +348,7 @@
     .metrics-grid {
       display: grid;
       gap: 14px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       margin-bottom: 18px;
     }
 
@@ -375,6 +375,9 @@
     .metric:nth-child(2)::before { background: var(--primary); }
     .metric:nth-child(3)::before { background: var(--warning); }
     .metric:nth-child(4)::before { background: var(--danger); }
+    .metric:nth-child(5)::before { background: var(--primary); }
+    .metric:nth-child(6)::before { background: var(--warning); }
+    .metric:nth-child(7)::before { background: var(--danger); }
 
     .metric span {
       color: var(--muted);
@@ -397,6 +400,9 @@
     .metric:nth-child(2) strong { color: var(--primary); }
     .metric:nth-child(3) strong { color: var(--warning); }
     .metric:nth-child(4) strong { color: var(--danger); }
+    .metric:nth-child(5) strong { color: var(--primary); }
+    .metric:nth-child(6) strong { color: var(--warning); }
+    .metric:nth-child(7) strong { color: var(--danger); }
 
     .tabs {
       background: #eef4f7;
@@ -1471,6 +1477,10 @@ h3,
 .metric:nth-child(4) strong { color: var(--chart-slate) !important; }
 .metric:nth-child(5)::before { background: var(--chart-blue-soft) !important; }
 .metric:nth-child(5) strong { color: var(--chart-blue-soft) !important; }
+.metric:nth-child(6)::before { background: var(--chart-amber) !important; }
+.metric:nth-child(6) strong { color: var(--chart-amber) !important; }
+.metric:nth-child(7)::before { background: var(--chart-slate) !important; }
+.metric:nth-child(7) strong { color: var(--chart-slate) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -2084,6 +2094,9 @@ function formatarDataInput(data) {
       return [
         montarMetrica("Atendimentos", resumo.totalAtendimentos),
         montarMetrica("Pessoas", resumo.pessoasDistintas),
+        montarMetrica("Eventos coletivos", resumo.totalEventosColetivos),
+        montarMetrica("Pessoas em eventos", resumo.pessoasEventos),
+        montarMetrica("Total de pessoas", resumo.pessoasTotalGeral),
         montarMetrica("Faltas", resumo.totalFaltas),
         montarMetrica("Altas", resumo.totalAltas)
       ].join("");
