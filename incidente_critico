@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<!--
+  SAIC - Incidente Critico
+  Tela disponivel para usuarios autorizados do sistema.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base target="_top">
+  <title>Incidente Cr&iacute;tico - SiSMen</title>
+  <style>
+    :root {
+      --bg: #eef4f7;
+      --surface: #ffffff;
+      --surface-soft: #f7fbfc;
+      --ink: #263033;
+      --muted: #66747c;
+      --line: #d8e4e8;
+      --red: #b31f2a;
+      --red-soft: #f5e1e3;
+      --blue: #315f72;
+      --blue-soft: #dbeef5;
+      --green: #2f7d55;
+      --shadow: 0 18px 38px rgba(31, 48, 56, 0.10);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    label {
+      color: var(--ink);
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 7px;
+    }
+
+    input,
+    select,
+    textarea {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      min-height: 42px;
+      outline: none;
+      padding: 10px 12px;
+      width: 100%;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(49, 95, 114, 0.14);
+    }
+
+    input[readonly] {
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      color: #ffffff;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 18px;
+      position: sticky;
+      top: 0;
+    }
+
+    .sidebar::after {
+      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
+      content: "";
+      height: 100%;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 2px;
+    }
+
+    .brand {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      padding-bottom: 22px;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .brand span {
+      color: rgba(255, 255, 255, 0.76);
+      display: block;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 26px;
+    }
+
+    .side-nav button {
+      background: transparent;
+      border-radius: var(--radius);
+      color: rgba(255, 255, 255, 0.84);
+      min-height: 42px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .side-nav button.active,
+    .side-nav button:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .side-nav-separator {
+      background: rgba(255, 255, 255, 0.16);
+      height: 1px;
+      margin: 10px 0;
+    }
+
+    .side-nav button.nav-voltar {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+
+    .content {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .page-banner {
+      background: linear-gradient(135deg, #ffffff 0%, #eef6f8 100%);
+      border: 1px solid rgba(216, 228, 232, 0.8);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-height: 142px;
+      overflow: hidden;
+      padding: 28px 30px;
+      position: relative;
+    }
+
+    .page-banner::before,
+    .page-banner::after {
+      content: "";
+      height: 8px;
+      left: 0;
+      pointer-events: none;
+      position: absolute;
+      width: 100%;
+    }
+
+    .page-banner::before {
+      background: linear-gradient(100deg, var(--red) 0%, rgba(179, 31, 42, 0.7) 34%, transparent 86%);
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+      top: 0;
+    }
+
+    .page-banner::after {
+      background: linear-gradient(280deg, #75848a 0%, rgba(117, 132, 138, 0.62) 36%, transparent 88%);
+      bottom: 0;
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .banner-content {
+      align-items: center;
+      display: flex;
+      gap: 20px;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+    }
+
+    .page-banner h1 {
+      color: var(--ink);
+      font-size: clamp(30px, 4vw, 44px);
+      letter-spacing: 0;
+      line-height: 1.08;
+      margin: 0;
+    }
+
+    .page-banner span {
+      color: var(--muted);
+      display: block;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .summary-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-width: 230px;
+      padding: 16px;
+    }
+
+    .summary-card small {
+      color: var(--muted);
+      display: block;
+      font-weight: 800;
+    }
+
+    .summary-card strong {
+      color: var(--ink);
+      display: block;
+      font-size: 18px;
+      margin-top: 6px;
+    }
+
+    .status-line {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      margin: 18px 0;
+      min-height: 22px;
+    }
+
+    .status-line.error {
+      color: #b42318;
+    }
+
+    .status-line.success {
+      color: var(--green);
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-top: 18px;
+      padding: 22px;
+    }
+
+    .section-title {
+      align-items: center;
+      color: var(--ink);
+      display: flex;
+      font-size: 19px;
+      gap: 10px;
+      line-height: 1.2;
+      margin: 0 0 18px;
+    }
+
+    .section-title::before {
+      background: var(--red);
+      border-radius: 999px;
+      content: "";
+      height: 24px;
+      width: 4px;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .field-span-2 {
+      grid-column: span 2;
+    }
+
+    .check-field {
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-height: 42px;
+      padding: 10px 12px;
+    }
+
+    .check-field > label {
+      margin-bottom: 8px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .checkbox-option {
+      align-items: center;
+      color: var(--ink);
+      display: flex;
+      font-size: 13px;
+      font-weight: 800;
+      gap: 7px;
+      margin: 0;
+    }
+
+    .checkbox-option input {
+      min-height: auto;
+      width: auto;
+    }
+
+    .actions {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(49, 95, 114, 0.16);
+      color: #ffffff;
+      min-height: 44px;
+      padding: 11px 16px;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      min-height: 44px;
+      padding: 11px 16px;
+    }
+
+    .saving-inline {
+      align-items: center;
+      color: var(--muted);
+      display: inline-flex;
+      font-size: 13px;
+      font-weight: 800;
+      gap: 8px;
+      min-height: 28px;
+    }
+
+    .saving-inline.success {
+      color: var(--green);
+    }
+
+    .saving-inline.error {
+      color: #b42318;
+    }
+
+    .saving-spinner,
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border-radius: 999px;
+      border-style: solid;
+    }
+
+    .saving-spinner {
+      border-color: rgba(49, 95, 114, 0.18);
+      border-top-color: var(--blue);
+      border-width: 2px;
+      height: 16px;
+      width: 16px;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: var(--ink);
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      border-color: rgba(49, 95, 114, 0.18);
+      border-top-color: var(--blue);
+      border-width: 3px;
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .required-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 8px 0 0;
+    }
+
+    @media (max-width: 980px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        position: relative;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .banner-content {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .grid-2,
+      .grid-3,
+      .grid-4,
+      .field-span-2 {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      body {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        font-size: 16px;
+        min-height: 52px;
+        padding: 13px 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando pagina">
+    <div class="navegacao-card">
+      <span class="navegacao-spinner"></span>
+      <strong id="navegacaoMensagem">Carregando...</strong>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Incidente Critico">
+      <div class="brand">
+        <strong>Incidente Cr&iacute;tico</strong>
+        <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+      </div>
+
+      <nav class="side-nav">
+        <button type="button" class="active">Incidente Cr&iacute;tico</button>
+        <div class="side-nav-separator" aria-hidden="true"></div>
+        <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="page-banner">
+        <div class="banner-content">
+          <div>
+            <p class="eyebrow">Incidente Cr&iacute;tico</p>
+            <h1>Registro de Incidente</h1>
+            <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+          </div>
+          <div class="summary-card">
+            <small>Respons&aacute;vel</small>
+            <strong id="resumoResponsavel">Carregando</strong>
+            <span id="resumoNaps">NAPS n&atilde;o informado</span>
+          </div>
+        </div>
+      </header>
+
+      <div id="statusTela" class="status-line"><?= mensagemLoginInicial ?></div>
+
+      <section class="section" aria-label="Identificacao do relatorio">
+        <h2 class="section-title">Identifica&ccedil;&atilde;o do Relat&oacute;rio</h2>
+        <div class="grid-3">
+          <div>
+            <label for="numeroRelatorio">N&uacute;mero do Relat&oacute;rio</label>
+            <input id="numeroRelatorio" type="text" value="Carregando..." readonly>
+          </div>
+
+          <div>
+            <label for="dataFato">Data do Fato</label>
+            <input id="dataFato" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)" required>
+          </div>
+
+          <div>
+            <label for="dataAcionamento">Data do Acionamento</label>
+            <input id="dataAcionamento" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this)" onblur="validarAnoDataCampo(this)" required>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Dados pessoais e funcionais">
+        <h2 class="section-title">Dados Pessoais e Funcionais</h2>
+        <div class="grid-4">
+          <div>
+            <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
+            <select id="postoGraduacao" required>
+              <option value="">Selecione</option>
+              <option>Sd PM</option>
+              <option>Cb PM</option>
+              <option>3&ordm; Sgt PM</option>
+              <option>2&ordm; Sgt PM</option>
+              <option>1&ordm; Sgt PM</option>
+              <option>Subten PM</option>
+              <option>Asp of PM</option>
+              <option>2&ordm; Ten PM</option>
+              <option>1&ordm; Ten PM</option>
+              <option>Cap PM</option>
+              <option>Maj PM</option>
+              <option>Ten Cel PM</option>
+              <option>Cel PM</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="re">R.E.</label>
+            <input id="re" type="text" placeholder="000000-0" oninput="mascaraRE(this)" required>
+          </div>
+
+          <div>
+            <label for="situacaoStatus">Situa&ccedil;&atilde;o/Status</label>
+            <select id="situacaoStatus" required>
+              <option value="">Selecione</option>
+              <option>agregado(a)</option>
+              <option>ativo administrativo</option>
+              <option>ativo operacional</option>
+              <option>exonerado(a)</option>
+              <option>inativo</option>
+              <option>inativo (falecido/a)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="sexo">Sexo</label>
+            <select id="sexo" required>
+              <option value="">Selecione</option>
+              <option>masculino</option>
+              <option>feminino</option>
+              <option>nao informado</option>
+            </select>
+          </div>
+
+          <div class="field-span-2">
+            <label for="nome">Nome</label>
+            <input id="nome" type="text" oninput="converterMaiusculasSemAcento(this)" required>
+          </div>
+
+          <div>
+            <label for="opmAtual">OPM Atual/&Uacute;ltima</label>
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="OPM ou unidade" oninput="converterMaiusculasSemAcento(this)" required>
+            <datalist id="listaOPM">
+              <option value="1.BAEP">1.BAEP</option>
+              <option value="1.BPAMB">1.BPAMB</option>
+              <option value="1.BPCHQ">1.BPCHQ</option>
+              <option value="1.BPM/I">1.BPM/I</option>
+              <option value="1.BPM/M">1.BPM/M</option>
+              <option value="1.BPRV">1.BPRV</option>
+              <option value="1.BPTRAN">1.BPTRAN</option>
+              <option value="1.EM/PM">1.EM/PM</option>
+              <option value="1.GB">1.GB</option>
+              <option value="10.BAEP">10.BAEP</option>
+              <option value="10.BPM/I">10.BPM/I</option>
+              <option value="10.BPM/M">10.BPM/M</option>
+              <option value="10.GB">10.GB</option>
+              <option value="11.BAEP">11.BAEP</option>
+              <option value="11.BPM/I">11.BPM/I</option>
+              <option value="11.BPM/M">11.BPM/M</option>
+              <option value="11.GB">11.GB</option>
+              <option value="12.BAEP">12.BAEP</option>
+              <option value="12.BPM/I">12.BPM/I</option>
+              <option value="12.BPM/M">12.BPM/M</option>
+              <option value="12.GB">12.GB</option>
+              <option value="13.BAEP">13.BAEP</option>
+              <option value="13.BPM/I">13.BPM/I</option>
+              <option value="13.BPM/M">13.BPM/M</option>
+              <option value="13.GB">13.GB</option>
+              <option value="14.BAEP">14.BAEP</option>
+              <option value="14.BPM/I">14.BPM/I</option>
+              <option value="14BPM/M">14BPM/M</option>
+              <option value="14.GB">14.GB</option>
+              <option value="15.BAEP">15.BAEP</option>
+              <option value="15.BPM/I">15.BPM/I</option>
+              <option value="15.BPM/M">15.BPM/M</option>
+              <option value="15.GB">15.GB</option>
+              <option value="16.BPM/I">16.BPM/I</option>
+              <option value="16.BPM/M">16.BPM/M</option>
+              <option value="16.GB">16.GB</option>
+              <option value="17.BPM/I">17.BPM/I</option>
+              <option value="17.BPM/M">17.BPM/M</option>
+              <option value="17.GB">17.GB</option>
+              <option value="18.BPM/I">18.BPM/I</option>
+              <option value="18.BPM/M">18.BPM/M</option>
+              <option value="18.GB">18.GB</option>
+              <option value="19.BPM/I">19.BPM/I</option>
+              <option value="19.BPM/M">19.BPM/M</option>
+              <option value="19.GB">19.GB</option>
+              <option value="2.BAEP">2.BAEP</option>
+              <option value="2.BPAMB">2.BPAMB</option>
+              <option value="2.BPCHQ">2.BPCHQ</option>
+              <option value="2.BPM/I">2.BPM/I</option>
+              <option value="2.BPM/M">2.BPM/M</option>
+              <option value="2.BPRV">2.BPRV</option>
+              <option value="2.BPTRAN">2.BPTRAN</option>
+              <option value="2.EM/PM">2.EM/PM</option>
+              <option value="2.GB">2.GB</option>
+              <option value="20.BPM/I">20.BPM/I</option>
+              <option value="20.BPM/M">20.BPM/M</option>
+              <option value="20.GB">20.GB</option>
+              <option value="21.BPM/I">21.BPM/I</option>
+              <option value="21.BPM/M">21.BPM/M</option>
+              <option value="22.BPM/I">22.BPM/I</option>
+              <option value="22.BPM/M">22.BPM/M</option>
+              <option value="23.BPM/I">23.BPM/I</option>
+              <option value="23.BPM/M">23.BPM/M</option>
+              <option value="24.BPM/I">24.BPM/I</option>
+              <option value="24.BPM/M">24.BPM/M</option>
+              <option value="25.BPM/I">25.BPM/I</option>
+              <option value="25.BPM/M">25.BPM/M</option>
+              <option value="26.BPM/I">26.BPM/I</option>
+              <option value="26.BPM/M">26.BPM/M</option>
+              <option value="27.BPM/I">27.BPM/I</option>
+              <option value="27.BPM/M">27.BPM/M</option>
+              <option value="28.BPM/I">28.BPM/I</option>
+              <option value="28.BPM/M">28.BPM/M</option>
+              <option value="29.BPM/I">29.BPM/I</option>
+              <option value="29.BPM/M">29.BPM/M</option>
+              <option value="3.BAEP">3.BAEP</option>
+              <option value="3.BPAMB">3.BPAMB</option>
+              <option value="3.BPCHQ">3.BPCHQ</option>
+              <option value="3.BPM/I">3.BPM/I</option>
+              <option value="3.BPM/M">3.BPM/M</option>
+              <option value="3.GB">3.GB</option>
+              <option value="30.BPM/I">30.BPM/I</option>
+              <option value="30.BPM/M">30.BPM/M</option>
+              <option value="31.BPM/I">31.BPM/I</option>
+              <option value="31.BPM/M">31.BPM/M</option>
+              <option value="32.BPM/I">32.BPM/I</option>
+              <option value="32.BPM/M">32.BPM/M</option>
+              <option value="33.BPM/I">33.BPM/I</option>
+              <option value="33.BPM/M">33.BPM/M</option>
+              <option value="34.BPM/I">34.BPM/I</option>
+              <option value="35.BPM/I">35.BPM/I</option>
+              <option value="35.BPM/M">35.BPM/M</option>
+              <option value="36.BPM/I">36.BPM/I</option>
+              <option value="36.BPM/M">36.BPM/M</option>
+              <option value="37.BPM/I">37.BPM/I</option>
+              <option value="37.BPM/M">37.BPM/M</option>
+              <option value="38.BPM/I">38.BPM/I</option>
+              <option value="38.BPM/M">38.BPM/M</option>
+              <option value="39.BPM/I">39.BPM/I</option>
+              <option value="39.BPM/M">39.BPM/M</option>
+              <option value="4.BAEP">4.BAEP</option>
+              <option value="4.BPAMB">4.BPAMB</option>
+              <option value="4.BPCHQ">4.BPCHQ</option>
+              <option value="4.GB">4.GB</option>
+              <option value="40.BPM/I">40.BPM/I</option>
+              <option value="40.BPM/M">40.BPM/M</option>
+              <option value="41.BPM/I">41.BPM/I</option>
+              <option value="42.BPM/I">42.BPM/I</option>
+              <option value="43.BPM/I">43.BPM/I</option>
+              <option value="43.BPM/M">43.BPM/M</option>
+              <option value="44.BPM/I">44.BPM/I</option>
+              <option value="44.BPM/M">44.BPM/M</option>
+              <option value="45.BPM/I">45.BPM/I</option>
+              <option value="46.BPM/M">46.BPM/M</option>
+              <option value="47.BPM/I">47.BPM/I</option>
+              <option value="48.BPM/I">48.BPM/I</option>
+              <option value="48.BPM/M">48.BPM/M</option>
+              <option value="49.BPM/I">49.BPM/I</option>
+              <option value="49.BPM/M">49.BPM/M</option>
+              <option value="5.BAEP">5.BAEP</option>
+              <option value="5.BPAMB">5.BPAMB</option>
+              <option value="5.BPCHQ">5.BPCHQ</option>
+              <option value="5.BPM/I">5.BPM/I</option>
+              <option value="5.BPM/M">5.BPM/M</option>
+              <option value="5.BPRV">5.BPRV</option>
+              <option value="5.GB">5.GB</option>
+              <option value="50.BPM/M">50.BPM/M</option>
+              <option value="51.BPM/I">51.BPM/I</option>
+              <option value="52.BPM/I">52.BPM/I</option>
+              <option value="53.BPM/I">53.BPM/I</option>
+              <option value="54.BPM/I">54.BPM/I</option>
+              <option value="55.BPM/I">55.BPM/I</option>
+              <option value="6.BAEP">6.BAEP</option>
+              <option value="6.BPM/I">6.BPM/I</option>
+              <option value="6.BPM/M">6.BPM/M</option>
+              <option value="6.BPRV">6.BPRV</option>
+              <option value="6.EM/PM">6.EM/PM</option>
+              <option value="6.GB">6.GB</option>
+              <option value="7.BAEP">7.BAEP</option>
+              <option value="7.BPM/I">7.BPM/I</option>
+              <option value="7.BPM/M">7.BPM/M</option>
+              <option value="7.GB">7.GB</option>
+              <option value="8.BAEP">8.BAEP</option>
+              <option value="8.BPM/I">8.BPM/I</option>
+              <option value="8.BPM/M">8.BPM/M</option>
+              <option value="8.GB">8.GB</option>
+              <option value="9.BAEP">9.BAEP</option>
+              <option value="9.BPM/I">9.BPM/I</option>
+              <option value="9.BPM/M">9.BPM/M</option>
+              <option value="9.GB">9.GB</option>
+              <option value="APMAL">APMAL</option>
+              <option value="APMBB">APMBB</option>
+              <option value="APMCG">APMCG</option>
+              <option value="APMCGE">APMCGE</option>
+              <option value="APMCMSP">APMCMSP</option>
+              <option value="APMPGE">APMPGE</option>
+              <option value="APMPGJ">APMPGJ</option>
+              <option value="APMPMSP">APMPMSP</option>
+              <option value="APMSAP">APMSAP</option>
+              <option value="APMSEFAZ">APMSEFAZ</option>
+              <option value="APMSJC">APMSJC</option>
+              <option value="APMSSP">APMSSP</option>
+              <option value="APMTCE">APMTCE</option>
+              <option value="APMTJ">APMTJ</option>
+              <option value="APMTJM">APMTJM</option>
+              <option value="C COM SOC">C COM SOC</option>
+              <option value="C MED">C MED</option>
+              <option value="C MIL">C MIL</option>
+              <option value="C MUS">C MUS</option>
+              <option value="C ODONT">C ODONT</option>
+              <option value="CAES">CAES</option>
+              <option value="CAJ">CAJ</option>
+              <option value="CAPS">CAPS</option>
+              <option value="CAVPM">CAVPM</option>
+              <option value="CBI-1">CBI-1</option>
+              <option value="CBI-2">CBI-2</option>
+              <option value="CBI-3">CBI-3</option>
+              <option value="CBM">CBM</option>
+              <option value="CCB">CCB</option>
+              <option value="CAIF">CAIF</option>
+              <option value="CIAP">CIAP</option>
+              <option value="CIPM">CIPM</option>
+              <option value="CMB">CMB</option>
+              <option value="CMI">CMI</option>
+              <option value="CMM">CMM</option>
+              <option value="CMT GERAL">CMT GERAL</option>
+              <option value="COORD OP PM">COORD OP PM</option>
+              <option value="COPOM">COPOM</option>
+              <option value="CORREG PM">CORREG PM</option>
+              <option value="CPA/M-1">CPA/M-1</option>
+              <option value="CPA/M-10">CPA/M-10</option>
+              <option value="CPA/M-11">CPA/M-11</option>
+              <option value="CPA/M-12">CPA/M-12</option>
+              <option value="CPA/M-2">CPA/M-2</option>
+              <option value="CPA/M-3">CPA/M-3</option>
+              <option value="CPA/M-4">CPA/M-4</option>
+              <option value="CPA/M-5">CPA/M-5</option>
+              <option value="CPA/M-6">CPA/M-6</option>
+              <option value="CPA/M-7">CPA/M-7</option>
+              <option value="CPA/M-8">CPA/M-8</option>
+              <option value="CPA/M-9">CPA/M-9</option>
+              <option value="CPAMB">CPAMB</option>
+              <option value="CPC">CPC</option>
+              <option value="CPCHQ">CPCHQ</option>
+              <option value="CPD">CPD</option>
+              <option value="CPI-1">CPI-1</option>
+              <option value="CPI-10">CPI-10</option>
+              <option value="CPI-2">CPI-2</option>
+              <option value="CPI-3">CPI-3</option>
+              <option value="CPI-4">CPI-4</option>
+              <option value="CPI-5">CPI-5</option>
+              <option value="CPI-6">CPI-6</option>
+              <option value="CPI-7">CPI-7</option>
+              <option value="CPI-8">CPI-8</option>
+              <option value="CPI-9">CPI-9</option>
+              <option value="CPM">CPM</option>
+              <option value="CPRV">CPRV</option>
+              <option value="CPTRAN">CPTRAN</option>
+              <option value="CRPM">CRPM</option>
+              <option value="CSM/MOPB">CSM/MOPB</option>
+              <option value="DEC">DEC</option>
+              <option value="DF">DF</option>
+              <option value="DL">DL</option>
+              <option value="DP">DP</option>
+              <option value="DPCDH">DPCDH</option>
+              <option value="DS">DS</option>
+              <option value="DAS/CG">DAS/CG</option>
+              <option value="DTIC">DTIC</option>
+              <option value="EEF">EEF</option>
+              <option value="EM/E">EM/E</option>
+              <option value="EM/PM">EM/PM</option>
+              <option value="ESB">ESB</option>
+              <option value="ESSD">ESSD</option>
+              <option value="ESSGT">ESSGT</option>
+              <option value="GAB CMT G">GAB CMT G</option>
+              <option value="GBMAR">GBMAR</option>
+              <option value="GOV">GOV</option>
+              <option value="PMRG">PMRG</option>
+              <option value="RPMON">RPMON</option>
+              <option value="SSP">SSP</option>
+              <option value="SUBCMT PM">SUBCMT PM</option>
+            </datalist>
+          </div>
+
+          <div class="check-field">
+            <label>Escala</label>
+            <div class="checkbox-row">
+              <label class="checkbox-option" for="servico">
+                <input id="servico" type="checkbox" value="servico" onchange="alternarServicoFolga(this)">
+                Servi&ccedil;o
+              </label>
+              <label class="checkbox-option" for="folga">
+                <input id="folga" type="checkbox" value="folga" onchange="alternarServicoFolga(this)">
+                Folga
+              </label>
+              <label class="checkbox-option" for="inTinere">
+                <input id="inTinere" type="checkbox" value="in tinere" onchange="alternarServicoFolga(this)">
+                In tinere
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Dados do incidente">
+        <h2 class="section-title">Dados do Incidente</h2>
+        <div class="grid-2">
+          <div>
+            <label for="vitima">V&iacute;tima</label>
+            <select id="vitima" required>
+              <option value="">Selecione</option>
+              <option value="pai">Pai</option>
+              <option value="mae">M&atilde;e</option>
+              <option value="policial militar">Policial Militar</option>
+              <option value="filho(a)">Filho(a)</option>
+              <option value="irmao(a)">Irm&atilde;o(a)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="modalidade">Modalidade</label>
+            <select id="modalidade" required>
+              <option value="">Selecione</option>
+              <option value="caso fortuito">CASO FORTUITO</option>
+              <option value="falecimento de familiar">FALECIMENTO DE FAMILIAR</option>
+              <option value="homicidio">HOMIC&Iacute;DIO</option>
+              <option value="morte natural/patologias">MORTE NATURAL/ PATOLOGIAS</option>
+              <option value="suicidio">SUIC&Iacute;DIO</option>
+              <option value="tentativa de suicidio">TENTATIVA DE SUIC&Iacute;DIO</option>
+              <option value="acidente de transito">ACIDENTE DE TR&Acirc;NSITO</option>
+              <option value="morte em servico">MORTE EM SERVI&Ccedil;O</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="required-note">Campos obrigat&oacute;rios devem ser preenchidos antes do salvamento.</p>
+      </section>
+
+      <section class="section" aria-label="Equipe">
+        <h2 class="section-title">Equipe</h2>
+        <div class="grid-4">
+          <div>
+            <label for="oficialSobreaviso">Oficial de Sobreaviso</label>
+            <input id="oficialSobreaviso" type="text" list="listaOficialSobreaviso" oninput="converterMaiusculasSemAcento(this)">
+            <datalist id="listaOficialSobreaviso"></datalist>
+          </div>
+
+          <div>
+            <label for="psicologo">Psic&oacute;logo Respons&aacute;vel</label>
+            <input id="psicologo" type="text" readonly>
+          </div>
+
+          <div>
+            <label for="assistenteSocial">Assistente Social</label>
+            <input id="assistenteSocial" type="text" list="listaAssistenteSocial" oninput="converterMaiusculasSemAcento(this)">
+            <datalist id="listaAssistenteSocial"></datalist>
+          </div>
+
+          <div>
+            <label for="motorista">Motorista</label>
+            <input id="motorista" type="text" list="listaMotorista" oninput="converterMaiusculasSemAcento(this)">
+            <datalist id="listaMotorista"></datalist>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Salvar incidente">
+        <h2 class="section-title">Finalizar</h2>
+        <div class="actions">
+          <button id="btnSalvarIncidente" type="button" class="btn-primary" onclick="salvarIncidente()">Salvar Incidente Cr&iacute;tico</button>
+          <span id="statusSalvarIncidente" class="saving-inline"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const webAppUrl = "<?= webAppUrl ?>";
+    let tokenGoogle = "<?= tokenGoogleInicial ?>";
+    let usuarioLogado = <?!= usuarioInicialJson ?>;
+    let mensagemLoginInicial = <?!= JSON.stringify(mensagemLoginInicial || "") ?>;
+
+    window.addEventListener("load", function() {
+      if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
+        mostrarStatus(mensagemLoginInicial || "Abra Incidente Cr\u00edtico pelo menu do formulario.", "error");
+        bloquearTela();
+        return;
+      }
+
+      document.getElementById("resumoResponsavel").innerText = formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email || "Responsavel");
+      document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
+      preencherPsicologoResponsavel();
+      preencherDatasIncidenteSeVazias();
+      carregarNumeroRelatorioIncidente();
+      carregarOpcoesEquipeIncidente();
+      registrarLimpezaStatusAoEditar();
+      mostrarStatus("Pronto para registrar incidente critico.", "");
+    });
+
+    function voltarAoAtendimento() {
+      if (!tokenGoogle || !webAppUrl) {
+        mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
+        return;
+      }
+
+      const botao = document.getElementById("nav-voltar-atendimento");
+      if (botao) {
+        botao.disabled = true;
+        botao.innerText = "Carregando Atendimento...";
+      }
+
+      mostrarCarregamentoNavegacao("Carregando Atendimento...");
+
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = webAppUrl;
+      form.target = "_top";
+      form.style.display = "none";
+
+      const campoToken = document.createElement("input");
+      campoToken.type = "hidden";
+      campoToken.name = "credential";
+      campoToken.value = tokenGoogle;
+
+      const campoDestino = document.createElement("input");
+      campoDestino.type = "hidden";
+      campoDestino.name = "state";
+      campoDestino.value = "index";
+
+      form.appendChild(campoToken);
+      form.appendChild(campoDestino);
+      document.body.appendChild(form);
+
+      setTimeout(function() {
+        form.submit();
+        form.remove();
+      }, 80);
+    }
+
+    function salvarIncidente() {
+      if (!validarFormularioIncidente()) return;
+
+      definirStatusSalvar(true, "Salvando incidente cr\u00edtico...");
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          definirStatusSalvar(false, "Salvo.", "success");
+          limparFormularioIncidente();
+          carregarNumeroRelatorioIncidente();
+          mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Incidente Cr\u00edtico salvo com sucesso.", "success");
+        })
+        .withFailureHandler(function(erro) {
+          definirStatusSalvar(false, obterMensagemErro(erro), "error");
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .salvarIncidenteCritico(montarDadosIncidente(), tokenGoogle);
+    }
+
+    function montarDadosIncidente() {
+      return {
+        numeroRelatorio: valorCampo("numeroRelatorio"),
+        dataFato: valorDataCampo("dataFato"),
+        dataAcionamento: valorDataCampo("dataAcionamento"),
+        postoGraduacao: valorCampo("postoGraduacao"),
+        re: valorCampo("re"),
+        nome: valorCampo("nome"),
+        opmAtual: valorCampo("opmAtual"),
+        situacaoStatus: valorCampo("situacaoStatus"),
+        oficialSobreaviso: valorCampo("oficialSobreaviso"),
+        psicologo: valorCampo("psicologo"),
+        assistenteSocial: valorCampo("assistenteSocial"),
+        motorista: valorCampo("motorista"),
+        vitima: valorCampo("vitima"),
+        sexo: valorCampo("sexo"),
+        modalidade: valorCampo("modalidade"),
+        servico: obterServicoIncidente()
+      };
+    }
+
+    function validarFormularioIncidente() {
+      const idsObrigatorios = [
+        "dataFato",
+        "dataAcionamento",
+        "postoGraduacao",
+        "re",
+        "nome",
+        "opmAtual",
+        "situacaoStatus",
+        "vitima",
+        "sexo",
+        "modalidade"
+      ];
+      const camposComErro = [];
+
+      document.querySelectorAll("input, select, textarea").forEach(limparErroVisualCampo);
+
+      idsObrigatorios.forEach(function(id) {
+        const campo = document.getElementById(id);
+
+        if (campo && !campo.value.trim()) {
+          marcarCampoObrigatorio(campo);
+          camposComErro.push(campo);
+        }
+      });
+
+      if (!validarDatasFormulario(["dataFato", "dataAcionamento"], ["dataFato", "dataAcionamento"])) {
+        camposComErro.push(document.getElementById("dataFato"));
+      }
+
+      if (camposComErro.length > 0) {
+        mostrarStatus("Preencha os campos obrigatorios destacados.", "error");
+        camposComErro[0].focus();
+        return false;
+      }
+
+      return true;
+    }
+
+    function limparFormularioIncidente() {
+      document.querySelectorAll("input, select, textarea").forEach(function(campo) {
+        if (campo.id === "numeroRelatorio" || campo.id === "psicologo") return;
+
+        if (campo.type === "checkbox") {
+          campo.checked = false;
+        } else {
+          campo.value = "";
+        }
+
+        limparErroVisualCampo(campo);
+      });
+
+      preencherPsicologoResponsavel();
+      preencherDatasIncidenteSeVazias();
+    }
+
+    function carregarNumeroRelatorioIncidente() {
+      const campo = document.getElementById("numeroRelatorio");
+      if (campo) campo.value = "Carregando...";
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          if (campo) {
+            campo.value = retorno && retorno.numeroRelatorio
+              ? retorno.numeroRelatorio
+              : "Gerado ao salvar";
+          }
+        })
+        .withFailureHandler(function() {
+          if (campo) campo.value = "Gerado ao salvar";
+        })
+        .obterNumeroRelatorioIncidenteCritico(tokenGoogle);
+    }
+
+    function preencherDatasIncidenteSeVazias() {
+      const hoje = formatarDataBrasil(new Date());
+      const campos = ["dataFato", "dataAcionamento"];
+
+      campos.forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo && !campo.value.trim()) campo.value = hoje;
+      });
+    }
+
+    function formatarDataBrasil(data) {
+      const dia = String(data.getDate()).padStart(2, "0");
+      const mes = String(data.getMonth() + 1).padStart(2, "0");
+      const ano = data.getFullYear();
+
+      return dia + "/" + mes + "/" + ano;
+    }
+
+    function alternarServicoFolga(campoMarcado) {
+      if (!campoMarcado || !campoMarcado.checked) return;
+
+      ["servico", "folga", "inTinere"].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo && campo !== campoMarcado) campo.checked = false;
+      });
+    }
+
+    function obterServicoIncidente() {
+      if (document.getElementById("servico") && document.getElementById("servico").checked) return "servico";
+      if (document.getElementById("folga") && document.getElementById("folga").checked) return "folga";
+      if (document.getElementById("inTinere") && document.getElementById("inTinere").checked) return "in tinere";
+
+      return "";
+    }
+
+    function preencherPsicologoResponsavel() {
+      const campo = document.getElementById("psicologo");
+      if (!campo) return;
+
+      campo.value = usuarioLogado && (usuarioLogado.nome || usuarioLogado.email)
+        ? formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email)
+        : "";
+      limparErroVisualCampo(campo);
+    }
+
+    function formatarResponsavelSistema(texto) {
+      const original = String(texto || "").trim();
+      const conectivos = {
+        "da": true,
+        "de": true,
+        "do": true,
+        "das": true,
+        "dos": true,
+        "e": true
+      };
+
+      if (!original) return "";
+      if (original.indexOf("@") >= 0) return original.toLowerCase();
+
+      return original
+        .toLowerCase()
+        .split(/\s+/)
+        .map(function(parte, indice) {
+          const limpa = parte.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+          if (limpa === "pm") return "PM";
+          if (indice > 0 && conectivos[limpa]) return limpa;
+          if (/^\d/.test(parte)) return parte.replace(/[a-zA-Z]+/g, function(trecho) {
+            return trecho.charAt(0).toUpperCase() + trecho.slice(1);
+          });
+
+          return parte.charAt(0).toUpperCase() + parte.slice(1);
+        })
+        .join(" ");
+    }
+
+    function carregarOpcoesEquipeIncidente() {
+      google.script.run
+        .withSuccessHandler(function(opcoes) {
+          popularListaEquipeIncidente("listaOficialSobreaviso", opcoes && opcoes.oficialSobreaviso);
+          popularListaEquipeIncidente("listaAssistenteSocial", opcoes && opcoes.assistenteSocial);
+          popularListaEquipeIncidente("listaMotorista", opcoes && opcoes.motorista);
+        })
+        .withFailureHandler(function() {})
+        .obterOpcoesEquipeIncidente(tokenGoogle);
+    }
+
+    function popularListaEquipeIncidente(idLista, nomes) {
+      const lista = document.getElementById(idLista);
+      if (!lista) return;
+
+      lista.innerHTML = "";
+      (nomes || []).forEach(function(nome) {
+        const option = document.createElement("option");
+        option.value = nome;
+        lista.appendChild(option);
+      });
+    }
+
+    function registrarLimpezaStatusAoEditar() {
+      document.querySelectorAll("input, select, textarea").forEach(function(campo) {
+        campo.addEventListener("input", limparStatusOperacao);
+        campo.addEventListener("change", limparStatusOperacao);
+      });
+    }
+
+    function limparStatusOperacao() {
+      mostrarStatus("", "");
+      definirStatusSalvar(false, "");
+    }
+
+    function bloquearTela() {
+      document.querySelectorAll("input, select, textarea, button:not(#nav-voltar-atendimento)").forEach(function(campo) {
+        campo.disabled = true;
+      });
+    }
+
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function definirStatusSalvar(salvando, texto, tipo) {
+      const el = document.getElementById("statusSalvarIncidente");
+      const botao = document.getElementById("btnSalvarIncidente");
+
+      if (botao) botao.disabled = salvando;
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = salvando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Salvando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function valorCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? campo.value.trim() : "";
+    }
+
+    function valorDataCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? converterDataBrasilParaISO(campo.value) : "";
+    }
+
+    function converterMaiusculasSemAcento(campo) {
+      campo.value = String(campo.value || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function mascaraRE(campo) {
+      let valor = campo.value.toUpperCase().replace(/[^0-9A]/g, "");
+      let numerosAntesHifen = "";
+      let digitoFinal = "";
+
+      for (let i = 0; i < valor.length; i++) {
+        const caractere = valor.charAt(i);
+
+        if (numerosAntesHifen.length < 6) {
+          if (/[0-9]/.test(caractere)) numerosAntesHifen += caractere;
+          continue;
+        }
+
+        if (!digitoFinal && /[0-9A]/.test(caractere)) {
+          digitoFinal = caractere;
+          break;
+        }
+      }
+
+      campo.value = digitoFinal ? numerosAntesHifen + "-" + digitoFinal : numerosAntesHifen;
+    }
+
+    function mascaraDataBrasil(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+
+      campo.value = valor;
+    }
+
+    function validarAnoDataCampo(campo) {
+      if (!campo.value) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      if (dataBrasilValida(campo.value)) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      campo.style.border = "2px solid #d32f2f";
+      return false;
+    }
+
+    function validarDatasFormulario(ids, obrigatorios) {
+      const obrigatoriosMapa = {};
+      let valido = true;
+
+      (obrigatorios || []).forEach(function(id) {
+        obrigatoriosMapa[id] = true;
+      });
+
+      ids.forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        if (obrigatoriosMapa[id] && !campo.value.trim()) {
+          campo.style.border = "2px solid #d32f2f";
+          valido = false;
+          return;
+        }
+
+        if (!validarAnoDataCampo(campo)) {
+          valido = false;
+        }
+      });
+
+      if (!valido) {
+        mostrarStatus("Confira as datas no formato dd/mm/aaaa.", "error");
+      }
+
+      return valido;
+    }
+
+    function dataBrasilValida(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return false;
+
+      const dia = Number(partes[1]);
+      const mes = Number(partes[2]);
+      const ano = Number(partes[3]);
+
+      if (ano < 1 || ano > 9999 || mes < 1 || mes > 12 || dia < 1) return false;
+
+      const data = new Date(ano, mes - 1, dia);
+
+      return data.getFullYear() === ano &&
+        data.getMonth() === mes - 1 &&
+        data.getDate() === dia;
+    }
+
+    function converterDataBrasilParaISO(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return "";
+
+      return partes[3] + "-" + partes[2] + "-" + partes[1];
+    }
+
+    function limparErroVisualCampo(campo) {
+      if (!campo) return;
+      campo.style.border = "1px solid var(--line)";
+    }
+
+    function marcarCampoObrigatorio(campo) {
+      if (!campo) return;
+      campo.style.border = "2px solid #d32f2f";
+    }
+
+    function mostrarStatus(mensagem, tipo) {
+      const el = document.getElementById("statusTela");
+      el.className = "status-line" + (tipo ? " " + tipo : "");
+      el.innerText = mensagem || "";
+    }
+
+    function obterMensagemErro(erro) {
+      return erro && erro.message ? erro.message : "Nao foi possivel concluir a operacao.";
+    }
+
+    function escaparHtml(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
