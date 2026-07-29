@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SAIC - Eventos Coletivos
+  SAIC - Grupos e Palestras
   Tela leve para Workshop, PROSEN e Palestras.
   Workshop/PROSEN recebem participantes nominais; Palestra registra quantidade.
 -->
@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Eventos Coletivos - SiSMen</title>
+  <title>Grupos e Palestras - SiSMen</title>
   <style>
     :root {
       --bg: #eef4f7;
@@ -320,6 +320,14 @@
 
     .section-title-row .section-title {
       margin-bottom: 0;
+    }
+
+    .section-title-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .grid-2 {
@@ -770,15 +778,14 @@
   </div>
 
   <div class="app-shell">
-    <aside class="sidebar" aria-label="Eventos coletivos">
+    <aside class="sidebar" aria-label="Grupos e Palestras">
       <div class="brand">
-        <strong>Eventos Coletivos</strong>
+        <strong>Grupos e Palestras</strong>
         <span>Workshop, PROSEN e Palestras</span>
       </div>
 
       <nav class="side-nav">
-        <button id="nav-workshop" type="button" class="active" onclick="selecionarEvento('workshop')">Workshop</button>
-        <button id="nav-prosen" type="button" onclick="selecionarEvento('prosen')">PROSEN</button>
+        <button id="nav-grupo" type="button" class="active" onclick="selecionarEvento('grupo')">Grupos</button>
         <button id="nav-palestra" type="button" onclick="selecionarEvento('palestra')">Palestras</button>
         <div class="side-nav-separator" aria-hidden="true"></div>
         <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
@@ -789,8 +796,8 @@
       <header class="page-banner">
         <div class="banner-content">
           <div>
-            <p class="eyebrow">Eventos Coletivos</p>
-            <h1 id="tituloPagina">Workshop</h1>
+            <p class="eyebrow">Grupos e Palestras</p>
+            <h1 id="tituloPagina">Grupos</h1>
             <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
           </div>
           <div class="summary-card">
@@ -809,7 +816,7 @@
         <div class="grid-3 event-grid">
           <div>
             <label for="tipoEvento">Tipo de evento</label>
-            <input id="tipoEvento" type="text" value="Workshop" readonly>
+            <input id="tipoEvento" type="text" value="Grupo" readonly>
           </div>
 
           <div>
@@ -824,7 +831,9 @@
 
           <div class="field-span-2">
             <label for="tema">Tema</label>
-            <input id="tema" type="text" placeholder="Tema do evento" oninput="converterMaiusculasSemAcento(this)">
+            <select id="tema" required>
+              <option value="">Selecione</option>
+            </select>
           </div>
 
           <div>
@@ -851,6 +860,7 @@
             <textarea id="observacoes" placeholder="Informa&ccedil;&otilde;es relevantes do evento"></textarea>
             <div class="event-cancel-row">
               <button id="btnCancelarEvento" type="button" class="btn-transparent" onclick="cancelarEvento()" style="display:none;">Cancelar evento</button>
+              <span id="statusCancelarEvento" class="saving-inline"></span>
             </div>
           </div>
         </div>
@@ -1227,8 +1237,9 @@
         <div id="linkActions" class="actions participant-actions">
           <div class="participant-actions-main">
             <button id="btnGerarLink" type="button" class="btn-primary" onclick="gerarLinkParticipantes()">Gerar link para participantes</button>
-            <button type="button" class="btn-primary" onclick="adicionarParticipanteManual()">Adicionar participante manual</button>
             <span id="statusGerarLink" class="saving-inline"></span>
+            <button id="btnAdicionarParticipanteManual" type="button" class="btn-primary" onclick="adicionarParticipanteManual()">Adicionar participante manual</button>
+            <span id="statusAdicionarParticipante" class="saving-inline"></span>
           </div>
           <button type="button" class="btn-transparent" onclick="limparFormularioParticipante()">Limpar participante</button>
         </div>
@@ -1246,7 +1257,10 @@
       <section id="listaPanel" class="section participant-panel" aria-label="Lista de participantes">
         <div class="section-title-row">
           <h2 class="section-title">Lista tempor&aacute;ria</h2>
-          <button id="btnAtualizarParticipantes" type="button" class="btn-secondary" onclick="atualizarParticipantesDoLink()">Atualizar participantes</button>
+          <div class="section-title-actions">
+            <button id="btnAtualizarParticipantes" type="button" class="btn-secondary" onclick="atualizarParticipantesDoLink()">Atualizar participantes</button>
+            <span id="statusAtualizarParticipantes" class="saving-inline"></span>
+          </div>
         </div>
         <div id="listaParticipantes"></div>
       </section>
@@ -1273,23 +1287,70 @@
     </div>
   </div>
 
+  <div id="modalCancelarParticipante" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloModalCancelarParticipante">
+    <div class="modal-box">
+      <h2 id="tituloModalCancelarParticipante">Cancelar participante?</h2>
+      <p>Este participante sair&aacute; da lista tempor&aacute;ria ativa, mas permanecer&aacute; registrado como cancelado.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="fecharModalCancelarParticipante()">Manter participante</button>
+        <button id="btnConfirmarCancelamentoParticipante" type="button" class="btn-danger" onclick="confirmarCancelamentoParticipante()">Cancelar participante</button>
+      </div>
+      <span id="statusCancelarParticipante" class="saving-inline"></span>
+    </div>
+  </div>
+
   <script>
     const webAppUrl = "<?= webAppUrl ?>";
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
     let tipoEventoInicial = "<?= tipoEventoInicial ?>";
-    let tipoEventoAtual = "workshop";
+    let tipoEventoAtual = "grupo";
     let idEventoAtual = "";
     let tokenEventoAtual = "";
     let linkParticipanteAtual = "";
     let participantesManuais = [];
     let participantesLink = [];
     let eventoRascunhoAberto = false;
+    let idParticipanteCancelamentoAtual = "";
 
     const rotulosEvento = {
-      workshop: "Workshop",
-      prosen: "PROSEN",
+      grupo: "Grupo",
       palestra: "Palestra"
+    };
+
+    const titulosEvento = {
+      grupo: "Grupos",
+      palestra: "Palestras"
+    };
+
+    const temasPorTipoEvento = {
+      grupo: [
+        "PPAD",
+        "PROSEN",
+        "GRP DE CONFLITOS INTERNOS",
+        "GRUPO PrAP",
+        "GRP DE FAMÍLIA",
+        "GRP DE MULHERES",
+        "Estresse",
+        "Intervenção focal APMBB",
+        "Conflitos Profissionais",
+        "Workshop"
+      ],
+      palestra: [
+        "PrAP",
+        "QUALIDADE DE VIDA / INATIVIDADE",
+        "ÁLCOOL E OUTRAS DROGAS",
+        "PPMS",
+        "PROSEN: REL. CONJ. / INTERPES",
+        "INTELIGÊNCIA EMOCIONAL",
+        "FATORES DE RISCO E DE PROTEÇÃO",
+        "MUDANÇA DE IDENTIDADE",
+        "CAPS na OPM",
+        "FUNCIONAMENTO NAPS",
+        "Gestão das Emoções",
+        "Relacionamento Interno no Trabalho",
+        "Pós-Venção"
+      ]
     };
 
     window.addEventListener("load", function() {
@@ -1297,7 +1358,7 @@
       document.getElementById("dataEvento").value = formatarDataBrasilInput(hoje);
 
       if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
-        mostrarStatus("Abra Eventos Coletivos pelo menu do formulario.", "error");
+        mostrarStatus("Abra Grupos e Palestras pelo menu do formulario.", "error");
         bloquearTela();
         return;
       }
@@ -1305,12 +1366,14 @@
       document.getElementById("resumoResponsavel").innerText = usuarioLogado.nome || usuarioLogado.email || "Responsavel";
       document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
       document.getElementById("napsAtendimento").value = usuarioLogado.naps || "";
-      selecionarEvento(rotulosEvento[tipoEventoInicial] ? tipoEventoInicial : "workshop");
+      selecionarEvento(rotulosEvento[tipoEventoInicial] ? tipoEventoInicial : "grupo");
       registrarLimpezaStatusAoEditarEvento();
       carregarRascunhoEventoAberto();
     });
 
     function selecionarEvento(tipo, preservarEstado) {
+      tipo = normalizarTipoEventoTela(tipo);
+
       if (eventoRascunhoAberto && preservarEstado !== true && tipo !== tipoEventoAtual) {
         atualizarNavegacaoEvento();
         mostrarStatus("Finalize o evento em aberto antes de iniciar outro.", "error");
@@ -1322,13 +1385,18 @@
       }
 
       tipoEventoAtual = tipo;
-      const usaParticipantes = tipoEventoAtual !== "palestra";
+      const usaParticipantes = tipoEventoAtual === "grupo";
       const usaModalidade = tipoEventoAtual === "palestra";
-      const rotulo = rotulosEvento[tipoEventoAtual] || "Evento";
+      const rotulo = rotulosEvento[tipoEventoAtual] || "Grupo/Palestra";
+      const titulo = titulosEvento[tipoEventoAtual] || rotulo;
 
       atualizarNavegacaoEvento();
+      atualizarOpcoesTemaEvento(
+        tipoEventoAtual,
+        preservarEstado === true ? document.getElementById("tema").value : ""
+      );
 
-      document.getElementById("tituloPagina").innerText = rotulo;
+      document.getElementById("tituloPagina").innerText = titulo;
       document.getElementById("tipoEvento").value = rotulo;
       document.getElementById("participantPanel").style.display = usaParticipantes ? "block" : "none";
       document.getElementById("listaPanel").style.display = usaParticipantes ? "block" : "none";
@@ -1342,11 +1410,44 @@
       atualizarBotaoCancelarEvento();
     }
 
+    function normalizarTipoEventoTela(tipo) {
+      const texto = String(tipo || "").toLowerCase().trim();
+
+      if (texto === "palestra" || texto === "palestras") return "palestra";
+      if (texto === "grupo" || texto === "grupos" || texto === "workshop" || texto === "prosen") return "grupo";
+
+      return "grupo";
+    }
+
     function atualizarNavegacaoEvento() {
-      ["workshop", "prosen", "palestra"].forEach(function(item) {
+      ["grupo", "palestra"].forEach(function(item) {
         const botao = document.getElementById("nav-" + item);
         if (botao) botao.classList.toggle("active", item === tipoEventoAtual);
       });
+    }
+
+    function atualizarOpcoesTemaEvento(tipo, valorSelecionado) {
+      const campoTema = document.getElementById("tema");
+      const temas = temasPorTipoEvento[tipo] || [];
+      const valorAtual = valorSelecionado !== undefined ? valorSelecionado : campoTema.value;
+
+      campoTema.innerHTML = '<option value="">Selecione</option>';
+
+      temas.forEach(function(tema) {
+        const option = document.createElement("option");
+        option.value = tema;
+        option.textContent = tema;
+        campoTema.appendChild(option);
+      });
+
+      if (valorAtual && temas.indexOf(valorAtual) === -1) {
+        const optionAtual = document.createElement("option");
+        optionAtual.value = valorAtual;
+        optionAtual.textContent = valorAtual;
+        campoTema.appendChild(optionAtual);
+      }
+
+      campoTema.value = valorAtual || "";
     }
 
     function mostrarCarregamentoNavegacao(texto) {
@@ -1432,6 +1533,10 @@
       mostrarStatus("", "");
       definirStatusSalvarEvento(false, "");
       definirStatusGerarLink(false, "");
+      definirStatusAdicionarParticipante(false, "");
+      definirStatusAtualizarParticipantes(false, "");
+      definirStatusCancelarEvento(false, "");
+      definirStatusCancelarParticipante(false, "");
     }
 
     function atualizarBotaoCancelarEvento() {
@@ -1473,7 +1578,7 @@
           setCarregando(false);
 
           if (!retorno || !retorno.encontrado) {
-            mostrarStatus("Pronto para iniciar um evento coletivo.", "");
+            mostrarStatus("Pronto para iniciar um grupo ou palestra.", "");
             return;
           }
 
@@ -1500,7 +1605,7 @@
 
       document.getElementById("dataEvento").value = rascunho.dataEvento || document.getElementById("dataEvento").value;
       document.getElementById("napsAtendimento").value = rascunho.napsAtendimento || usuarioLogado.naps || "";
-      document.getElementById("tema").value = rascunho.tema || "";
+      atualizarOpcoesTemaEvento(tipoEventoAtual, rascunho.tema || "");
       document.getElementById("motivo").value = rascunho.motivo || "";
       document.getElementById("quantidadeInformada").value = rascunho.quantidadeInformada || "";
       document.getElementById("modalidadeEvento").value = rascunho.modalidade || "";
@@ -1518,11 +1623,7 @@
       if (tipoEventoAtual === "palestra") return;
       if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) return;
 
-      if (!valorCampo("tema")) {
-        mostrarStatus("Informe o tema do evento antes de gerar o link.", "error");
-        document.getElementById("tema").focus();
-        return;
-      }
+      if (!validarTemaEvento("Informe o tema do grupo antes de gerar o link.")) return;
 
       definirStatusGerarLink(true, "Gerando link...");
       setCarregando(true, "Preparando link do evento...");
@@ -1564,6 +1665,7 @@
     }
 
     function adicionarParticipanteManual() {
+      if (!validarTemaEvento("Informe o tema do grupo antes de adicionar participantes.")) return;
       if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], [])) return;
 
       const participante = lerFormularioParticipante();
@@ -1578,10 +1680,12 @@
         return;
       }
 
+      definirStatusAdicionarParticipante(true, "Adicionando participante...");
       setCarregando(true, "Adicionando participante ao rascunho...");
       google.script.run
         .withSuccessHandler(function(retorno) {
           setCarregando(false);
+          definirStatusAdicionarParticipante(false, "Participante adicionado.", "success");
           idEventoAtual = retorno.idEvento || idEventoAtual;
           tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
           linkParticipanteAtual = retorno.linkParticipante || linkParticipanteAtual;
@@ -1598,6 +1702,7 @@
         })
         .withFailureHandler(function(erro) {
           setCarregando(false);
+          definirStatusAdicionarParticipante(false, obterMensagemErro(erro), "error");
           mostrarStatus(obterMensagemErro(erro), "error");
         })
         .registrarParticipanteEventoManual(montarDadosEvento(), participante, tokenGoogle);
@@ -1626,12 +1731,14 @@
 
     function confirmarCancelamentoEvento() {
       fecharModalCancelarEvento();
+      definirStatusCancelarEvento(true, "Cancelando evento...");
       setCarregando(true, "Cancelando evento...");
       google.script.run
         .withSuccessHandler(function(retorno) {
           setCarregando(false);
           definirStatusSalvarEvento(false, "");
           definirStatusGerarLink(false, "");
+          definirStatusCancelarEvento(false, "");
           resetarEstadoEvento();
           limparIdentificacaoEvento();
           limparFormularioParticipante();
@@ -1642,9 +1749,57 @@
         })
         .withFailureHandler(function(erro) {
           setCarregando(false);
+          definirStatusCancelarEvento(false, obterMensagemErro(erro), "error");
           mostrarStatus(obterMensagemErro(erro), "error");
         })
         .cancelarEventoColetivo(montarDadosEvento(), tokenGoogle);
+    }
+
+    function abrirModalCancelarParticipante(idParticipante) {
+      idParticipanteCancelamentoAtual = idParticipante || "";
+      definirStatusCancelarParticipante(false, "");
+
+      const modal = document.getElementById("modalCancelarParticipante");
+
+      if (modal) modal.classList.add("active");
+    }
+
+    function fecharModalCancelarParticipante() {
+      const modal = document.getElementById("modalCancelarParticipante");
+
+      if (modal) modal.classList.remove("active");
+      definirStatusCancelarParticipante(false, "");
+      idParticipanteCancelamentoAtual = "";
+    }
+
+    function confirmarCancelamentoParticipante() {
+      const chaveEvento = idEventoAtual || tokenEventoAtual;
+
+      if (!chaveEvento || !idParticipanteCancelamentoAtual) {
+        mostrarStatus("Nao foi possivel identificar o participante para cancelar.", "error");
+        return;
+      }
+
+      definirStatusCancelarParticipante(true, "Cancelando participante...");
+      setCarregando(true, "Cancelando participante...");
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+          definirStatusCancelarParticipante(false, "");
+          fecharModalCancelarParticipante();
+          participantesManuais = [];
+          participantesLink = retorno && retorno.participantes ? retorno.participantes : [];
+          renderizarParticipantes();
+          atualizarContador();
+          mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Participante cancelado.", "success");
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          definirStatusCancelarParticipante(false, obterMensagemErro(erro), "error");
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .cancelarParticipanteEvento(chaveEvento, idParticipanteCancelamentoAtual, tokenGoogle);
     }
 
     function lerFormularioParticipante() {
@@ -1921,6 +2076,7 @@
       }
 
       if (!modoSilencioso) {
+        definirStatusAtualizarParticipantes(true, "Atualizando participantes...");
         setCarregando(true, "Atualizando participantes enviados pelo link...");
       }
 
@@ -1935,6 +2091,11 @@
 
           if (!modoSilencioso) {
             const total = participantesLink.length;
+            definirStatusAtualizarParticipantes(
+              false,
+              total > 0 ? "Lista atualizada." : "Sem novos envios.",
+              total > 0 ? "success" : ""
+            );
             mostrarStatus(
               total > 0
                 ? "Participantes atualizados: " + total + "."
@@ -1945,13 +2106,17 @@
         })
         .withFailureHandler(function(erro) {
           if (!modoSilencioso) setCarregando(false);
-          if (!modoSilencioso) mostrarStatus(obterMensagemErro(erro), "error");
+          if (!modoSilencioso) {
+            definirStatusAtualizarParticipantes(false, obterMensagemErro(erro), "error");
+            mostrarStatus(obterMensagemErro(erro), "error");
+          }
         })
         .listarParticipantesEvento(chaveEvento, tokenGoogle);
     }
 
     function salvarEvento() {
       if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) return;
+      if (!validarTemaEvento("Informe o tema antes de salvar.")) return;
 
       const dadosEvento = montarDadosEvento();
 
@@ -1977,7 +2142,7 @@
           renderizarParticipantes();
           atualizarContador();
           atualizarBotaoCancelarEvento();
-          mostrarStatus("Pronto para iniciar um evento coletivo.", "success", true);
+          mostrarStatus("Pronto para iniciar um grupo ou palestra.", "success", true);
         })
         .withFailureHandler(function(erro) {
           setCarregando(false);
@@ -2008,13 +2173,15 @@
       });
 
       participantesLink.forEach(function(item) {
+        if (String(item.status || "").toLowerCase() === "cancelado") return;
+
         linhas.push({
           origem: "rascunho",
           nome: item.nome,
           re: item.re,
           cpf: item.cpf,
           status: item.status || "pendente",
-          acao: ""
+          acao: '<button type="button" class="btn-danger" onclick="abrirModalCancelarParticipante(\'' + escaparAttr(item.idParticipante) + '\')">Cancelar</button>'
         });
       });
 
@@ -2050,12 +2217,22 @@
 
     document.getElementById("quantidadeInformada").addEventListener("input", atualizarContador);
 
+    function validarTemaEvento(mensagem) {
+      if (valorCampo("tema")) return true;
+
+      mostrarStatus(mensagem || "Informe o tema.", "error");
+      document.getElementById("tema").focus();
+      return false;
+    }
+
     function setCarregando(carregando, mensagem) {
       document.getElementById("btnGerarLink").disabled = carregando;
+      document.getElementById("btnAdicionarParticipanteManual").disabled = carregando;
       document.getElementById("btnAtualizarParticipantes").disabled = carregando;
       document.getElementById("btnSalvarEvento").disabled = carregando;
       document.getElementById("btnCancelarEvento").disabled = carregando;
       document.getElementById("btnConfirmarCancelamentoEvento").disabled = carregando;
+      document.getElementById("btnConfirmarCancelamentoParticipante").disabled = carregando;
 
       if (mensagem) mostrarStatus(mensagem, "");
     }
@@ -2079,6 +2256,50 @@
       el.className = "saving-inline" + (tipo ? " " + tipo : "");
       el.innerHTML = gerando
         ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Gerando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusAdicionarParticipante(adicionando, texto, tipo) {
+      const el = document.getElementById("statusAdicionarParticipante");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = adicionando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Adicionando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusAtualizarParticipantes(atualizando, texto, tipo) {
+      const el = document.getElementById("statusAtualizarParticipantes");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = atualizando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Atualizando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusCancelarEvento(cancelando, texto, tipo) {
+      const el = document.getElementById("statusCancelarEvento");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = cancelando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Cancelando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusCancelarParticipante(cancelando, texto, tipo) {
+      const el = document.getElementById("statusCancelarParticipante");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = cancelando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Cancelando...") + '</span>'
         : escaparHtml(texto || "");
     }
 
