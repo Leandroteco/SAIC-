@@ -23,7 +23,11 @@ const ABA_RECADOS = "recados_sistema";
 const ABA_EVENTOS_COLETIVOS = "eventos_coletivos";
 const ABA_PARTICIPANTES_EVENTO = "participantes_evento";
 const ABA_PARTICIPANTES_EVENTO_INDICE = "participantes_evento_indice";
+const ABA_EMAILS_RELATORIO = "emails_relatorio";
+const ABA_INCIDENTE_CRITICO = "incidente_critico";
+const ABA_EQUIPE_INCIDENTE = "equipe_incidente";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
+const CACHE_USUARIO_TOKEN_SEGUNDOS = 300;
 
 const PERFIL_ADMINISTRADOR = "administrador";
 const PERFIL_ATENDENTE = "atendente";
@@ -88,7 +92,8 @@ const CABECALHOS_USUARIOS = [
   "nome",
   "naps",
   "cep_naps",
-  "vencimento"
+  "vencimento",
+  "acesso_ppms"
 ];
 
 const CABECALHOS_CEPS_CACHE = [
@@ -172,6 +177,46 @@ const CABECALHOS_PARTICIPANTES_EVENTO_INDICE = [
   "linha_participante"
 ];
 
+const CABECALHOS_EMAILS_RELATORIO = [
+  "email",
+  "nome",
+  "ativo",
+  "dia_semana",
+  "horario",
+  "observacao"
+];
+
+const CABECALHOS_INCIDENTE_CRITICO = [
+  "numero_relatorio",
+  "data_fato",
+  "data_acionamento",
+  "posto_graduacao",
+  "re",
+  "nome",
+  "opm_atual",
+  "situacao_status",
+  "oficial_sobreaviso",
+  "psicologo",
+  "assistente_social",
+  "motorista",
+  "vitima",
+  "sexo",
+  "modalidade",
+  "data_cadastro",
+  "responsavel_pelo_registro",
+  "email_responsavel",
+  "napsAtendimento",
+  "servico"
+];
+
+const CABECALHOS_EQUIPE_INCIDENTE = [
+  "tipo_equipe",
+  "nome",
+  "ativo",
+  "ordem",
+  "observacao"
+];
+
 const ALIASES_CABECALHOS_PADRAO = {
   idatendimento: ["id atendimento", "id do atendimento", "id"],
   emailcadastro: ["email cadastrado", "email_cadastrado", "emailcadastrado", "email cadastro", "email do cadastro", "email responsavel", "email do responsavel"],
@@ -213,7 +258,8 @@ const ALIASES_CABECALHOS_PADRAO = {
   longitude: ["lng", "long"],
   endereco: ["endereço"],
   dataatualizacao: ["data atualizacao", "data atualização", "data de atualizacao", "data de atualização"],
-  modalidade: ["modalidade_evento", "modalidade do evento"]
+  modalidade: ["modalidade_evento", "modalidade do evento"],
+  servico: ["serviço", "escala", "servico_folga", "serviço_folga"]
 };
 
 // ESTRUTURA DA PLANILHA E MAPEAMENTO DE CABECALHOS
@@ -224,12 +270,17 @@ function configurarEstruturaPlanilha() {
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
   const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
+  garantirCabecalhoFinal(sheetUsuarios, "acesso_ppms");
   const sheetCepsCache = obterOuCriarAba(ss, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
   const sheetRecados = obterOuCriarAba(ss, ABA_RECADOS, CABECALHOS_RECADOS);
   const sheetEventosColetivos = obterOuCriarAba(ss, ABA_EVENTOS_COLETIVOS, CABECALHOS_EVENTOS_COLETIVOS);
   garantirCabecalhoFinal(sheetEventosColetivos, "modalidade");
   const sheetParticipantesEvento = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO, CABECALHOS_PARTICIPANTES_EVENTO);
   const sheetParticipantesEventoIndice = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO_INDICE, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
+  const sheetEmailsRelatorio = obterOuCriarAba(ss, ABA_EMAILS_RELATORIO, CABECALHOS_EMAILS_RELATORIO);
+  const sheetIncidenteCritico = obterOuCriarAba(ss, ABA_INCIDENTE_CRITICO, CABECALHOS_INCIDENTE_CRITICO);
+  garantirCabecalhoFinal(sheetIncidenteCritico, "servico");
+  const sheetEquipeIncidente = obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE);
 
   return {
     sheetDados: sheetDados,
@@ -240,7 +291,31 @@ function configurarEstruturaPlanilha() {
     sheetRecados: sheetRecados,
     sheetEventosColetivos: sheetEventosColetivos,
     sheetParticipantesEvento: sheetParticipantesEvento,
-    sheetParticipantesEventoIndice: sheetParticipantesEventoIndice
+    sheetParticipantesEventoIndice: sheetParticipantesEventoIndice,
+    sheetEmailsRelatorio: sheetEmailsRelatorio,
+    sheetIncidenteCritico: sheetIncidenteCritico,
+    sheetEquipeIncidente: sheetEquipeIncidente
+  };
+}
+
+function configurarEstruturaSalvamentoAtendimento() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  return {
+    sheetDados: obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS),
+    sheetVinculos: obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS),
+    sheetIndice: obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE)
+  };
+}
+
+function configurarEstruturaIncidenteCritico() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetIncidenteCritico = obterOuCriarAba(ss, ABA_INCIDENTE_CRITICO, CABECALHOS_INCIDENTE_CRITICO);
+  garantirCabecalhoFinal(sheetIncidenteCritico, "servico");
+
+  return {
+    sheetIncidenteCritico: sheetIncidenteCritico,
+    sheetEquipeIncidente: obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE)
   };
 }
 
@@ -281,7 +356,8 @@ function obterIndicesUsuariosSistema(sheet) {
     nome: obterIndiceCabecalho(mapa, ["nome", "nomeusuario", "nome_usuario"], 3),
     naps: obterIndiceCabecalho(mapa, ["naps", "nap", "unidade", "unidadenaps", "nome_naps"], 4),
     cepNaps: obterIndiceCabecalho(mapa, ["cep_naps", "cepnaps", "cepdonaps", "cep_do_naps", "cep"], 5),
-    vencimento: obterIndiceCabecalho(mapa, ["vencimento", "validade", "data_vencimento", "datavencimento"], 6)
+    vencimento: obterIndiceCabecalho(mapa, ["vencimento", "validade", "data_vencimento", "datavencimento"], 6),
+    acessoPpms: obterIndiceCabecalho(mapa, ["acesso_ppms", "acessoppms", "ppms"], 7)
   };
 }
 
@@ -541,7 +617,8 @@ function lerDadosUsuarioSistema(linha, indices) {
     nome: String(linha[indices.nome] || "").trim(),
     naps: String(linha[indices.naps] || "").trim(),
     cepNaps: formatarCEP(linha[indices.cepNaps] || ""),
-    vencimento: linha[indices.vencimento] || ""
+    vencimento: linha[indices.vencimento] || "",
+    acessoPpms: String(linha[indices.acessoPpms] || "").toLowerCase().trim()
   };
 }
 
@@ -626,6 +703,7 @@ function obterUsuarioSistema() {
           naps: usuarioLinha.naps,
           cepNaps: usuarioLinha.cepNaps,
           vencimento: usuarioLinha.vencimento,
+          acessoPpms: usuarioLinha.acessoPpms,
           mensagem: "Usuario cadastrado, mas inativo."
         };
       }
@@ -639,6 +717,7 @@ function obterUsuarioSistema() {
           naps: usuarioLinha.naps,
           cepNaps: usuarioLinha.cepNaps,
           vencimento: usuarioLinha.vencimento,
+          acessoPpms: usuarioLinha.acessoPpms,
           mensagem: "Usuario com acesso vencido em " + formatarDataVencimentoUsuario(usuarioLinha.vencimento) + "."
         };
       }
@@ -651,6 +730,7 @@ function obterUsuarioSistema() {
         naps: usuarioLinha.naps,
         cepNaps: usuarioLinha.cepNaps,
         vencimento: usuarioLinha.vencimento,
+        acessoPpms: usuarioLinha.acessoPpms,
         mensagem: ""
       };
     }
@@ -745,6 +825,7 @@ function obterPaginaSolicitada(valor) {
   if (pagina === "mapa_de_calor") return "mapa_de_calor";
   if (pagina === "relatorio_naps") return "relatorio_naps";
   if (pagina === "eventos_coletivos") return "eventos_coletivos";
+  if (pagina === "incidente_critico") return "incidente_critico";
   if (pagina === "participante_evento") return "participante_evento";
 
   return "Index";
@@ -785,7 +866,8 @@ function obterTipoEventoInicial(valor) {
   const partes = String(valor || "").toLowerCase().trim().split(":");
   const tipo = partes.length > 1 ? partes[1] : "";
 
-  if (tipo === "workshop" || tipo === "prosen" || tipo === "palestra") return tipo;
+  if (tipo === "grupo" || tipo === "grupos" || tipo === "workshop" || tipo === "prosen") return "grupo";
+  if (tipo === "palestra" || tipo === "palestras") return "palestra";
 
   return "";
 }
@@ -815,7 +897,7 @@ function renderizarPaginaParticipanteEvento(tokenEvento) {
 
   return template
     .evaluate()
-    .setTitle("Participante - Evento Coletivo")
+    .setTitle("Participante - Grupo")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -829,11 +911,16 @@ function validarLoginGoogle(idToken) {
     nome: usuario.nome,
     naps: usuario.naps || "",
     vencimento: usuario.vencimento || "",
-    administrador: usuario.perfil === PERFIL_ADMINISTRADOR
+    administrador: usuario.perfil === PERFIL_ADMINISTRADOR,
+    acessoPpms: usuarioTemAcessoPPMS(usuario)
   };
 }
 
 function validarUsuarioPorToken(idToken) {
+  const usuarioCache = obterUsuarioTokenCache(idToken);
+
+  if (usuarioCache) return usuarioCache;
+
   const dadosToken = verificarTokenGoogle(idToken);
   const usuario = obterUsuarioSistemaPorEmail(dadosToken.email);
 
@@ -841,7 +928,58 @@ function validarUsuarioPorToken(idToken) {
     throw new Error(usuario.mensagem || "Acesso negado.");
   }
 
+  salvarUsuarioTokenCache(idToken, usuario);
+
   return usuario;
+}
+
+function obterUsuarioTokenCache(idToken) {
+  try {
+    const chave = gerarChaveCacheUsuarioToken(idToken);
+
+    if (!chave) return null;
+
+    const texto = CacheService.getScriptCache().get(chave);
+
+    if (!texto) return null;
+
+    const usuario = JSON.parse(texto);
+
+    if (!usuario || !usuario.autorizado || !usuario.email) return null;
+    if (usuario.acessoPpms === undefined) return null;
+
+    return usuario;
+  } catch (erro) {
+    return null;
+  }
+}
+
+function salvarUsuarioTokenCache(idToken, usuario) {
+  try {
+    const chave = gerarChaveCacheUsuarioToken(idToken);
+
+    if (!chave || !usuario || !usuario.autorizado) return;
+
+    CacheService
+      .getScriptCache()
+      .put(chave, JSON.stringify(usuario), CACHE_USUARIO_TOKEN_SEGUNDOS);
+  } catch (erro) {
+    // Cache e apenas otimizacao; se falhar, o fluxo normal continua.
+  }
+}
+
+function gerarChaveCacheUsuarioToken(idToken) {
+  if (!idToken) return "";
+
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(idToken));
+  const partes = [];
+
+  for (let i = 0; i < digest.length; i++) {
+    const valor = (digest[i] + 256) % 256;
+    partes.push(("0" + valor.toString(16)).slice(-2));
+  }
+
+  return "usuario_token:" + partes.join("");
 }
 
 function validarAdministradorPorToken(idToken) {
@@ -849,6 +987,22 @@ function validarAdministradorPorToken(idToken) {
 
   if (usuario.perfil !== PERFIL_ADMINISTRADOR) {
     throw new Error("Acesso negado. Somente administradores podem acessar este recurso.");
+  }
+
+  return usuario;
+}
+
+function usuarioTemAcessoPPMS(usuario) {
+  if (usuario && usuario.acessoPpms === true) return true;
+
+  return normalizar(usuario && usuario.acessoPpms) === "sim";
+}
+
+function validarPPMSPorToken(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+
+  if (!usuarioTemAcessoPPMS(usuario)) {
+    throw new Error("Acesso negado. Usuario sem permissao para PPMS.");
   }
 
   return usuario;
@@ -929,6 +1083,7 @@ function obterUsuarioSistemaPorEmail(email) {
           naps: usuarioLinha.naps,
           cepNaps: usuarioLinha.cepNaps,
           vencimento: usuarioLinha.vencimento,
+          acessoPpms: usuarioLinha.acessoPpms,
           mensagem: "Usuário cadastrado, mas inativo."
         };
       }
@@ -942,6 +1097,7 @@ function obterUsuarioSistemaPorEmail(email) {
           naps: usuarioLinha.naps,
           cepNaps: usuarioLinha.cepNaps,
           vencimento: usuarioLinha.vencimento,
+          acessoPpms: usuarioLinha.acessoPpms,
           mensagem: "Usuário com acesso vencido em " + formatarDataVencimentoUsuario(usuarioLinha.vencimento) + "."
         };
       }
@@ -954,6 +1110,7 @@ function obterUsuarioSistemaPorEmail(email) {
         naps: usuarioLinha.naps,
         cepNaps: usuarioLinha.cepNaps,
         vencimento: usuarioLinha.vencimento,
+        acessoPpms: usuarioLinha.acessoPpms,
         mensagem: ""
       };
     }
@@ -1103,7 +1260,7 @@ function salvarAtendimento(dados, idToken) {
     lock.waitLock(30000);
     lockObtido = true;
 
-    const estrutura = configurarEstruturaPlanilha();
+    const estrutura = configurarEstruturaSalvamentoAtendimento();
     const sheet = estrutura.sheetDados;
     const sheetVinculos = estrutura.sheetVinculos;
     const sheetIndice = estrutura.sheetIndice;
@@ -1199,6 +1356,8 @@ function salvarAtendimento(dados, idToken) {
 
     const mensagemSalvamento = tipoAtendimento === "falta"
       ? "Falta registrada com sucesso!"
+      : tipoAtendimento === "arquivamento"
+      ? "Arquivamento salvo com sucesso!"
       : "Atendimento salvo com sucesso!";
 
     return {
@@ -1211,6 +1370,337 @@ function salvarAtendimento(dados, idToken) {
       lock.releaseLock();
     }
   }
+}
+
+// INCIDENTE CRITICO
+function obterNumeroRelatorioIncidenteCritico(idToken) {
+  validarUsuarioPorToken(idToken);
+
+  const estrutura = configurarEstruturaIncidenteCritico();
+  const sheet = estrutura.sheetIncidenteCritico;
+
+  if (!sheet) throw new Error("A aba incidente_critico nao foi encontrada.");
+
+  return {
+    numeroRelatorio: gerarNumeroRelatorioIncidenteCritico(sheet)
+  };
+}
+
+function obterOpcoesEquipeIncidente(idToken) {
+  validarUsuarioPorToken(idToken);
+
+  const estrutura = configurarEstruturaIncidenteCritico();
+  const sheet = estrutura.sheetEquipeIncidente;
+  const retorno = {
+    oficialSobreaviso: [],
+    assistenteSocial: [],
+    motorista: []
+  };
+
+  if (!sheet || sheet.getLastRow() < 2) return retorno;
+
+  const mapa = obterMapaCabecalhos(sheet, CABECALHOS_EQUIPE_INCIDENTE.length);
+  const retornoPorColunas = obterOpcoesEquipeIncidentePorColunas(sheet, mapa);
+
+  if (
+    retornoPorColunas.oficialSobreaviso.length ||
+    retornoPorColunas.assistenteSocial.length ||
+    retornoPorColunas.motorista.length
+  ) {
+    return retornoPorColunas;
+  }
+
+  const indices = {
+    tipo: obterIndiceCabecalho(mapa, ["tipo_equipe", "tipo equipe", "tipo", "funcao", "função"], 0),
+    nome: obterIndiceCabecalho(mapa, ["nome", "nome_equipe", "nome equipe"], 1),
+    ativo: obterIndiceCabecalho(mapa, ["ativo", "status"], 2),
+    ordem: obterIndiceCabecalho(mapa, ["ordem", "sequencia", "sequência"], 3)
+  };
+  const linhas = sheet
+    .getRange(2, 1, sheet.getLastRow() - 1, Math.max(sheet.getLastColumn(), CABECALHOS_EQUIPE_INCIDENTE.length))
+    .getValues();
+  const duplicados = {
+    oficialSobreaviso: {},
+    assistenteSocial: {},
+    motorista: {}
+  };
+  const itens = {
+    oficialSobreaviso: [],
+    assistenteSocial: [],
+    motorista: []
+  };
+
+  linhas.forEach(function(linha, indiceLinha) {
+    const nome = String(linha[indices.nome] || "").trim();
+    const tipo = classificarTipoEquipeIncidente(linha[indices.tipo]);
+    const ativo = normalizar(linha[indices.ativo]);
+    const chaveNome = normalizar(nome);
+
+    if (!nome || !tipo || !valorAtivoEquipeIncidente(ativo) || duplicados[tipo][chaveNome]) return;
+
+    duplicados[tipo][chaveNome] = true;
+    itens[tipo].push({
+      nome: nome,
+      ordem: Number(linha[indices.ordem]) || indiceLinha + 1
+    });
+  });
+
+  Object.keys(itens).forEach(function(tipo) {
+    retorno[tipo] = itens[tipo]
+      .sort(function(a, b) {
+        return a.ordem - b.ordem || normalizar(a.nome).localeCompare(normalizar(b.nome));
+      })
+      .map(function(item) {
+        return item.nome;
+      });
+  });
+
+  return retorno;
+}
+
+function classificarTipoEquipeIncidente(valor) {
+  const tipo = normalizar(valor).replace(/[^a-z0-9]/g, "");
+
+  if (tipo === "oficialsobreaviso" || tipo === "oficialdesobreaviso" || tipo === "oficial" || tipo === "sobreaviso") return "oficialSobreaviso";
+  if (tipo === "assistentesocial" || tipo === "assistente" || tipo === "social") return "assistenteSocial";
+  if (tipo === "motorista") return "motorista";
+
+  return "";
+}
+
+function obterOpcoesEquipeIncidentePorColunas(sheet, mapa) {
+  const retorno = {
+    oficialSobreaviso: [],
+    assistenteSocial: [],
+    motorista: []
+  };
+  const indices = {
+    oficialSobreaviso: obterIndiceCabecalho(mapa, [
+      "nome_oficial_sobreaviso",
+      "nome oficial sobreaviso",
+      "nome oficial de sobreaviso",
+      "oficial_sobreaviso",
+      "oficial de sobreaviso"
+    ], -1),
+    assistenteSocial: obterIndiceCabecalho(mapa, [
+      "nome_assistente_social",
+      "nome assistente social",
+      "assistente_social",
+      "assistente social"
+    ], -1),
+    motorista: obterIndiceCabecalho(mapa, [
+      "nome_motorista",
+      "nome motorista",
+      "motorista"
+    ], -1)
+  };
+  const temColunaEquipe = Object.keys(indices).some(function(tipo) {
+    return indices[tipo] >= 0;
+  });
+
+  if (!temColunaEquipe || sheet.getLastRow() < 2) return retorno;
+
+  const linhas = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+
+  Object.keys(indices).forEach(function(tipo) {
+    const indice = indices[tipo];
+    const duplicados = {};
+
+    if (indice < 0) return;
+
+    linhas.forEach(function(linha) {
+      const nome = String(linha[indice] || "").trim();
+      const chave = normalizar(nome);
+
+      if (!nome || duplicados[chave]) return;
+
+      duplicados[chave] = true;
+      retorno[tipo].push(nome);
+    });
+
+    retorno[tipo].sort(function(a, b) {
+      return normalizar(a).localeCompare(normalizar(b));
+    });
+  });
+
+  return retorno;
+}
+
+function valorAtivoEquipeIncidente(valorNormalizado) {
+  if (!valorNormalizado) return true;
+
+  return valorNormalizado === "sim" ||
+    valorNormalizado === "s" ||
+    valorNormalizado === "ativo" ||
+    valorNormalizado === "true" ||
+    valorNormalizado === "1";
+}
+
+function normalizarServicoIncidente(valor) {
+  const texto = normalizar(valor);
+
+  if (texto === "servico" || texto === "serviço") return "servico";
+  if (texto === "folga") return "folga";
+  if (texto === "in tinere" || texto === "intinere" || texto === "in-tinere") return "in tinere";
+
+  return "";
+}
+
+function salvarIncidenteCritico(dados, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaIncidenteCritico();
+    const sheet = estrutura.sheetIncidenteCritico;
+
+    if (!sheet) throw new Error("A aba incidente_critico nao foi encontrada.");
+
+    const incidente = prepararDadosIncidenteCritico(dados, usuario);
+    const numeroRelatorio = obterNumeroRelatorioIncidenteCriticoParaSalvar(sheet, dados.numeroRelatorio);
+    const dataCadastro = new Date();
+
+    gravarLinhasPadraoAbaixo(sheet, [[
+      numeroRelatorio,
+      incidente.dataFato,
+      incidente.dataAcionamento,
+      incidente.postoGraduacao,
+      incidente.re,
+      incidente.nome,
+      incidente.opmAtual,
+      incidente.situacaoStatus,
+      incidente.oficialSobreaviso,
+      incidente.psicologo,
+      incidente.assistenteSocial,
+      incidente.motorista,
+      incidente.vitima,
+      incidente.sexo,
+      incidente.modalidade,
+      dataCadastro,
+      incidente.responsavel,
+      incidente.emailResponsavel,
+      incidente.napsAtendimento,
+      incidente.servico
+    ]], CABECALHOS_INCIDENTE_CRITICO);
+
+    return {
+      sucesso: true,
+      numeroRelatorio: numeroRelatorio,
+      mensagem: "Incidente Cr\u00edtico salvo com sucesso. Numero do relatorio: " + numeroRelatorio + "."
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function prepararDadosIncidenteCritico(dados, usuario) {
+  dados = dados || {};
+
+  const dataFato = validarDataFormulario(dados.dataFato, "Data do Fato");
+  const dataAcionamento = validarDataFormulario(dados.dataAcionamento, "Data do Acionamento");
+  const responsavel = normalizar(usuario.nome || "");
+  const emailResponsavel = normalizar(usuario.email || "");
+  const napsAtendimento = String(usuario.naps || "").trim().toUpperCase();
+  const incidente = {
+    dataFato: dataFato,
+    dataAcionamento: dataAcionamento,
+    postoGraduacao: String(dados.postoGraduacao || "").trim(),
+    re: normalizar(dados.re),
+    nome: normalizar(dados.nome),
+    opmAtual: normalizar(dados.opmAtual),
+    situacaoStatus: normalizar(dados.situacaoStatus),
+    oficialSobreaviso: normalizar(dados.oficialSobreaviso),
+    psicologo: responsavel,
+    assistenteSocial: normalizar(dados.assistenteSocial),
+    motorista: normalizar(dados.motorista),
+    vitima: normalizar(dados.vitima),
+    sexo: normalizar(dados.sexo),
+    modalidade: normalizar(dados.modalidade),
+    servico: normalizarServicoIncidente(dados.servico),
+    responsavel: responsavel,
+    emailResponsavel: emailResponsavel,
+    napsAtendimento: napsAtendimento
+  };
+
+  const obrigatorios = [
+    ["Data do Fato", incidente.dataFato],
+    ["Data do Acionamento", incidente.dataAcionamento],
+    ["Posto/Graduacao", incidente.postoGraduacao],
+    ["R.E.", incidente.re],
+    ["Nome", incidente.nome],
+    ["OPM Atual", incidente.opmAtual],
+    ["Situacao/Status", incidente.situacaoStatus],
+    ["Vitima", incidente.vitima],
+    ["Sexo", incidente.sexo],
+    ["Modalidade", incidente.modalidade],
+    ["Responsavel", incidente.responsavel],
+    ["NAPS", incidente.napsAtendimento]
+  ];
+
+  obrigatorios.forEach(function(item) {
+    if (!item[1]) {
+      throw new Error(item[0] + " e obrigatorio.");
+    }
+  });
+
+  return incidente;
+}
+
+function gerarNumeroRelatorioIncidenteCritico(sheet) {
+  const ano = new Date().getFullYear();
+  const prefixo = "IC-" + ano + "-";
+  const ultimaLinha = sheet.getLastRow();
+  const indiceNumeroRelatorio = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_INCIDENTE_CRITICO)[0];
+  let maiorNumero = 0;
+
+  if (ultimaLinha >= 2 && indiceNumeroRelatorio >= 0) {
+    const valores = sheet
+      .getRange(2, indiceNumeroRelatorio + 1, ultimaLinha - 1, 1)
+      .getValues();
+
+    valores.forEach(function(linha) {
+      const texto = String(linha[0] || "").trim().toUpperCase();
+
+      if (texto.indexOf(prefixo) !== 0) return;
+
+      const numero = Number(texto.substring(prefixo.length).replace(/\D/g, ""));
+      if (numero > maiorNumero) maiorNumero = numero;
+    });
+  }
+
+  return prefixo + String(maiorNumero + 1).padStart(6, "0");
+}
+
+function obterNumeroRelatorioIncidenteCriticoParaSalvar(sheet, numeroInformado) {
+  const numero = String(numeroInformado || "").trim().toUpperCase();
+
+  if (/^IC-\d{4}-\d{6}$/.test(numero) && !numeroRelatorioIncidenteCriticoExiste(sheet, numero)) {
+    return numero;
+  }
+
+  return gerarNumeroRelatorioIncidenteCritico(sheet);
+}
+
+function numeroRelatorioIncidenteCriticoExiste(sheet, numeroRelatorio) {
+  const ultimaLinha = sheet.getLastRow();
+  const indiceNumeroRelatorio = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_INCIDENTE_CRITICO)[0];
+  const numero = String(numeroRelatorio || "").trim().toUpperCase();
+
+  if (!numero || ultimaLinha < 2 || indiceNumeroRelatorio < 0) return false;
+
+  const valores = sheet
+    .getRange(2, indiceNumeroRelatorio + 1, ultimaLinha - 1, 1)
+    .getValues();
+
+  return valores.some(function(linha) {
+    return String(linha[0] || "").trim().toUpperCase() === numero;
+  });
 }
 
 // EVENTOS COLETIVOS: WORKSHOP, PROSEN E PALESTRAS
@@ -1393,7 +1883,7 @@ function salvarEventoColetivo(dados, participantesManuais, idToken) {
     validarDuplicidadeParticipantesEventoEmLista(participantesValidos.participantes);
 
     participantesValidos.participantes.forEach(function(participante) {
-      validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, participante.dados);
+      validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, participante.dados, sheetParticipantes);
     });
 
     const linhasIndice = [];
@@ -1583,7 +2073,7 @@ function registrarParticipanteEventoManual(dadosEvento, participante, idToken) {
       )], CABECALHOS_EVENTOS_COLETIVOS);
     }
 
-    validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dadosParticipante);
+    validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dadosParticipante, sheetParticipantes);
 
     const idParticipante = gerarIdSeguro("PEV");
     const linhaParticipante = montarLinhaParticipanteEvento(
@@ -1717,6 +2207,87 @@ function cancelarEventoColetivo(dadosEvento, idToken) {
   }
 }
 
+function cancelarParticipanteEvento(idEventoOuToken, idParticipante, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetEventos = estrutura.sheetEventosColetivos;
+    const sheetParticipantes = estrutura.sheetParticipantesEvento;
+    const chaveEvento = String(idEventoOuToken || "").trim();
+    const chaveParticipante = String(idParticipante || "").trim();
+    let evento = localizarEventoColetivoPorId(sheetEventos, chaveEvento);
+
+    if (!evento) {
+      evento = localizarEventoColetivoPorToken(sheetEventos, chaveEvento);
+    }
+
+    if (!evento) {
+      throw new Error("Evento nao localizado.");
+    }
+
+    if (!usuarioPodeAcessarEventoColetivo(usuario, evento.linha)) {
+      throw new Error("Voce nao tem permissao para alterar este evento.");
+    }
+
+    const statusEvento = normalizar(evento.linha[10]);
+
+    if (statusEvento === "salvo") {
+      throw new Error("Eventos salvos nao podem ter participantes cancelados por esta lista.");
+    }
+
+    if (statusEvento === "cancelado") {
+      throw new Error("Este evento ja foi cancelado.");
+    }
+
+    if (statusEvento !== "rascunho") {
+      throw new Error("Somente eventos em rascunho podem ser alterados.");
+    }
+
+    if (!chaveParticipante) {
+      throw new Error("Participante nao informado.");
+    }
+
+    const participante = localizarParticipanteEventoPorId(
+      sheetParticipantes,
+      evento.linha[0],
+      chaveParticipante
+    );
+
+    if (!participante) {
+      throw new Error("Participante nao localizado na lista temporaria.");
+    }
+
+    if (normalizar(participante.linha[24]) !== "cancelado") {
+      participante.linha[24] = "cancelado";
+      participante.linha[26] = usuario.email;
+      participante.linha[27] = new Date();
+      atualizarLinhaPadrao(
+        sheetParticipantes,
+        participante.numeroLinha,
+        participante.linha,
+        CABECALHOS_PARTICIPANTES_EVENTO
+      );
+    }
+
+    return {
+      sucesso: true,
+      mensagem: "Participante cancelado na lista temporaria.",
+      idEvento: String(evento.linha[0] || "").trim(),
+      participantes: listarParticipantesEventoPorId(sheetParticipantes, evento.linha[0])
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
 function obterEventoPorTokenPublico(tokenEvento) {
   const token = String(tokenEvento || "").trim();
 
@@ -1802,7 +2373,7 @@ function registrarParticipanteEventoPublico(tokenEvento, participante) {
     }
 
     const dadosParticipante = prepararDadosParticipanteEvento(participante);
-    validarDuplicidadeParticipanteEvento(sheetIndice, evento.linha[0], dadosParticipante);
+    validarDuplicidadeParticipanteEvento(sheetIndice, evento.linha[0], dadosParticipante, sheetParticipantes);
 
     const idParticipante = gerarIdSeguro("PEV");
     const linhaParticipante = montarLinhaParticipanteEvento(
@@ -1849,6 +2420,7 @@ function prepararDadosEventoColetivo(dados, usuario) {
   const napsAtendimento = String(usuario.naps || dados.napsAtendimento || dados.naps || "").trim().toUpperCase();
   const quantidadeInformada = Number(dados.quantidadeInformada || 0);
   const modalidade = normalizar(dados.modalidadeEvento || dados.modalidade);
+  const tema = String(dados.tema || "").trim();
 
   if (!tipoEvento) {
     throw new Error("Tipo de evento invalido.");
@@ -1864,6 +2436,10 @@ function prepararDadosEventoColetivo(dados, usuario) {
 
   if (!napsAtendimento) {
     throw new Error("NAPS do responsavel nao localizado na aba usuarios_sistema.");
+  }
+
+  if (!tema) {
+    throw new Error("Informe o tema do evento.");
   }
 
   if (tipoEvento === "palestra" && quantidadeInformada < 1) {
@@ -1884,7 +2460,7 @@ function prepararDadosEventoColetivo(dados, usuario) {
     napsAtendimento: napsAtendimento,
     responsavelNome: responsavelNome,
     responsavelEmail: responsavelEmail,
-    tema: normalizar(dados.tema),
+    tema: tema,
     motivo: normalizar(dados.motivo),
     quantidadeInformada: quantidadeInformada || "",
     observacoes: normalizar(dados.observacoes),
@@ -2040,7 +2616,7 @@ function montarLinhasIndiceParticipanteEvento(idParticipante, idEvento, dados, l
   return linhas;
 }
 
-function validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dados) {
+function validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dados, sheetParticipantes) {
   const id = String(idEvento || "").trim();
   const cpfNumeros = somenteNumeros(formatarCPF(dados && dados.cpf));
   const reNumeros = somenteNumeros(normalizar(dados && dados.re));
@@ -2049,6 +2625,7 @@ function validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dados) {
   if (sheetIndice.getLastRow() < 2) return;
 
   const linhas = lerDadosPadrao(sheetIndice, CABECALHOS_PARTICIPANTES_EVENTO_INDICE, 2);
+  const canceladosPorLinha = {};
 
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i];
@@ -2057,6 +2634,16 @@ function validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dados) {
 
     const chave = String(linha[0] || "").trim();
     const tipoChave = normalizar(linha[1]);
+    const linhaParticipante = Number(linha[7] || 0);
+
+    if (canceladosPorLinha[linhaParticipante] === undefined) {
+      canceladosPorLinha[linhaParticipante] = participanteEventoIndiceEstaCancelado(
+        sheetParticipantes,
+        linhaParticipante
+      );
+    }
+
+    if (canceladosPorLinha[linhaParticipante]) continue;
 
     if (cpfNumeros && tipoChave === "cpf" && chave === cpfNumeros) {
       throw new Error("Este CPF ja foi enviado para este evento.");
@@ -2066,6 +2653,19 @@ function validarDuplicidadeParticipanteEvento(sheetIndice, idEvento, dados) {
       throw new Error("Este R.E. ja foi enviado para este evento.");
     }
   }
+}
+
+function participanteEventoIndiceEstaCancelado(sheetParticipantes, numeroLinhaParticipante) {
+  if (!sheetParticipantes || !numeroLinhaParticipante) return false;
+  if (numeroLinhaParticipante < 2 || numeroLinhaParticipante > sheetParticipantes.getLastRow()) return false;
+
+  const linha = lerLinhaPadrao(
+    sheetParticipantes,
+    numeroLinhaParticipante,
+    CABECALHOS_PARTICIPANTES_EVENTO
+  );
+
+  return normalizar(linha[24]) === "cancelado";
 }
 
 function validarDuplicidadeParticipantesEventoEmLista(participantes) {
@@ -2187,11 +2787,32 @@ function listarParticipantesEventoPorId(sheetParticipantes, idEvento) {
 
   return linhas
     .filter(function(linha) {
-      return String(linha[1] || "").trim() === id;
+      return String(linha[1] || "").trim() === id &&
+        normalizar(linha[24]) !== "cancelado";
     })
     .map(function(linha) {
       return montarParticipanteEventoRetorno(linha);
     });
+}
+
+function localizarParticipanteEventoPorId(sheetParticipantes, idEvento, idParticipante) {
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+  const id = String(idEvento || "").trim();
+  const participante = String(idParticipante || "").trim();
+
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+
+    if (String(linha[1] || "").trim() !== id) continue;
+    if (String(linha[0] || "").trim() !== participante) continue;
+
+    return {
+      numeroLinha: i + 2,
+      linha: linha
+    };
+  }
+
+  return null;
 }
 
 function montarParticipanteEventoRetorno(linha) {
@@ -2304,8 +2925,8 @@ function usuarioPodeAcessarEventoColetivo(usuario, linhaEvento) {
 function normalizarTipoEventoColetivo(valor) {
   const tipo = normalizar(valor);
 
-  if (tipo === "workshop" || tipo === "worshop") return "workshop";
-  if (tipo === "prosen") return "prosen";
+  if (tipo === "grupo" || tipo === "grupos") return "grupo";
+  if (tipo === "workshop" || tipo === "worshop" || tipo === "prosen") return "grupo";
   if (tipo === "palestra" || tipo === "palestras") return "palestra";
 
   return "";
@@ -2314,17 +2935,16 @@ function normalizarTipoEventoColetivo(valor) {
 function obterRotuloTipoEventoColetivo(tipoEvento) {
   const tipo = normalizarTipoEventoColetivo(tipoEvento);
 
-  if (tipo === "workshop") return "Workshop";
-  if (tipo === "prosen") return "PROSEN";
+  if (tipo === "grupo") return "Grupo";
   if (tipo === "palestra") return "Palestra";
 
-  return "Evento coletivo";
+  return "Grupo/Palestra";
 }
 
 function tipoEventoUsaParticipantes(tipoEvento) {
   const tipo = normalizarTipoEventoColetivo(tipoEvento);
 
-  return tipo === "workshop" || tipo === "prosen";
+  return tipo === "grupo";
 }
 
 function gerarTokenEventoColetivo() {
@@ -2588,6 +3208,7 @@ function normalizarTipoAtendimento(valor) {
 
   if (tipo === "alta" || tipo === "atendimento de alta") return "alta";
   if (tipo === "falta" || tipo === "registrar falta" || tipo.includes("no show")) return "falta";
+  if (tipo === "arquivamento") return "arquivamento";
 
   return tipo;
 }
@@ -3229,19 +3850,21 @@ function montarIndicadoresRelatorioNaps(registros) {
     pessoasEventos: resumo.pessoasEventos,
     pessoasTotal: resumo.pessoasTotalGeral,
     faltas: resumo.totalFaltas,
-    altas: resumo.totalAltas
+    altas: resumo.totalAltas,
+    arquivamentos: resumo.totalArquivamentos
   };
 }
 
 function montarComparativoRelatorioNaps(atual, anterior) {
   const campos = [
     { chave: "atendimentos", rotulo: "Atendimentos" },
-    { chave: "eventosColetivos", rotulo: "Eventos coletivos" },
+    { chave: "eventosColetivos", rotulo: "Grupos e Palestras" },
     { chave: "pessoas", rotulo: "Pessoas" },
     { chave: "pessoasEventos", rotulo: "Pessoas em eventos" },
     { chave: "pessoasTotal", rotulo: "Total de pessoas" },
     { chave: "faltas", rotulo: "Faltas" },
-    { chave: "altas", rotulo: "Altas" }
+    { chave: "altas", rotulo: "Altas" },
+    { chave: "arquivamentos", rotulo: "Arquivamentos" }
   ];
 
   return campos.map(function(item) {
@@ -3291,7 +3914,7 @@ function obterDadosMapaCalor(filtros, idToken) {
     return ehRegistroFalta(registro);
   });
   const atendimentosFiltrados = filtrados.filter(function(registro) {
-    return !ehRegistroFalta(registro);
+    return !ehRegistroFalta(registro) && !ehRegistroArquivamento(registro);
   });
 
   const napsReferencia = carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail);
@@ -3983,6 +4606,7 @@ function montarResumoDashboard(registros, filtros) {
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) return;
+    if (ehRegistroArquivamento(registro)) return;
 
     const tipo = normalizar(registro.tipoAtendimento);
     const opm = String(registro.opmAtual || "").trim();
@@ -4008,6 +4632,7 @@ function montarResumoDashboard(registros, filtros) {
     pessoasTotalGeral: resumoRelatorio.pessoasTotalGeral,
     totalFaltas: resumoRelatorio.totalFaltas,
     totalAltas: resumoRelatorio.totalAltas,
+    totalArquivamentos: resumoRelatorio.totalArquivamentos,
     atendimentosEmergenciais: atendimentosEmergenciais,
     atendimentosIndividuais: atendimentosIndividuais,
     atendimentosFamiliaresOuGrupo: resumoRelatorio.atendimentosFamiliaresOuGrupo,
@@ -4039,6 +4664,7 @@ function montarGraficosDashboard(registros, filtros) {
     porNAPSAtendimentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "atendimentos"), 60),
     porNAPSFaltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "faltas"), 60),
     porNAPSAltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "altas"), 60),
+    porNAPSArquivamentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "arquivamentos"), 60),
     porSituacao: topDistribuicaoDashboard(contarPorCampo(registros, "situacaoStatus"), 8),
     porSexo: topDistribuicaoDashboard(contarPorCampo(registros, "sexo"), 8),
     porFaixaEtaria: ordenarFaixaEtariaDashboard(contarPorCampo(registros, "faixaEtaria")),
@@ -4058,12 +4684,15 @@ function montarComparativoNapsDashboard(registros) {
         atendimentos: 0,
         faltas: 0,
         altas: 0,
+        arquivamentos: 0,
         total: 0
       };
     }
 
     if (ehRegistroFalta(registro)) {
       mapa[naps].faltas++;
+    } else if (ehRegistroArquivamento(registro)) {
+      mapa[naps].arquivamentos++;
     } else {
       mapa[naps].atendimentos++;
     }
@@ -4091,10 +4720,12 @@ function contarPorNapsDashboard(registros, tipoContagem) {
   registros.forEach(function(registro) {
     const falta = ehRegistroFalta(registro);
     const alta = ehRegistroAlta(registro);
+    const arquivamento = ehRegistroArquivamento(registro);
 
-    if (tipoContagem === "atendimentos" && falta) return;
+    if (tipoContagem === "atendimentos" && (falta || arquivamento)) return;
     if (tipoContagem === "faltas" && !falta) return;
     if (tipoContagem === "altas" && !alta) return;
+    if (tipoContagem === "arquivamentos" && !arquivamento) return;
 
     const naps = String(registro.naps || "nao informado").trim() || "nao informado";
     contagem[naps] = (contagem[naps] || 0) + 1;
@@ -4162,6 +4793,7 @@ function montarEvolucaoDashboard(registros, filtros) {
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) return;
+    if (ehRegistroArquivamento(registro)) return;
 
     const data = registro.dataCadastroData;
     if (!data) return;
@@ -4566,6 +5198,7 @@ function montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento) {
   const motivo = limparEspacosRelatorio(linha[7]) || tema || rotuloTipo;
   const quantidadeValidada = obterQuantidadePessoasEventoRelatorio(linha, participantesPorEvento);
   const modalidade = normalizar(linha[15]);
+  const prefixoRegistro = tipoEvento === "palestra" ? "Palestra: " : "Grupo: ";
 
   return {
     id: idEvento,
@@ -4578,7 +5211,7 @@ function montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento) {
     tipoAtendimento: rotuloTipo,
     motivo: motivo,
     re: "",
-    nome: tema ? "Evento coletivo: " + formatarLocalidadeRelatorio(tema) : rotuloTipo,
+    nome: tema ? prefixoRegistro + formatarLocalidadeRelatorio(tema) : rotuloTipo,
     postoGraduacao: "",
     cpf: "",
     telefone: "",
@@ -4754,6 +5387,7 @@ function montarResumoRelatorio(registros) {
   let atendimentosFamiliaresOuGrupo = 0;
   let totalFaltas = 0;
   let totalAltas = 0;
+  let totalArquivamentos = 0;
   let totalAtendimentos = 0;
   let totalAtendimentosIndividuais = 0;
   let totalEventosColetivos = 0;
@@ -4762,6 +5396,11 @@ function montarResumoRelatorio(registros) {
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) {
       totalFaltas++;
+      return;
+    }
+
+    if (ehRegistroArquivamento(registro)) {
+      totalArquivamentos++;
       return;
     }
 
@@ -4812,6 +5451,7 @@ function montarResumoRelatorio(registros) {
     pessoasTotalGeral: Object.keys(pessoas).length + pessoasEventos,
     totalFaltas: totalFaltas,
     totalAltas: totalAltas,
+    totalArquivamentos: totalArquivamentos,
     retornos: retornos,
     pessoasComRetorno: pessoasComRetorno,
     atendimentosComVinculos: atendimentosComVinculos,
@@ -4847,6 +5487,7 @@ function contarPorMesNapsRelatorio(registros) {
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) return;
+    if (ehRegistroArquivamento(registro)) return;
 
     const mes = registro.mesCadastro || "sem data";
     const naps = registro.naps || "nao informado";
@@ -4893,7 +5534,8 @@ function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss)
           unidade: referencia.opmAtual || "",
           totalAtendimentos: totaisPessoa.atendimentos,
           totalFaltas: totaisPessoa.faltas,
-          totalAltas: totaisPessoa.altas
+          totalAltas: totaisPessoa.altas,
+          totalArquivamentos: totaisPessoa.arquivamentos
         };
       }).slice(0, 10)
     };
@@ -4916,6 +5558,7 @@ function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss)
     totalAtendimentos: totaisPessoa.atendimentos,
     totalFaltas: totaisPessoa.faltas,
     totalAltas: totaisPessoa.altas,
+    totalArquivamentos: totaisPessoa.arquivamentos,
     distanciaKm: distancia.distanciaKm,
     distanciaTexto: distancia.texto,
     distanciaDisponivel: distancia.disponivel,
@@ -4991,7 +5634,8 @@ function contarResumoPessoa(registros, chavePessoa) {
   const resumo = {
     atendimentos: 0,
     faltas: 0,
-    altas: 0
+    altas: 0,
+    arquivamentos: 0
   };
 
   registros.forEach(function(registro) {
@@ -4999,6 +5643,11 @@ function contarResumoPessoa(registros, chavePessoa) {
 
     if (ehRegistroFalta(registro)) {
       resumo.faltas++;
+      return;
+    }
+
+    if (ehRegistroArquivamento(registro)) {
+      resumo.arquivamentos++;
       return;
     }
 
@@ -5025,6 +5674,12 @@ function ehRegistroAlta(registro) {
   const tipo = normalizar(registro && registro.tipoAtendimento);
 
   return tipo === "alta" || tipo === "atendimento de alta";
+}
+
+function ehRegistroArquivamento(registro) {
+  const tipo = normalizar(registro && registro.tipoAtendimento);
+
+  return tipo === "arquivamento";
 }
 
 function obterDadosUsuarioSistemaParaRelatorio(email) {
@@ -5452,6 +6107,486 @@ function obterData(valor) {
   }
 
   return null;
+}
+
+// RELATORIO AUTOMATICO POR E-MAIL
+function enviarRelatorioEmailAgendado() {
+  return enviarRelatorioEmailSAIC();
+}
+
+function enviarRelatorioEmailSAIC() {
+  const configuracao = obterConfiguracaoRelatorioEmail();
+
+  if (configuracao.destinatarios.length === 0) {
+    throw new Error("Nenhum e-mail ativo encontrado na aba emails_relatorio.");
+  }
+
+  if (!deveEnviarRelatorioEmailAgora(configuracao)) {
+    return {
+      enviado: false,
+      mensagem: "Fora do dia/horario configurado para envio.",
+      destinatarios: configuracao.destinatarios
+    };
+  }
+
+  const dados = montarDadosRelatorioEmail(new Date());
+  const pdf = gerarPdfRelatorioEmail(dados);
+  const assunto = "Relatorio SAIC - " + dados.periodoSemana.rotuloCurto + " / " + dados.periodoMes.rotuloCurto;
+  const destinatarios = configuracao.destinatarios.join(",");
+
+  MailApp.sendEmail({
+    to: destinatarios,
+    subject: assunto,
+    body: "Segue em anexo o relatorio gerencial do SAIC em PDF.",
+    htmlBody: montarCorpoEmailRelatorio(dados),
+    attachments: [pdf]
+  });
+
+  return {
+    enviado: true,
+    destinatarios: configuracao.destinatarios,
+    assunto: assunto,
+    arquivo: pdf.getName()
+  };
+}
+
+function obterConfiguracaoRelatorioEmail() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = obterOuCriarAba(ss, ABA_EMAILS_RELATORIO, CABECALHOS_EMAILS_RELATORIO);
+  const ultimaLinha = sheet.getLastRow();
+
+  if (ultimaLinha < 2) {
+    return {
+      destinatarios: [],
+      diaSemana: "",
+      horario: ""
+    };
+  }
+
+  const mapa = obterMapaCabecalhos(sheet, CABECALHOS_EMAILS_RELATORIO.length);
+  const indices = {
+    email: obterIndiceCabecalho(mapa, ["email", "e-mail"], 0),
+    nome: obterIndiceCabecalho(mapa, ["nome"], 1),
+    ativo: obterIndiceCabecalho(mapa, ["ativo", "status"], 2),
+    diaSemana: obterIndiceCabecalho(mapa, ["dia_semana", "dia semana", "dia", "semana"], 3),
+    horario: obterIndiceCabecalho(mapa, ["horario", "hora", "horario_envio", "hora_envio"], 4),
+    observacao: obterIndiceCabecalho(mapa, ["observacao", "observaÃ§Ã£o", "obsercacao", "obs"], 5)
+  };
+  const linhas = sheet.getRange(2, 1, ultimaLinha - 1, Math.max(sheet.getLastColumn(), CABECALHOS_EMAILS_RELATORIO.length)).getValues();
+  const destinatarios = [];
+  const emailsIncluidos = {};
+  let diaSemana = "";
+  let horario = "";
+
+  linhas.forEach(function(linha) {
+    const ativo = normalizar(linha[indices.ativo]);
+    const email = String(linha[indices.email] || "").trim().toLowerCase();
+
+    if (!email || !email.includes("@")) return;
+    if (!valorAtivoRelatorioEmail(ativo)) return;
+
+    if (!emailsIncluidos[email]) {
+      destinatarios.push(email);
+      emailsIncluidos[email] = true;
+    }
+
+    if (!diaSemana) diaSemana = String(linha[indices.diaSemana] || "").trim();
+    if (!horario) horario = formatarHorarioConfiguracaoRelatorioEmail(linha[indices.horario]);
+  });
+
+  return {
+    destinatarios: destinatarios,
+    diaSemana: diaSemana,
+    horario: horario
+  };
+}
+
+function valorAtivoRelatorioEmail(valorNormalizado) {
+  return valorNormalizado === "sim" ||
+    valorNormalizado === "s" ||
+    valorNormalizado === "ativo" ||
+    valorNormalizado === "true" ||
+    valorNormalizado === "1";
+}
+
+function formatarHorarioConfiguracaoRelatorioEmail(valor) {
+  if (!valor) return "";
+
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor.getTime())) {
+    return Utilities.formatDate(valor, Session.getScriptTimeZone(), "HH:mm");
+  }
+
+  const texto = String(valor).trim();
+  const horaCheia = texto.match(/^(\d{1,2})$/);
+  const partes = texto.match(/^(\d{1,2}):(\d{2})/);
+
+  if (horaCheia) {
+    return String(Number(horaCheia[1])).padStart(2, "0") + ":00";
+  }
+
+  if (!partes) return texto;
+
+  return String(Number(partes[1])).padStart(2, "0") + ":" + partes[2];
+}
+
+function deveEnviarRelatorioEmailAgora(configuracao) {
+  if (!configuracao.diaSemana || !configuracao.horario) return false;
+
+  const agora = new Date();
+  const diaAtual = obterDiaSemanaRelatorioEmail(agora);
+  const horaAtual = Utilities.formatDate(agora, Session.getScriptTimeZone(), "HH");
+  const horaConfigurada = String(configuracao.horario || "").substring(0, 2);
+
+  return normalizarDiaSemanaRelatorioEmail(configuracao.diaSemana) === diaAtual && horaAtual === horaConfigurada;
+}
+
+function obterDiaSemanaRelatorioEmail(data) {
+  const dias = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+  return dias[data.getDay()];
+}
+
+function normalizarDiaSemanaRelatorioEmail(valor) {
+  return normalizar(valor)
+    .replace(/-?feira/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function configurarGatilhoRelatorioEmail() {
+  const configuracao = obterConfiguracaoRelatorioEmail();
+
+  if (!configuracao.diaSemana || !configuracao.horario) {
+    throw new Error("Informe dia_semana e horario na primeira linha ativa da aba emails_relatorio.");
+  }
+
+  removerGatilhosRelatorioEmail();
+
+  const dia = obterDiaSemanaScriptAppRelatorioEmail(configuracao.diaSemana);
+  const hora = Number(String(configuracao.horario).substring(0, 2));
+
+  ScriptApp
+    .newTrigger("enviarRelatorioEmailAgendado")
+    .timeBased()
+    .onWeekDay(dia)
+    .atHour(hora)
+    .create();
+
+  return "Gatilho configurado para " + configuracao.diaSemana + " as " + configuracao.horario + ".";
+}
+
+function removerGatilhosRelatorioEmail() {
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === "enviarRelatorioEmailAgendado") {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+}
+
+function obterDiaSemanaScriptAppRelatorioEmail(valor) {
+  const dia = normalizarDiaSemanaRelatorioEmail(valor);
+  const mapa = {
+    domingo: ScriptApp.WeekDay.SUNDAY,
+    segunda: ScriptApp.WeekDay.MONDAY,
+    terca: ScriptApp.WeekDay.TUESDAY,
+    quarta: ScriptApp.WeekDay.WEDNESDAY,
+    quinta: ScriptApp.WeekDay.THURSDAY,
+    sexta: ScriptApp.WeekDay.FRIDAY,
+    sabado: ScriptApp.WeekDay.SATURDAY
+  };
+
+  if (!mapa[dia]) {
+    throw new Error("Dia da semana invalido na aba emails_relatorio.");
+  }
+
+  return mapa[dia];
+}
+
+function montarDadosRelatorioEmail(dataBase) {
+  const estrutura = configurarEstruturaPlanilha();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
+  const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
+  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
+  const periodos = montarPeriodosRelatorioEmail(dataBase);
+
+  const registrosSemana = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.semana.inicio, periodos.semana.fim);
+  const registrosSemanaAnterior = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.semanaAnterior.inicio, periodos.semanaAnterior.fim);
+  const registrosMes = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.mes.inicio, periodos.mes.fim);
+  const registrosMesAnterior = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.mesAnterior.inicio, periodos.mesAnterior.fim);
+  const resumoSemana = montarResumoRelatorio(registrosSemana);
+  const resumoSemanaAnterior = montarResumoRelatorio(registrosSemanaAnterior);
+  const resumoMes = montarResumoRelatorio(registrosMes);
+  const resumoMesAnterior = montarResumoRelatorio(registrosMesAnterior);
+  const distribuicoesMes = montarDistribuicoesRelatorio(registrosMes);
+  const topNaps = montarTopContagemRelatorioEmail(distribuicoesMes.porNAPS, 8);
+  const topTipos = montarTopContagemRelatorioEmail(distribuicoesMes.porTipo, 6);
+  const topMotivos = montarTopContagemRelatorioEmail(distribuicoesMes.porMotivo, 6);
+  const topOpms = montarTopContagemRelatorioEmail(distribuicoesMes.porOPM, 6);
+
+  return {
+    geradoEm: formatarDataHoraBrasil(new Date()),
+    periodoSemana: montarPeriodoTextoRelatorioEmail(periodos.semana),
+    periodoMes: montarPeriodoTextoRelatorioEmail(periodos.mes),
+    nomeArquivoPeriodo: periodos.mes.nomeArquivo,
+    semana: {
+      resumo: resumoSemana,
+      anterior: resumoSemanaAnterior,
+      variacaoAtendimentos: formatarVariacaoRelatorioEmail(resumoSemana.totalAtendimentos, resumoSemanaAnterior.totalAtendimentos),
+      variacaoFaltas: formatarVariacaoRelatorioEmail(resumoSemana.totalFaltas, resumoSemanaAnterior.totalFaltas),
+      variacaoAltas: formatarVariacaoRelatorioEmail(resumoSemana.totalAltas, resumoSemanaAnterior.totalAltas),
+      variacaoArquivamentos: formatarVariacaoRelatorioEmail(resumoSemana.totalArquivamentos, resumoSemanaAnterior.totalArquivamentos)
+    },
+    mes: {
+      resumo: resumoMes,
+      anterior: resumoMesAnterior,
+      variacaoAtendimentos: formatarVariacaoRelatorioEmail(resumoMes.totalAtendimentos, resumoMesAnterior.totalAtendimentos),
+      variacaoFaltas: formatarVariacaoRelatorioEmail(resumoMes.totalFaltas, resumoMesAnterior.totalFaltas),
+      variacaoAltas: formatarVariacaoRelatorioEmail(resumoMes.totalAltas, resumoMesAnterior.totalAltas),
+      variacaoArquivamentos: formatarVariacaoRelatorioEmail(resumoMes.totalArquivamentos, resumoMesAnterior.totalArquivamentos)
+    },
+    cards: montarCardsRelatorioEmail(resumoSemana, resumoSemanaAnterior, resumoMes, resumoMesAnterior),
+    topNaps: topNaps,
+    stackNaps: montarStackNapsRelatorioEmail(registrosMes, 7),
+    topTipos: topTipos,
+    topMotivos: topMotivos,
+    topOpms: topOpms,
+    perfilSituacao: montarTopContagemRelatorioEmail(distribuicoesMes.porSituacao, 5),
+    perfilSexo: montarTopContagemRelatorioEmail(distribuicoesMes.porSexo, 5),
+    faixaEtaria: montarTopContagemRelatorioEmail(distribuicoesMes.porFaixaEtaria, 8),
+    tempoServico: montarTopContagemRelatorioEmail(distribuicoesMes.porTempoServico, 8),
+    leitura: montarLeituraGerencialRelatorioEmail(resumoMes, resumoSemana, topNaps, topMotivos, topOpms)
+  };
+}
+
+function montarPeriodosRelatorioEmail(dataBase) {
+  const hoje = obterDataInicio(dataBase || new Date()) || new Date();
+  const referencia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
+  const diaSemana = referencia.getDay();
+  const diasDesdeSegunda = (diaSemana + 6) % 7;
+  const inicioSemana = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate() - diasDesdeSegunda);
+  const fimSemana = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate());
+  fimSemana.setHours(23, 59, 59, 999);
+
+  const inicioSemanaAnterior = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() - 7);
+  const fimSemanaAnterior = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() - 1);
+  fimSemanaAnterior.setHours(23, 59, 59, 999);
+
+  const inicioMes = new Date(referencia.getFullYear(), referencia.getMonth(), 1);
+  const fimMes = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate());
+  fimMes.setHours(23, 59, 59, 999);
+
+  const inicioMesAnterior = new Date(referencia.getFullYear(), referencia.getMonth() - 1, 1);
+  const fimMesAnterior = new Date(referencia.getFullYear(), referencia.getMonth(), 0);
+  fimMesAnterior.setHours(23, 59, 59, 999);
+
+  return {
+    semana: { inicio: inicioSemana, fim: fimSemana, nomeArquivo: obterMesAno(fimSemana) },
+    semanaAnterior: { inicio: inicioSemanaAnterior, fim: fimSemanaAnterior, nomeArquivo: obterMesAno(fimSemanaAnterior) },
+    mes: { inicio: inicioMes, fim: fimMes, nomeArquivo: obterMesAno(fimMes) },
+    mesAnterior: { inicio: inicioMesAnterior, fim: fimMesAnterior, nomeArquivo: obterMesAno(fimMesAnterior) }
+  };
+}
+
+function montarPeriodoTextoRelatorioEmail(periodo) {
+  return {
+    inicio: formatarDataBrasil(periodo.inicio),
+    fim: formatarDataBrasil(periodo.fim),
+    rotulo: formatarDataBrasil(periodo.inicio) + " a " + formatarDataBrasil(periodo.fim),
+    rotuloCurto: formatarDataBrasil(periodo.inicio) + " - " + formatarDataBrasil(periodo.fim)
+  };
+}
+
+function montarCardsRelatorioEmail(resumoSemana, resumoSemanaAnterior, resumoMes, resumoMesAnterior) {
+  return [
+    {
+      titulo: "Atendimentos no mes",
+      valor: resumoMes.totalAtendimentos,
+      classe: "",
+      detalhe: formatarVariacaoRelatorioEmail(resumoMes.totalAtendimentos, resumoMesAnterior.totalAtendimentos) + " vs. mes anterior"
+    },
+    {
+      titulo: "Pessoas no mes",
+      valor: resumoMes.pessoasDistintas,
+      classe: "",
+      detalhe: resumoMes.pessoasTotalGeral + " pessoas no total geral"
+    },
+    {
+      titulo: "Faltas no mes",
+      valor: resumoMes.totalFaltas,
+      classe: "warning",
+      detalhe: formatarPercentualRelatorioEmail(resumoMes.totalFaltas, resumoMes.totalRegistros) + " dos registros"
+    },
+    {
+      titulo: "Altas no mes",
+      valor: resumoMes.totalAltas,
+      classe: "success",
+      detalhe: formatarPercentualRelatorioEmail(resumoMes.totalAltas, resumoMes.totalAtendimentos) + " dos atendimentos"
+    },
+    {
+      titulo: "Arquivamentos",
+      valor: resumoMes.totalArquivamentos,
+      classe: "",
+      detalhe: formatarVariacaoRelatorioEmail(resumoMes.totalArquivamentos, resumoMesAnterior.totalArquivamentos) + " vs. mes anterior"
+    },
+    {
+      titulo: "Grupos e Palestras",
+      valor: resumoMes.totalEventosColetivos,
+      classe: "event",
+      detalhe: resumoMes.pessoasEventos + " participantes"
+    },
+    {
+      titulo: "Semana atual",
+      valor: resumoSemana.totalAtendimentos,
+      classe: "",
+      detalhe: formatarVariacaoRelatorioEmail(resumoSemana.totalAtendimentos, resumoSemanaAnterior.totalAtendimentos) + " vs. semana anterior"
+    }
+  ];
+}
+
+function montarTopContagemRelatorioEmail(contagem, limite) {
+  const itens = Object.keys(contagem || {}).map(function(chave) {
+    return {
+      nome: String(chave || "nao informado").trim() || "nao informado",
+      valor: Number(contagem[chave] || 0)
+    };
+  }).filter(function(item) {
+    return item.valor > 0;
+  }).sort(function(a, b) {
+    return b.valor - a.valor || a.nome.localeCompare(b.nome);
+  });
+  const lista = itens.slice(0, limite || 6);
+  const total = itens.reduce(function(soma, item) {
+    return soma + item.valor;
+  }, 0);
+  const maior = lista.length > 0 ? lista[0].valor : 0;
+
+  return lista.map(function(item, indice) {
+    return {
+      nome: item.nome,
+      valor: item.valor,
+      percentual: formatarPercentualRelatorioEmail(item.valor, total),
+      largura: maior > 0 ? Math.max(6, Math.round((item.valor / maior) * 100)) : 0,
+      cor: "c" + ((indice % 6) + 1)
+    };
+  });
+}
+
+function montarStackNapsRelatorioEmail(registros, limite) {
+  const mapa = {};
+
+  registros.forEach(function(registro) {
+    const naps = formatarNapsRelatorio(registro.naps || registro.napsAtendimento || "nao informado");
+
+    if (!mapa[naps]) {
+      mapa[naps] = {
+        naps: naps,
+        atendimentos: 0,
+        faltas: 0,
+        altas: 0,
+        arquivamentos: 0
+      };
+    }
+
+    if (ehRegistroFalta(registro)) {
+      mapa[naps].faltas++;
+      return;
+    }
+
+    if (ehRegistroArquivamento(registro)) {
+      mapa[naps].arquivamentos++;
+      return;
+    }
+
+    mapa[naps].atendimentos++;
+
+    if (ehRegistroAlta(registro)) {
+      mapa[naps].altas++;
+    }
+  });
+
+  return Object.keys(mapa).map(function(chave) {
+    const item = mapa[chave];
+    item.totalVisual = item.atendimentos + item.faltas + item.altas + item.arquivamentos;
+    item.larguraAtendimentos = item.totalVisual > 0 ? Math.round((item.atendimentos / item.totalVisual) * 100) : 0;
+    item.larguraFaltas = item.totalVisual > 0 ? Math.round((item.faltas / item.totalVisual) * 100) : 0;
+    item.larguraAltas = item.totalVisual > 0 ? Math.round((item.altas / item.totalVisual) * 100) : 0;
+    item.larguraArquivamentos = Math.max(0, 100 - item.larguraAtendimentos - item.larguraFaltas - item.larguraAltas);
+    return item;
+  }).sort(function(a, b) {
+    return b.totalVisual - a.totalVisual || a.naps.localeCompare(b.naps);
+  }).slice(0, limite || 7);
+}
+
+function montarLeituraGerencialRelatorioEmail(resumoMes, resumoSemana, topNaps, topMotivos, topOpms) {
+  const principalNaps = topNaps[0];
+  const principalMotivo = topMotivos[0];
+  const principalOpm = topOpms[0];
+  const leituras = [];
+
+  if (principalNaps) {
+    leituras.push("O " + principalNaps.nome + " concentrou " + principalNaps.percentual + " dos registros do mes.");
+  }
+
+  if (principalMotivo) {
+    leituras.push("O motivo mais frequente foi " + principalMotivo.nome + ", com " + principalMotivo.valor + " registro(s), equivalente a " + principalMotivo.percentual + ".");
+  }
+
+  if (principalOpm) {
+    leituras.push("A OPM com maior incidencia foi " + principalOpm.nome + ", com " + principalOpm.valor + " registro(s).");
+  }
+
+  leituras.push("No mes, houve " + resumoMes.totalAtendimentos + " atendimento(s), " + resumoMes.totalFaltas + " falta(s), " + resumoMes.totalAltas + " alta(s) e " + resumoMes.totalEventosColetivos + " grupo(s) ou palestra(s).");
+  leituras.push("Arquivamentos no mes: " + resumoMes.totalArquivamentos + ". Na semana: " + resumoSemana.totalArquivamentos + ".");
+  leituras.push("Na semana, houve " + resumoSemana.totalAtendimentos + " atendimento(s), com " + resumoSemana.totalFaltas + " falta(s) e " + resumoSemana.totalAltas + " alta(s).");
+
+  return leituras;
+}
+
+function formatarPercentualRelatorioEmail(valor, total) {
+  const numero = Number(valor || 0);
+  const base = Number(total || 0);
+
+  if (!base) return "0%";
+
+  return ((numero / base) * 100).toFixed(1).replace(".", ",") + "%";
+}
+
+function formatarVariacaoRelatorioEmail(atual, anterior) {
+  const numeroAtual = Number(atual || 0);
+  const numeroAnterior = Number(anterior || 0);
+
+  if (numeroAnterior === 0 && numeroAtual === 0) return "0%";
+  if (numeroAnterior === 0) return "+100%";
+
+  const variacao = ((numeroAtual - numeroAnterior) / numeroAnterior) * 100;
+  const sinal = variacao > 0 ? "+" : "";
+
+  return sinal + variacao.toFixed(1).replace(".", ",") + "%";
+}
+
+function gerarPdfRelatorioEmail(dados) {
+  const template = HtmlService.createTemplateFromFile("relatorio_email_pdf");
+  template.dados = dados;
+
+  const html = template.evaluate().getContent();
+  const nomeArquivo = "relatorio_saic_" + dados.nomeArquivoPeriodo + ".pdf";
+
+  return Utilities
+    .newBlob(html, "text/html", "relatorio_saic.html")
+    .getAs("application/pdf")
+    .setName(nomeArquivo);
+}
+
+function montarCorpoEmailRelatorio(dados) {
+  return [
+    "<div style='font-family:Arial,Helvetica,sans-serif;color:#293033;line-height:1.5'>",
+    "<h2 style='margin:0 0 8px'>Relatorio SAIC</h2>",
+    "<p>Segue em anexo o relatorio gerencial em PDF.</p>",
+    "<p><strong>Semana:</strong> " + dados.periodoSemana.rotulo + "<br>",
+    "<strong>Mes:</strong> " + dados.periodoMes.rotulo + "</p>",
+    "<p style='color:#66737b;font-size:12px'>Gerado em " + dados.geradoEm + ".</p>",
+    "</div>"
+  ].join("");
 }
 
 // UTILITARIOS GERAIS E AUTORIZACAO
