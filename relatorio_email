@@ -184,7 +184,7 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(7, 1fr);
       gap: 11px;
       margin-bottom: 14px;
     }
@@ -365,6 +365,10 @@
       background: var(--green);
     }
 
+    .stack-r {
+      background: #64748b;
+    }
+
     .legend {
       display: flex;
       flex-wrap: wrap;
@@ -399,6 +403,10 @@
 
     .dot.violet {
       background: var(--violet);
+    }
+
+    .dot.gray {
+      background: #64748b;
     }
 
     .insights {
@@ -473,7 +481,7 @@
       <div class="notice">
         <div>
           <strong>Relat&oacute;rio gerado automaticamente</strong>
-          <span>Gerado em <?= dados.geradoEm ?>. Eventos coletivos contam como um atendimento e mant&ecirc;m participantes em indicador separado.</span>
+          <span>Gerado em <?= dados.geradoEm ?>. Grupos e Palestras contam como um atendimento e mant&ecirc;m participantes em indicador separado.</span>
         </div>
         <div class="pill">Semana: <?= dados.periodoSemana.rotulo ?></div>
         <div class="pill">M&ecirc;s: <?= dados.periodoMes.rotulo ?></div>
@@ -518,11 +526,12 @@
 
       <div class="grid-2">
         <section class="panel">
-          <h2>Atendimentos, faltas e altas por NAPS</h2>
+          <h2>Atendimentos, faltas, altas e arquivamentos por NAPS</h2>
           <div class="legend">
             <span><i class="dot"></i> Atendimentos</span>
             <span><i class="dot orange"></i> Faltas</span>
             <span><i class="dot green"></i> Altas</span>
+            <span><i class="dot gray"></i> Arquivamentos</span>
           </div>
           <div class="stacked">
             <? if (dados.stackNaps.length === 0) { ?>
@@ -535,8 +544,9 @@
                   <div class="stack-a" style="width:<?= item.larguraAtendimentos ?>%"></div>
                   <div class="stack-f" style="width:<?= item.larguraFaltas ?>%"></div>
                   <div class="stack-h" style="width:<?= item.larguraAltas ?>%"></div>
+                  <div class="stack-r" style="width:<?= item.larguraArquivamentos ?>%"></div>
                 </div>
-                <span><?= item.atendimentos ?> / <?= item.faltas ?> / <?= item.altas ?></span>
+                <span><?= item.atendimentos ?> / <?= item.faltas ?> / <?= item.altas ?> / <?= item.arquivamentos ?></span>
               </div>
             <? }); ?>
           </div>
@@ -572,7 +582,7 @@
         <div>
           <p class="eyebrow">Detalhamento do per&iacute;odo</p>
           <h1>Indicadores complementares</h1>
-          <p class="subtitle">Motivos, OPMs, perfil e compara&ccedil;&otilde;es do per&iacute;odo</p>
+          <p class="subtitle">Hip&oacute;teses de diagn&oacute;stico, OPMs, perfil e compara&ccedil;&otilde;es do per&iacute;odo</p>
         </div>
         <div class="brand-marks" aria-label="Identidade institucional">
           <span>SSP</span>
@@ -586,7 +596,7 @@
     <main class="content">
       <div class="grid-3">
         <section class="panel">
-          <h2>Motivos</h2>
+          <h2>Hip&oacute;teses de diagn&oacute;stico</h2>
           <div class="bars">
             <? if (dados.topMotivos.length === 0) { ?>
               <div class="insight">Nenhum registro encontrado no per&iacute;odo.</div>
@@ -707,7 +717,8 @@
               <tr><td>Pessoas</td><td><?= dados.semana.resumo.pessoasDistintas ?></td><td><?= dados.semana.anterior.pessoasDistintas ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.pessoasDistintas, dados.semana.anterior.pessoasDistintas) ?></td></tr>
               <tr><td>Faltas</td><td><?= dados.semana.resumo.totalFaltas ?></td><td><?= dados.semana.anterior.totalFaltas ?></td><td><?= dados.semana.variacaoFaltas ?></td></tr>
               <tr><td>Altas</td><td><?= dados.semana.resumo.totalAltas ?></td><td><?= dados.semana.anterior.totalAltas ?></td><td><?= dados.semana.variacaoAltas ?></td></tr>
-              <tr><td>Eventos coletivos</td><td><?= dados.semana.resumo.totalEventosColetivos ?></td><td><?= dados.semana.anterior.totalEventosColetivos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.totalEventosColetivos, dados.semana.anterior.totalEventosColetivos) ?></td></tr>
+              <tr><td>Arquivamentos</td><td><?= dados.semana.resumo.totalArquivamentos ?></td><td><?= dados.semana.anterior.totalArquivamentos ?></td><td><?= dados.semana.variacaoArquivamentos ?></td></tr>
+              <tr><td>Grupos e Palestras</td><td><?= dados.semana.resumo.totalEventosColetivos ?></td><td><?= dados.semana.anterior.totalEventosColetivos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.totalEventosColetivos, dados.semana.anterior.totalEventosColetivos) ?></td></tr>
               <tr><td>Participantes em eventos</td><td><?= dados.semana.resumo.pessoasEventos ?></td><td><?= dados.semana.anterior.pessoasEventos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.semana.resumo.pessoasEventos, dados.semana.anterior.pessoasEventos) ?></td></tr>
             </tbody>
           </table>
@@ -729,7 +740,8 @@
               <tr><td>Pessoas</td><td><?= dados.mes.resumo.pessoasDistintas ?></td><td><?= dados.mes.anterior.pessoasDistintas ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.pessoasDistintas, dados.mes.anterior.pessoasDistintas) ?></td></tr>
               <tr><td>Faltas</td><td><?= dados.mes.resumo.totalFaltas ?></td><td><?= dados.mes.anterior.totalFaltas ?></td><td><?= dados.mes.variacaoFaltas ?></td></tr>
               <tr><td>Altas</td><td><?= dados.mes.resumo.totalAltas ?></td><td><?= dados.mes.anterior.totalAltas ?></td><td><?= dados.mes.variacaoAltas ?></td></tr>
-              <tr><td>Eventos coletivos</td><td><?= dados.mes.resumo.totalEventosColetivos ?></td><td><?= dados.mes.anterior.totalEventosColetivos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.totalEventosColetivos, dados.mes.anterior.totalEventosColetivos) ?></td></tr>
+              <tr><td>Arquivamentos</td><td><?= dados.mes.resumo.totalArquivamentos ?></td><td><?= dados.mes.anterior.totalArquivamentos ?></td><td><?= dados.mes.variacaoArquivamentos ?></td></tr>
+              <tr><td>Grupos e Palestras</td><td><?= dados.mes.resumo.totalEventosColetivos ?></td><td><?= dados.mes.anterior.totalEventosColetivos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.totalEventosColetivos, dados.mes.anterior.totalEventosColetivos) ?></td></tr>
               <tr><td>Participantes em eventos</td><td><?= dados.mes.resumo.pessoasEventos ?></td><td><?= dados.mes.anterior.pessoasEventos ?></td><td><?= formatarVariacaoRelatorioEmail(dados.mes.resumo.pessoasEventos, dados.mes.anterior.pessoasEventos) ?></td></tr>
             </tbody>
           </table>
