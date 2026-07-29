@@ -324,7 +324,7 @@
 
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 16px;
       margin-top: 20px;
     }
@@ -623,7 +623,7 @@
           <a href="#resumo" class="active">Resumo</a>
           <a href="#comparativo">Comparativo</a>
           <a href="#tipos">Tipos</a>
-          <a href="#motivos">Motivos</a>
+          <a href="#motivos">Hipóteses</a>
         </nav>
       </aside>
 
@@ -681,7 +681,7 @@
           </div>
 
           <div id="motivos" class="chart-card">
-            <h2 class="section-title">Motivos</h2>
+            <h2 class="section-title">Hipóteses de diagnóstico</h2>
             <div id="graficoMotivos" class="bar-list"></div>
           </div>
         </section>
@@ -792,9 +792,13 @@
 
       const cards = [
         { chave: "atendimentos", titulo: "Atendimentos", valor: resumo.atendimentos || 0 },
+        { chave: "eventosColetivos", titulo: "Grupos e Palestras", valor: resumo.eventosColetivos || 0 },
         { chave: "pessoas", titulo: "Pessoas", valor: resumo.pessoas || 0 },
+        { chave: "pessoasEventos", titulo: "Pessoas em eventos", valor: resumo.pessoasEventos || 0 },
+        { chave: "pessoasTotal", titulo: "Total de pessoas", valor: resumo.pessoasTotal || 0 },
         { chave: "faltas", titulo: "Faltas", valor: resumo.faltas || 0 },
-        { chave: "altas", titulo: "Altas", valor: resumo.altas || 0 }
+        { chave: "altas", titulo: "Altas", valor: resumo.altas || 0 },
+        { chave: "arquivamentos", titulo: "Arquivamentos", valor: resumo.arquivamentos || 0 }
       ];
 
       document.getElementById("resumo").innerHTML = cards.map(function(card) {
