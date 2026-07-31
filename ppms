@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<!--
+  SAIC - PPMS
+  Tela disponivel para usuarios autorizados pelo campo acesso_ppms.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base target="_top">
+  <title>PPMS - SiSMen</title>
+  <style>
+    :root {
+      --bg: #eef4f7;
+      --surface: #ffffff;
+      --surface-soft: #f7fbfc;
+      --ink: #263033;
+      --muted: #66747c;
+      --line: #d8e4e8;
+      --red: #b31f2a;
+      --blue: #315f72;
+      --green: #2f7d55;
+      --shadow: 0 18px 38px rgba(31, 48, 56, 0.10);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    label {
+      color: var(--ink);
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 7px;
+    }
+
+    input,
+    select,
+    textarea {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      min-height: 42px;
+      outline: none;
+      padding: 10px 12px;
+      width: 100%;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(49, 95, 114, 0.14);
+    }
+
+    input[readonly] {
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      background: #eef4f6;
+      color: #7a8a90;
+      cursor: not-allowed;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      color: #ffffff;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 18px;
+      position: sticky;
+      top: 0;
+    }
+
+    .sidebar::after {
+      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
+      content: "";
+      height: 100%;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 2px;
+    }
+
+    .brand {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      padding-bottom: 22px;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .brand span {
+      color: rgba(255, 255, 255, 0.76);
+      display: block;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 26px;
+    }
+
+    .side-nav button {
+      background: transparent;
+      border-radius: var(--radius);
+      color: rgba(255, 255, 255, 0.84);
+      min-height: 42px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .side-nav button.active,
+    .side-nav button:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .side-nav-separator {
+      background: rgba(255, 255, 255, 0.16);
+      height: 1px;
+      margin: 10px 0;
+    }
+
+    .side-nav button.nav-voltar {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+
+    .content {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .page-banner {
+      background: linear-gradient(135deg, #ffffff 0%, #eef6f8 100%);
+      border: 1px solid rgba(216, 228, 232, 0.8);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-height: 142px;
+      overflow: hidden;
+      padding: 28px 30px;
+      position: relative;
+    }
+
+    .page-banner::before,
+    .page-banner::after {
+      content: "";
+      height: 8px;
+      left: 0;
+      pointer-events: none;
+      position: absolute;
+      width: 100%;
+    }
+
+    .page-banner::before {
+      background: linear-gradient(100deg, var(--red) 0%, rgba(179, 31, 42, 0.7) 34%, transparent 86%);
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+      top: 0;
+    }
+
+    .page-banner::after {
+      background: linear-gradient(280deg, #75848a 0%, rgba(117, 132, 138, 0.62) 36%, transparent 88%);
+      bottom: 0;
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .banner-content {
+      align-items: center;
+      display: flex;
+      gap: 20px;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+    }
+
+    .page-banner h1 {
+      color: var(--ink);
+      font-size: clamp(30px, 4vw, 44px);
+      letter-spacing: 0;
+      line-height: 1.08;
+      margin: 0;
+    }
+
+    .page-banner span {
+      color: var(--muted);
+      display: block;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .summary-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-width: 230px;
+      padding: 16px;
+    }
+
+    .summary-card small {
+      color: var(--muted);
+      display: block;
+      font-weight: 800;
+    }
+
+    .summary-card strong {
+      color: var(--ink);
+      display: block;
+      font-size: 18px;
+      margin-top: 6px;
+    }
+
+    .status-line {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      margin: 18px 0;
+      min-height: 22px;
+    }
+
+    .status-line.error {
+      color: #b42318;
+    }
+
+    .status-line.success {
+      color: var(--green);
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-top: 18px;
+      padding: 22px;
+    }
+
+    .section-title {
+      align-items: center;
+      color: var(--ink);
+      display: flex;
+      font-size: 19px;
+      gap: 10px;
+      line-height: 1.2;
+      margin: 0 0 18px;
+    }
+
+    .section-title::before {
+      background: var(--red);
+      border-radius: 999px;
+      content: "";
+      height: 24px;
+      width: 4px;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4,
+    .grid-5 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .grid-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .grid-endereco-ppms {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(70px, 0.45fr) minmax(190px, 1.3fr) minmax(110px, 0.8fr);
+    }
+
+    .campo-rua-ppms,
+    .campo-complemento-ppms {
+      grid-column: span 2;
+    }
+
+    .field-span-2 {
+      grid-column: span 2;
+    }
+
+    .field-span-3 {
+      grid-column: span 3;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    .field-helper {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      min-height: 18px;
+      padding-top: 5px;
+    }
+
+    .campo-condicional {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .campo-condicional.visivel {
+      display: block;
+    }
+
+    .check-field {
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-height: 42px;
+      padding: 10px 12px;
+    }
+
+    .check-field > label {
+      margin-bottom: 8px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .check-field.compacto {
+      padding: 9px 12px;
+    }
+
+    .check-field.compacto .checkbox-row {
+      align-items: center;
+      flex-direction: row;
+      gap: 12px;
+    }
+
+    .check-field.sem-titulo > label {
+      display: none;
+    }
+
+    .checkbox-option {
+      align-items: center;
+      color: var(--ink);
+      display: flex;
+      font-size: 13px;
+      font-weight: 800;
+      gap: 7px;
+      margin: 0;
+    }
+
+    .checkbox-option input {
+      min-height: auto;
+      width: auto;
+    }
+
+    .actions {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(49, 95, 114, 0.16);
+      color: #ffffff;
+      min-height: 44px;
+      padding: 11px 16px;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      min-height: 44px;
+      padding: 11px 16px;
+    }
+
+    .ultimos-ppms-wrapper {
+      position: relative;
+    }
+
+    .btn-ultimos-ppms {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--blue);
+      display: inline-flex;
+      height: 44px;
+      justify-content: center;
+      padding: 0;
+      width: 44px;
+    }
+
+    .icone-relogio {
+      border: 3px solid currentColor;
+      border-radius: 50%;
+      display: inline-block;
+      height: 20px;
+      position: relative;
+      width: 20px;
+    }
+
+    .icone-relogio::before,
+    .icone-relogio::after {
+      background: currentColor;
+      border-radius: 999px;
+      content: "";
+      left: 8px;
+      position: absolute;
+      top: 3px;
+      transform-origin: bottom center;
+      width: 2px;
+    }
+
+    .icone-relogio::before {
+      height: 7px;
+    }
+
+    .icone-relogio::after {
+      height: 5px;
+      transform: rotate(90deg);
+    }
+
+    .ultimos-ppms-popover {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      bottom: calc(100% + 8px);
+      box-shadow: 0 20px 42px rgba(15, 23, 42, 0.18);
+      display: none;
+      min-width: 320px;
+      padding: 10px;
+      position: absolute;
+      right: 0;
+      z-index: 30;
+    }
+
+    .ultimos-ppms-popover.ativo {
+      display: block;
+    }
+
+    .ultimos-titulo {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .ultimo-ppms-item {
+      background: var(--surface-soft);
+      border-radius: var(--radius);
+      color: var(--ink);
+      display: block;
+      margin-top: 7px;
+      padding: 9px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .ultimo-ppms-item strong,
+    .ultimo-ppms-item span {
+      display: block;
+    }
+
+    .ultimo-ppms-item span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .ultimos-vazio {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 2px;
+    }
+
+    .saving-inline {
+      align-items: center;
+      color: var(--muted);
+      display: inline-flex;
+      font-size: 13px;
+      font-weight: 800;
+      gap: 8px;
+      min-height: 28px;
+    }
+
+    .saving-inline.success {
+      color: var(--green);
+    }
+
+    .saving-inline.error {
+      color: #b42318;
+    }
+
+    .saving-spinner,
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border-radius: 999px;
+      border-style: solid;
+    }
+
+    .saving-spinner {
+      border-color: rgba(49, 95, 114, 0.18);
+      border-top-color: var(--blue);
+      border-width: 2px;
+      height: 16px;
+      width: 16px;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: var(--ink);
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      border-color: rgba(49, 95, 114, 0.18);
+      border-top-color: var(--blue);
+      border-width: 3px;
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    @media (max-width: 980px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        position: relative;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .banner-content {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .grid-2,
+      .grid-3,
+      .grid-4,
+      .grid-5,
+      .grid-endereco-ppms,
+      .field-span-2,
+      .campo-rua-ppms,
+      .campo-complemento-ppms,
+      .field-full {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+      }
+
+      .field-span-3 {
+        grid-column: 1 / -1;
+      }
+
+      .check-field.compacto .checkbox-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 620px) {
+      body {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        font-size: 16px;
+        min-height: 52px;
+        padding: 13px 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando pagina">
+    <div class="navegacao-card">
+      <span class="navegacao-spinner"></span>
+      <strong id="navegacaoMensagem">Carregando...</strong>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="PPMS">
+      <div class="brand">
+        <strong>PPMS</strong>
+        <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+      </div>
+
+      <nav class="side-nav">
+        <button type="button" class="active">PPMS</button>
+        <div class="side-nav-separator" aria-hidden="true"></div>
+        <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="page-banner">
+        <div class="banner-content">
+          <div>
+            <p class="eyebrow">PPMS</p>
+            <h1>Registro PPMS</h1>
+            <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+          </div>
+          <div class="summary-card">
+            <small>Respons&aacute;vel</small>
+            <strong id="resumoResponsavel">Carregando</strong>
+            <span id="resumoNaps">NAPS n&atilde;o informado</span>
+          </div>
+        </div>
+      </header>
+
+      <div id="statusTela" class="status-line"><?= mensagemLoginInicial ?></div>
+
+      <section class="section" aria-label="Identificacao do fato">
+        <h2 class="section-title">Identifica&ccedil;&atilde;o do Fato</h2>
+        <div class="grid-3">
+          <div>
+            <label for="dataFato">Data do Fato</label>
+            <input id="dataFato" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this); atualizarDiaSemana()" onblur="validarAnoDataCampo(this); atualizarDiaSemana()" required>
+          </div>
+
+          <div>
+            <label for="horaFato">Hora do Fato</label>
+            <input id="horaFato" type="time" required>
+          </div>
+
+          <div>
+            <label for="diaSemana">Dia da Semana</label>
+            <input id="diaSemana" type="text" readonly>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Dados PPMS">
+        <h2 class="section-title">Dados PPMS</h2>
+        <div class="grid-3">
+          <div>
+            <label for="meioUtilizado">Meio Utilizado</label>
+            <select id="meioUtilizado" onchange="atualizarMeioOutros()" required>
+              <option value="">Selecione</option>
+              <option value="arma de fogo">Arma de fogo</option>
+              <option value="corda">Corda</option>
+              <option value="armas brancas">Armas brancas</option>
+              <option value="medicamento">Medicamento</option>
+              <option value="auto-lesao">Auto-les&atilde;o</option>
+              <option value="precipitacao">Precipita&ccedil;&atilde;o</option>
+              <option value="outros">Outros</option>
+            </select>
+            <div id="grupoMeioOutros" class="campo-condicional">
+              <input id="meioUtilizadoOutros" type="text" placeholder="Detalhe o meio utilizado" oninput="converterMaiusculasSemAcento(this)">
+            </div>
+          </div>
+
+          <div>
+            <label for="tentativaAnterior">Tentativa anterior</label>
+            <select id="tentativaAnterior" required>
+              <option value="">Selecione</option>
+              <option value="sim">Sim</option>
+              <option value="nao">N&atilde;o</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="fatorPrecipitante">Fator Precipitante</label>
+            <input id="fatorPrecipitante" type="text" placeholder="Descreva o fator precipitante" required>
+          </div>
+
+          <div class="check-field compacto sem-titulo field-span-3">
+            <label>Acompanhamentos e passagens</label>
+            <div class="checkbox-row">
+              <label class="checkbox-option" for="acompanhamentoCaps">
+                <input id="acompanhamentoCaps" type="checkbox">
+                Acompanhamento em psicoterapia pelo CAPS/NAPS
+              </label>
+              <label class="checkbox-option" for="passagemCaps">
+                <input id="passagemCaps" type="checkbox">
+                Passagem pelo CAPS/NAPS
+              </label>
+              <label class="checkbox-option" for="acompanhamentoPsiquiatria">
+                <input id="acompanhamentoPsiquiatria" type="checkbox">
+                Acompanhamento em psiquiatria
+              </label>
+              <label class="checkbox-option" for="passagemPsiquiatria">
+                <input id="passagemPsiquiatria" type="checkbox">
+                Passagem pela psiquiatria
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Dados pessoais e funcionais">
+        <h2 class="section-title">Dados Pessoais e Funcionais</h2>
+        <div class="grid-5">
+          <div>
+            <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
+            <select id="postoGraduacao" required>
+              <option value="">Selecione</option>
+              <option>Sd PM</option>
+              <option>Cb PM</option>
+              <option>3&ordm; Sgt PM</option>
+              <option>2&ordm; Sgt PM</option>
+              <option>1&ordm; Sgt PM</option>
+              <option>Subten PM</option>
+              <option>Asp of PM</option>
+              <option>2&ordm; Ten PM</option>
+              <option>1&ordm; Ten PM</option>
+              <option>Cap PM</option>
+              <option>Maj PM</option>
+              <option>Ten Cel PM</option>
+              <option>Cel PM</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="opmAtual">OPM Atual/&Uacute;ltima</label>
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this)" required>
+            <datalist id="listaOPM">
+              <option value="CAPS"></option>
+              <option value="PMRG"></option>
+              <option value="APMBB"></option>
+              <option value="COPOM"></option>
+              <option value="CCB"></option>
+              <option value="CRPM"></option>
+              <option value="C MED"></option>
+              <option value="1.BPM/M"></option>
+              <option value="2.BPM/M"></option>
+              <option value="3.BPM/M"></option>
+              <option value="4.BPM/M"></option>
+              <option value="5.BPM/M"></option>
+              <option value="6.BPM/M"></option>
+              <option value="7.BPM/M"></option>
+              <option value="8.BPM/M"></option>
+              <option value="9.BPM/M"></option>
+              <option value="10.BPM/M"></option>
+              <option value="11.BPM/M"></option>
+              <option value="12.BPM/M"></option>
+              <option value="13.BPM/M"></option>
+              <option value="14BPM/M"></option>
+              <option value="15.BPM/M"></option>
+              <option value="16.BPM/M"></option>
+              <option value="17.BPM/M"></option>
+              <option value="18.BPM/M"></option>
+              <option value="19.BPM/M"></option>
+              <option value="20.BPM/M"></option>
+              <option value="21.BPM/M"></option>
+              <option value="22.BPM/M"></option>
+              <option value="23.BPM/M"></option>
+              <option value="24.BPM/M"></option>
+              <option value="25.BPM/M"></option>
+              <option value="26.BPM/M"></option>
+              <option value="27.BPM/M"></option>
+              <option value="28.BPM/M"></option>
+              <option value="29.BPM/M"></option>
+              <option value="30.BPM/M"></option>
+              <option value="31.BPM/M"></option>
+              <option value="32.BPM/M"></option>
+              <option value="33.BPM/M"></option>
+              <option value="35.BPM/M"></option>
+              <option value="36.BPM/M"></option>
+              <option value="37.BPM/M"></option>
+              <option value="38.BPM/M"></option>
+              <option value="39.BPM/M"></option>
+              <option value="40.BPM/M"></option>
+              <option value="43.BPM/M"></option>
+              <option value="44.BPM/M"></option>
+              <option value="46.BPM/M"></option>
+              <option value="48.BPM/M"></option>
+              <option value="49.BPM/M"></option>
+              <option value="50.BPM/M"></option>
+              <option value="CPA/M-1"></option>
+              <option value="CPA/M-2"></option>
+              <option value="CPA/M-3"></option>
+              <option value="CPA/M-4"></option>
+              <option value="CPA/M-5"></option>
+              <option value="CPA/M-6"></option>
+              <option value="CPA/M-7"></option>
+              <option value="CPA/M-8"></option>
+              <option value="CPA/M-9"></option>
+              <option value="CPA/M-10"></option>
+              <option value="CPA/M-11"></option>
+              <option value="CPA/M-12"></option>
+              <option value="CPI-1"></option>
+              <option value="CPI-2"></option>
+              <option value="CPI-3"></option>
+              <option value="CPI-4"></option>
+              <option value="CPI-5"></option>
+              <option value="CPI-6"></option>
+              <option value="CPI-7"></option>
+              <option value="CPI-8"></option>
+              <option value="CPI-9"></option>
+              <option value="CPI-10"></option>
+              <option value="CPAMB"></option>
+              <option value="CPCHQ"></option>
+              <option value="CPRV"></option>
+              <option value="CPTRAN"></option>
+              <option value="ESSD"></option>
+              <option value="ESSGT"></option>
+              <option value="GBMAR"></option>
+            </datalist>
+          </div>
+
+          <div>
+            <label for="situacaoStatus">Situa&ccedil;&atilde;o/Status</label>
+            <select id="situacaoStatus" onchange="atualizarEscalaPorSituacao(); atualizarObrigatoriedadeDataInatividade()" required>
+              <option value="">Selecione</option>
+              <option>agregado(a)</option>
+              <option>ativo administrativo</option>
+              <option>ativo operacional</option>
+              <option>exonerado(a)</option>
+              <option>inativo</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="dataIngresso">Data de Ingresso</label>
+            <input id="dataIngresso" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this); atualizarCalculosDatas()" onblur="validarAnoDataCampo(this); atualizarCalculosDatas()" required>
+            <span id="tempoServico" class="field-helper"></span>
+          </div>
+
+          <div>
+            <label for="dataInatividade">Data de Inatividade</label>
+            <input id="dataInatividade" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this); atualizarCalculosDatas()" onblur="validarAnoDataCampo(this); atualizarCalculosDatas()" disabled>
+            <span id="tempoInatividade" class="field-helper"></span>
+          </div>
+
+          <div>
+            <label for="dataNascimento">Data de Nascimento</label>
+            <input id="dataNascimento" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="mascaraDataBrasil(this); atualizarCalculosDatas()" onblur="validarAnoDataCampo(this); atualizarCalculosDatas()" required>
+            <span id="idadeCalculada" class="field-helper"></span>
+          </div>
+
+          <div>
+            <label for="estadoCivil">Estado Civil</label>
+            <select id="estadoCivil" required>
+              <option value="">Selecione</option>
+              <option>solteiro(a)</option>
+              <option>casado(a)</option>
+              <option>divorciado(a)</option>
+              <option>viuvo(a)</option>
+              <option>uniao estavel</option>
+              <option>nao informado</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="sexo">Sexo</label>
+            <select id="sexo" required>
+              <option value="">Selecione</option>
+              <option>masculino</option>
+              <option>feminino</option>
+              <option>nao informado</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="numeroFilhos">N&uacute;mero de Filhos</label>
+            <input id="numeroFilhos" type="number" min="0" max="10" value="0" oninput="ajustarNumeroFilhos(this)">
+          </div>
+
+          <div class="check-field compacto campo-escala-ppms">
+            <label>Escala</label>
+            <div class="checkbox-row">
+              <label class="checkbox-option" for="servico">
+                <input id="servico" type="checkbox" value="servico" onchange="alternarServicoFolga(this)">
+                Servi&ccedil;o
+              </label>
+              <label class="checkbox-option" for="folga">
+                <input id="folga" type="checkbox" value="folga" onchange="alternarServicoFolga(this)">
+                Folga
+              </label>
+              <label class="checkbox-option" for="inTinere">
+                <input id="inTinere" type="checkbox" value="in tinere" onchange="alternarServicoFolga(this)">
+                In tinere
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Endereco residencial, funcional e/ou relacionado a ocorrencia">
+        <h2 class="section-title">Endere&ccedil;o residencial, funcional e/ou relacionado &agrave; ocorr&ecirc;ncia</h2>
+        <div class="grid-endereco-ppms">
+          <div>
+            <label for="cep">CEP</label>
+            <input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCep()" required>
+          </div>
+
+          <div>
+            <label for="tipoLocalEndereco">Tipo do local</label>
+            <select id="tipoLocalEndereco" required>
+              <option value="">Selecione</option>
+              <option value="residencial">Residencial</option>
+              <option value="funcional">Funcional</option>
+              <option value="outro local relacionado">Outro local relacionado</option>
+            </select>
+          </div>
+
+          <div class="campo-rua-ppms">
+            <label for="rua">Rua</label>
+            <input id="rua" type="text" required>
+          </div>
+
+          <div>
+            <label for="numero">N&uacute;mero</label>
+            <input id="numero" type="text" required>
+          </div>
+
+          <div>
+            <label for="bairro">Bairro</label>
+            <input id="bairro" type="text" required>
+          </div>
+
+          <div>
+            <label for="cidade">Cidade</label>
+            <input id="cidade" type="text" required>
+          </div>
+
+          <div>
+            <label for="estado">Estado</label>
+            <input id="estado" type="text" maxlength="2" oninput="converterMaiusculasSemAcento(this)" required>
+          </div>
+
+          <div class="campo-complemento-ppms">
+            <label for="complemento">Complemento / detalhes do local</label>
+            <input id="complemento" type="text" placeholder="Digite complemento, referencia ou detalhe do local">
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Salvar PPMS">
+        <h2 class="section-title">Finalizar</h2>
+        <div>
+          <label for="responsavel">Respons&aacute;vel pelo Registro</label>
+          <input id="responsavel" type="text" readonly>
+        </div>
+
+        <div class="actions">
+          <button id="btnSalvarPPMS" type="button" class="btn-primary" onclick="salvarRegistroPPMS()">Salvar PPMS</button>
+          <button type="button" class="btn-secondary" onclick="limparFormularioPPMS()">Limpar</button>
+          <span id="statusSalvarPPMS" class="saving-inline"></span>
+          <div class="ultimos-ppms-wrapper">
+            <button id="btnUltimosPPMS" type="button" class="btn-ultimos-ppms" title="&Uacute;ltimos registros PPMS" aria-label="&Uacute;ltimos registros PPMS" onclick="alternarUltimosPPMS(event)">
+              <span class="icone-relogio" aria-hidden="true"></span>
+            </button>
+            <div id="painelUltimosPPMS" class="ultimos-ppms-popover"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const webAppUrl = "<?= webAppUrl ?>";
+    let tokenGoogle = "<?= tokenGoogleInicial ?>";
+    let usuarioLogado = <?!= usuarioInicialJson ?>;
+    let mensagemLoginInicial = <?!= JSON.stringify(mensagemLoginInicial || "") ?>;
+    let ultimosPPMSCarregados = false;
+    let ultimosPPMSCarregando = false;
+
+    window.addEventListener("load", function() {
+      if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
+        mostrarStatus(mensagemLoginInicial || "Abra PPMS pelo menu do formulario.", "error");
+        bloquearTela();
+        return;
+      }
+
+      if (!usuarioPodeAcessarPPMS()) {
+        mostrarStatus("Acesso permitido somente para usuarios autorizados ao PPMS.", "error");
+        bloquearTela();
+        return;
+      }
+
+      document.getElementById("resumoResponsavel").innerText = formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email || "Responsavel");
+      document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
+      document.getElementById("responsavel").value = formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email || "");
+      preencherDataFatoSeVazia();
+      atualizarDiaSemana();
+      atualizarCalculosDatas();
+      atualizarEscalaPorSituacao();
+      atualizarObrigatoriedadeDataInatividade();
+      registrarLimpezaStatusAoEditar();
+      mostrarStatus("Pronto para registrar PPMS.", "");
+    });
+
+    document.addEventListener("click", function(evento) {
+      const wrapper = document.querySelector(".ultimos-ppms-wrapper");
+
+      if (wrapper && !wrapper.contains(evento.target)) {
+        fecharUltimosPPMS();
+      }
+    });
+
+    function usuarioPodeAcessarPPMS() {
+      const valor = usuarioLogado && usuarioLogado.acessoPpms;
+
+      return valor === true ||
+        String(valor || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim() === "sim";
+    }
+
+    function voltarAoAtendimento() {
+      if (!tokenGoogle || !webAppUrl) {
+        mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
+        return;
+      }
+
+      const botao = document.getElementById("nav-voltar-atendimento");
+      if (botao) {
+        botao.disabled = true;
+        botao.innerText = "Carregando Atendimento...";
+      }
+
+      mostrarCarregamentoNavegacao("Carregando Atendimento...");
+
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = webAppUrl;
+      form.target = "_top";
+      form.style.display = "none";
+
+      const campoToken = document.createElement("input");
+      campoToken.type = "hidden";
+      campoToken.name = "credential";
+      campoToken.value = tokenGoogle;
+
+      const campoDestino = document.createElement("input");
+      campoDestino.type = "hidden";
+      campoDestino.name = "state";
+      campoDestino.value = "index";
+
+      form.appendChild(campoToken);
+      form.appendChild(campoDestino);
+      document.body.appendChild(form);
+
+      setTimeout(function() {
+        form.submit();
+        form.remove();
+      }, 80);
+    }
+
+    function salvarRegistroPPMS() {
+      if (!validarFormularioPPMS()) return;
+
+      definirStatusSalvar(true, "Salvando PPMS...");
+
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          definirStatusSalvar(false, "Salvo.", "success");
+          limparFormularioPPMS();
+          ultimosPPMSCarregados = false;
+          mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Registro PPMS salvo com sucesso.", "success");
+        })
+        .withFailureHandler(function(erro) {
+          definirStatusSalvar(false, obterMensagemErro(erro), "error");
+          mostrarStatus(obterMensagemErro(erro), "error");
+        })
+        .salvarPPMS(montarDadosPPMS(), tokenGoogle);
+    }
+
+    function montarDadosPPMS() {
+      return {
+        dataFato: valorDataCampo("dataFato"),
+        horaFato: valorCampo("horaFato"),
+        postoGraduacao: valorCampo("postoGraduacao"),
+        opmAtual: valorCampo("opmAtual"),
+        situacaoStatus: valorCampo("situacaoStatus"),
+        servico: obterServicoPPMS(),
+        dataIngresso: valorDataCampo("dataIngresso"),
+        dataInatividade: valorDataCampo("dataInatividade"),
+        meioUtilizado: valorCampo("meioUtilizado"),
+        meioUtilizadoOutros: valorCampo("meioUtilizadoOutros"),
+        fatorPrecipitante: valorCampo("fatorPrecipitante"),
+        tentativaAnterior: valorCampo("tentativaAnterior"),
+        acompanhamentoCaps: document.getElementById("acompanhamentoCaps").checked,
+        acompanhamentoPsiquiatria: document.getElementById("acompanhamentoPsiquiatria").checked,
+        passagemCaps: document.getElementById("passagemCaps").checked,
+        passagemPsiquiatria: document.getElementById("passagemPsiquiatria").checked,
+        numeroFilhos: valorCampo("numeroFilhos"),
+        dataNascimento: valorDataCampo("dataNascimento"),
+        estadoCivil: valorCampo("estadoCivil"),
+        sexo: valorCampo("sexo"),
+        cep: valorCampo("cep"),
+        rua: valorCampo("rua"),
+        bairro: valorCampo("bairro"),
+        cidade: valorCampo("cidade"),
+        estado: valorCampo("estado"),
+        numero: valorCampo("numero"),
+        tipoLocalEndereco: valorCampo("tipoLocalEndereco"),
+        complemento: valorCampo("complemento")
+      };
+    }
+
+    function validarFormularioPPMS() {
+      const camposObrigatorios = [
+        "dataFato",
+        "horaFato",
+        "postoGraduacao",
+        "opmAtual",
+        "situacaoStatus",
+        "dataIngresso",
+        "meioUtilizado",
+        "fatorPrecipitante",
+        "tentativaAnterior",
+        "dataNascimento",
+        "estadoCivil",
+        "sexo",
+        "cep",
+        "rua",
+        "bairro",
+        "cidade",
+        "estado",
+        "numero",
+        "tipoLocalEndereco"
+      ];
+
+      if (campoMeioOutrosObrigatorio()) {
+        camposObrigatorios.push("meioUtilizadoOutros");
+      }
+
+      if (statusExigeDataInatividade()) {
+        camposObrigatorios.push("dataInatividade");
+      }
+
+      if (situacaoPermiteEscala() && !obterServicoPPMS()) {
+        ["servico", "folga", "inTinere"].forEach(function(id) {
+          const campo = document.getElementById(id);
+          if (campo) campo.parentElement.style.color = "#b42318";
+        });
+        mostrarStatus("Informe se estava em servi\u00e7o, folga ou in tinere.", "error");
+        return false;
+      }
+
+      let valido = true;
+      camposObrigatorios.forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        if (!campo.value.trim()) {
+          marcarCampoObrigatorio(campo);
+          valido = false;
+        }
+      });
+
+      if (!validarDatasFormulario(["dataFato", "dataIngresso", "dataInatividade", "dataNascimento"], ["dataFato", "dataIngresso", "dataNascimento"])) {
+        valido = false;
+      }
+
+      if (!valido) {
+        mostrarStatus("Preencha os campos obrigatorios destacados.", "error");
+      }
+
+      return valido;
+    }
+
+    function alternarUltimosPPMS(evento) {
+      if (evento) evento.stopPropagation();
+
+      const painel = document.getElementById("painelUltimosPPMS");
+      if (!painel) return;
+
+      if (painel.classList.contains("ativo")) {
+        fecharUltimosPPMS();
+        return;
+      }
+
+      painel.classList.add("ativo");
+      carregarUltimosPPMS(false);
+    }
+
+    function fecharUltimosPPMS() {
+      const painel = document.getElementById("painelUltimosPPMS");
+      if (painel) painel.classList.remove("ativo");
+    }
+
+    function carregarUltimosPPMS(forcarAtualizacao) {
+      const painel = document.getElementById("painelUltimosPPMS");
+      if (!painel || ultimosPPMSCarregando) return;
+      if (ultimosPPMSCarregados && !forcarAtualizacao) return;
+
+      if (!window.google || !google.script || !google.script.run) {
+        painel.innerHTML = '<div class="ultimos-vazio">Abra pelo Apps Script para carregar a lista.</div>';
+        return;
+      }
+
+      ultimosPPMSCarregando = true;
+      painel.innerHTML = '<div class="ultimos-vazio">Carregando...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          ultimosPPMSCarregando = false;
+          ultimosPPMSCarregados = true;
+          renderizarUltimosPPMS(lista || []);
+        })
+        .withFailureHandler(function(erro) {
+          ultimosPPMSCarregando = false;
+          painel.innerHTML = '<div class="ultimos-vazio">Erro ao carregar: ' + escaparHtml(obterMensagemErro(erro)) + '</div>';
+        })
+        .obterUltimosPPMSResponsavel(tokenGoogle);
+    }
+
+    function renderizarUltimosPPMS(lista) {
+      const painel = document.getElementById("painelUltimosPPMS");
+      if (!painel) return;
+
+      if (!lista.length) {
+        painel.innerHTML = '<div class="ultimos-titulo">&Uacute;ltimos PPMS</div>' +
+          '<div class="ultimos-vazio">Nenhum registro salvo por este usu&aacute;rio.</div>';
+        return;
+      }
+
+      painel.innerHTML = '<div class="ultimos-titulo">&Uacute;ltimos PPMS</div>' + lista.map(function(item) {
+        const titulo = item.dataFato ? "Fato em " + item.dataFato : "Registro PPMS";
+        const detalhe = [
+          item.opmAtual ? "OPM " + item.opmAtual : "",
+          item.meioUtilizado ? "Meio " + item.meioUtilizado : "",
+          item.dataHoraCadastro ? "Salvo em " + item.dataHoraCadastro : ""
+        ].filter(Boolean).join(" - ");
+
+        return '<div class="ultimo-ppms-item">' +
+          '<strong>' + escaparHtml(titulo) + '</strong>' +
+          '<span>' + escaparHtml(detalhe) + '</span>' +
+        '</div>';
+      }).join("");
+    }
+
+    function limparFormularioPPMS() {
+      document.querySelectorAll("input, select, textarea").forEach(function(campo) {
+        if (campo.id === "responsavel") return;
+        if (campo.type === "checkbox") {
+          campo.checked = false;
+        } else if (campo.id === "numeroFilhos") {
+          campo.value = "0";
+        } else {
+          campo.value = "";
+        }
+
+        limparErroVisualCampo(campo);
+      });
+
+      preencherDataFatoSeVazia();
+      atualizarDiaSemana();
+      atualizarCalculosDatas();
+      atualizarMeioOutros();
+      atualizarEscalaPorSituacao();
+      atualizarObrigatoriedadeDataInatividade();
+    }
+
+    function preencherDataFatoSeVazia() {
+      const campo = document.getElementById("dataFato");
+      if (campo && !campo.value.trim()) campo.value = formatarDataBrasil(new Date());
+    }
+
+    function atualizarMeioOutros() {
+      const grupo = document.getElementById("grupoMeioOutros");
+      const campo = document.getElementById("meioUtilizadoOutros");
+      const obrigatorio = campoMeioOutrosObrigatorio();
+
+      if (grupo) grupo.classList.toggle("visivel", obrigatorio);
+      if (campo) {
+        campo.required = obrigatorio;
+        if (!obrigatorio) {
+          campo.value = "";
+          limparErroVisualCampo(campo);
+        }
+      }
+    }
+
+    function campoMeioOutrosObrigatorio() {
+      return normalizarTexto(valorCampo("meioUtilizado")) === "outros";
+    }
+
+    function alternarServicoFolga(campoMarcado) {
+      if (!campoMarcado || !campoMarcado.checked) return;
+
+      ["servico", "folga", "inTinere"].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo && campo !== campoMarcado) {
+          campo.checked = false;
+          campo.parentElement.style.color = "";
+        }
+      });
+    }
+
+    function atualizarEscalaPorSituacao() {
+      const permiteEscala = situacaoPermiteEscala();
+
+      ["servico", "folga", "inTinere"].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        campo.disabled = !permiteEscala;
+        campo.parentElement.style.color = "";
+        if (!permiteEscala) campo.checked = false;
+      });
+    }
+
+    function situacaoPermiteEscala() {
+      const situacao = normalizarTexto(valorCampo("situacaoStatus"));
+
+      return situacao === "agregado(a)" ||
+        situacao === "ativo administrativo" ||
+        situacao === "ativo operacional";
+    }
+
+    function statusExigeDataInatividade() {
+      const situacao = normalizarTexto(valorCampo("situacaoStatus"));
+      return situacao === "inativo" || situacao === "exonerado(a)";
+    }
+
+    function atualizarObrigatoriedadeDataInatividade() {
+      const campo = document.getElementById("dataInatividade");
+      if (!campo) return;
+
+      const exigida = statusExigeDataInatividade();
+      campo.required = exigida;
+      campo.disabled = !exigida;
+
+      if (!exigida) {
+        campo.value = "";
+        limparErroVisualCampo(campo);
+      }
+
+      atualizarCalculosDatas();
+    }
+
+    function obterServicoPPMS() {
+      if (document.getElementById("servico") && document.getElementById("servico").checked) return "servico";
+      if (document.getElementById("folga") && document.getElementById("folga").checked) return "folga";
+      if (document.getElementById("inTinere") && document.getElementById("inTinere").checked) return "in tinere";
+
+      return "";
+    }
+
+    function atualizarDiaSemana() {
+      const campo = document.getElementById("diaSemana");
+      if (!campo) return;
+
+      const data = obterDataPorCampoBrasil("dataFato");
+      campo.value = data ? obterNomeDiaSemana(data) : "";
+    }
+
+    function atualizarCalculosDatas() {
+      const hoje = new Date();
+
+      preencherTexto("idadeCalculada", calcularIdadeAnos(obterDataPorCampoBrasil("dataNascimento"), hoje));
+      preencherTexto("tempoServico", calcularAnosMeses(obterDataPorCampoBrasil("dataIngresso"), hoje, "Tempo de servi\u00e7o"));
+      preencherTexto("tempoInatividade", calcularAnosMeses(obterDataPorCampoBrasil("dataInatividade"), hoje, "Tempo de inatividade"));
+    }
+
+    function calcularIdadeAnos(data, hoje) {
+      if (!data) return "";
+
+      let anos = hoje.getFullYear() - data.getFullYear();
+      const aniversarioPassou = hoje.getMonth() > data.getMonth() ||
+        (hoje.getMonth() === data.getMonth() && hoje.getDate() >= data.getDate());
+
+      if (!aniversarioPassou) anos--;
+
+      return anos >= 0 ? "Idade: " + anos + " ano" + (anos === 1 ? "" : "s") : "";
+    }
+
+    function calcularAnosMeses(data, hoje, rotulo) {
+      if (!data) return "";
+
+      let anos = hoje.getFullYear() - data.getFullYear();
+      let meses = hoje.getMonth() - data.getMonth();
+
+      if (hoje.getDate() < data.getDate()) meses--;
+      if (meses < 0) {
+        anos--;
+        meses += 12;
+      }
+
+      if (anos < 0) return "";
+
+      return rotulo + ": " + anos + " ano" + (anos === 1 ? "" : "s") + " e " +
+        meses + " mes" + (meses === 1 ? "" : "es");
+    }
+
+    function obterDataPorCampoBrasil(id) {
+      const valor = valorCampo(id);
+      const partes = valor.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return null;
+
+      const data = new Date(Number(partes[3]), Number(partes[2]) - 1, Number(partes[1]));
+
+      if (data.getFullYear() !== Number(partes[3]) ||
+        data.getMonth() !== Number(partes[2]) - 1 ||
+        data.getDate() !== Number(partes[1])) {
+        return null;
+      }
+
+      return data;
+    }
+
+    function obterNomeDiaSemana(data) {
+      return [
+        "domingo",
+        "segunda-feira",
+        "terca-feira",
+        "quarta-feira",
+        "quinta-feira",
+        "sexta-feira",
+        "sabado"
+      ][data.getDay()];
+    }
+
+    function preencherTexto(id, texto) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = texto || "";
+    }
+
+    function buscarCep() {
+      const cep = document.getElementById("cep").value.replace(/\D/g, "");
+
+      if (cep.length !== 8) return;
+
+      fetch("https://viacep.com.br/ws/" + cep + "/json/")
+        .then(function(resposta) {
+          return resposta.json();
+        })
+        .then(function(dados) {
+          if (!dados.erro) {
+            document.getElementById("rua").value = dados.logradouro || "";
+            document.getElementById("bairro").value = dados.bairro || "";
+            document.getElementById("cidade").value = dados.localidade || "";
+            document.getElementById("estado").value = dados.uf || "";
+            ["rua", "bairro", "cidade", "estado"].forEach(function(id) {
+              limparErroVisualCampo(document.getElementById(id));
+            });
+          } else {
+            mostrarStatus("CEP n\u00e3o encontrado.", "error");
+          }
+        })
+        .catch(function() {
+          mostrarStatus("Erro ao buscar CEP.", "error");
+        });
+    }
+
+    function registrarLimpezaStatusAoEditar() {
+      document.querySelectorAll("input, select, textarea").forEach(function(campo) {
+        campo.addEventListener("input", limparStatusOperacao);
+        campo.addEventListener("change", limparStatusOperacao);
+      });
+    }
+
+    function limparStatusOperacao() {
+      mostrarStatus("", "");
+      definirStatusSalvar(false, "");
+    }
+
+    function bloquearTela() {
+      document.querySelectorAll("input, select, textarea, button:not(#nav-voltar-atendimento)").forEach(function(campo) {
+        campo.disabled = true;
+      });
+    }
+
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function definirStatusSalvar(salvando, texto, tipo) {
+      const el = document.getElementById("statusSalvarPPMS");
+      const botao = document.getElementById("btnSalvarPPMS");
+
+      if (botao) botao.disabled = salvando;
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = salvando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Salvando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function valorCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? campo.value.trim() : "";
+    }
+
+    function valorDataCampo(id) {
+      const campo = document.getElementById(id);
+      return campo ? converterDataBrasilParaISO(campo.value) : "";
+    }
+
+    function converterMaiusculasSemAcento(campo) {
+      campo.value = String(campo.value || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function mascaraCEP(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+      valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+      campo.value = valor;
+    }
+
+    function mascaraDataBrasil(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+      valor = valor.replace(/(\d{2})(\d)/, "$1/$2");
+
+      campo.value = valor;
+    }
+
+    function validarAnoDataCampo(campo) {
+      if (!campo.value) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      if (dataBrasilValida(campo.value)) {
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      campo.style.border = "2px solid #d32f2f";
+      return false;
+    }
+
+    function validarDatasFormulario(ids, obrigatorios) {
+      const obrigatoriosMapa = {};
+      let valido = true;
+
+      (obrigatorios || []).forEach(function(id) {
+        obrigatoriosMapa[id] = true;
+      });
+
+      ids.forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        if (obrigatoriosMapa[id] && !campo.value.trim()) {
+          campo.style.border = "2px solid #d32f2f";
+          valido = false;
+          return;
+        }
+
+        if (!validarAnoDataCampo(campo)) {
+          valido = false;
+        }
+      });
+
+      return valido;
+    }
+
+    function dataBrasilValida(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return false;
+
+      const dia = Number(partes[1]);
+      const mes = Number(partes[2]);
+      const ano = Number(partes[3]);
+
+      if (ano < 1 || ano > 9999 || mes < 1 || mes > 12 || dia < 1) return false;
+
+      const data = new Date(ano, mes - 1, dia);
+
+      return data.getFullYear() === ano &&
+        data.getMonth() === mes - 1 &&
+        data.getDate() === dia;
+    }
+
+    function converterDataBrasilParaISO(valor) {
+      const partes = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!partes) return "";
+
+      return partes[3] + "-" + partes[2] + "-" + partes[1];
+    }
+
+    function ajustarNumeroFilhos(campo) {
+      let valor = Number(campo.value);
+
+      if (campo.value === "") return;
+      if (valor < 0) valor = 0;
+      if (valor > 10) valor = 10;
+
+      campo.value = valor;
+    }
+
+    function limparErroVisualCampo(campo) {
+      if (!campo) return;
+      campo.style.border = "1px solid var(--line)";
+    }
+
+    function marcarCampoObrigatorio(campo) {
+      if (!campo) return;
+      campo.style.border = "2px solid #d32f2f";
+    }
+
+    function mostrarStatus(mensagem, tipo) {
+      const el = document.getElementById("statusTela");
+      el.className = "status-line" + (tipo ? " " + tipo : "");
+      el.innerText = mensagem || "";
+    }
+
+    function formatarDataBrasil(data) {
+      const dia = String(data.getDate()).padStart(2, "0");
+      const mes = String(data.getMonth() + 1).padStart(2, "0");
+      const ano = data.getFullYear();
+
+      return dia + "/" + mes + "/" + ano;
+    }
+
+    function formatarResponsavelSistema(texto) {
+      const original = String(texto || "").trim();
+      const conectivos = {
+        "da": true,
+        "de": true,
+        "do": true,
+        "das": true,
+        "dos": true,
+        "e": true
+      };
+
+      if (!original) return "";
+      if (original.indexOf("@") >= 0) return original.toLowerCase();
+
+      return original
+        .toLowerCase()
+        .split(/\s+/)
+        .map(function(parte, indice) {
+          const limpa = parte.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+          if (limpa === "pm") return "PM";
+          if (indice > 0 && conectivos[limpa]) return limpa;
+          if (/^\d/.test(parte)) return parte.replace(/[a-zA-Z]+/g, function(trecho) {
+            return trecho.charAt(0).toUpperCase() + trecho.slice(1);
+          });
+
+          return parte.charAt(0).toUpperCase() + parte.slice(1);
+        })
+        .join(" ");
+    }
+
+    function normalizarTexto(valor) {
+      return String(valor || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function obterMensagemErro(erro) {
+      return erro && erro.message ? erro.message : "Nao foi possivel concluir a operacao.";
+    }
+
+    function escaparHtml(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
