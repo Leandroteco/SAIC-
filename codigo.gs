@@ -23,9 +23,9 @@ const ABA_RECADOS = "recados_sistema";
 const ABA_EVENTOS_COLETIVOS = "eventos_coletivos";
 const ABA_PARTICIPANTES_EVENTO = "participantes_evento";
 const ABA_PARTICIPANTES_EVENTO_INDICE = "participantes_evento_indice";
-const ABA_EMAILS_RELATORIO = "emails_relatorio";
 const ABA_INCIDENTE_CRITICO = "incidente_critico";
 const ABA_EQUIPE_INCIDENTE = "equipe_incidente";
+const ABA_PPMS = "ppms";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 const CACHE_USUARIO_TOKEN_SEGUNDOS = 300;
 
@@ -177,15 +177,6 @@ const CABECALHOS_PARTICIPANTES_EVENTO_INDICE = [
   "linha_participante"
 ];
 
-const CABECALHOS_EMAILS_RELATORIO = [
-  "email",
-  "nome",
-  "ativo",
-  "dia_semana",
-  "horario",
-  "observacao"
-];
-
 const CABECALHOS_INCIDENTE_CRITICO = [
   "numero_relatorio",
   "data_fato",
@@ -215,6 +206,40 @@ const CABECALHOS_EQUIPE_INCIDENTE = [
   "ativo",
   "ordem",
   "observacao"
+];
+
+const CABECALHOS_PPMS = [
+  "data_fato",
+  "hora_fato",
+  "dia_semana",
+  "postograduacao",
+  "OPM_Atual",
+  "Situacao_Status",
+  "Servico",
+  "Data_Ingresso",
+  "Data_Inatividade",
+  "Meio_utilizado",
+  "Fator_Precipitante",
+  "Tentativa_anterior",
+  "Acompanhamento_CAPS",
+  "Acompanhamento_psiquiatria",
+  "Passagem_CAPS",
+  "Passagem_psiquiatria",
+  "Numero_Filhos",
+  "Data_Nascimento",
+  "Estado_Civil",
+  "Sexo",
+  "CEP",
+  "Rua",
+  "Bairro",
+  "Cidade",
+  "Estado",
+  "Numero",
+  "Complemento",
+  "Responsavel_pelo_Atendimento",
+  "Data_Cadastro",
+  "napsAtendimento",
+  "tipo_local_endereco"
 ];
 
 const ALIASES_CABECALHOS_PADRAO = {
@@ -277,10 +302,11 @@ function configurarEstruturaPlanilha() {
   garantirCabecalhoFinal(sheetEventosColetivos, "modalidade");
   const sheetParticipantesEvento = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO, CABECALHOS_PARTICIPANTES_EVENTO);
   const sheetParticipantesEventoIndice = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO_INDICE, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
-  const sheetEmailsRelatorio = obterOuCriarAba(ss, ABA_EMAILS_RELATORIO, CABECALHOS_EMAILS_RELATORIO);
   const sheetIncidenteCritico = obterOuCriarAba(ss, ABA_INCIDENTE_CRITICO, CABECALHOS_INCIDENTE_CRITICO);
   garantirCabecalhoFinal(sheetIncidenteCritico, "servico");
   const sheetEquipeIncidente = obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE);
+  const sheetPpms = obterOuCriarAba(ss, ABA_PPMS, CABECALHOS_PPMS);
+  garantirCabecalhoFinal(sheetPpms, "tipo_local_endereco");
 
   return {
     sheetDados: sheetDados,
@@ -292,9 +318,9 @@ function configurarEstruturaPlanilha() {
     sheetEventosColetivos: sheetEventosColetivos,
     sheetParticipantesEvento: sheetParticipantesEvento,
     sheetParticipantesEventoIndice: sheetParticipantesEventoIndice,
-    sheetEmailsRelatorio: sheetEmailsRelatorio,
     sheetIncidenteCritico: sheetIncidenteCritico,
-    sheetEquipeIncidente: sheetEquipeIncidente
+    sheetEquipeIncidente: sheetEquipeIncidente,
+    sheetPpms: sheetPpms
   };
 }
 
@@ -316,6 +342,16 @@ function configurarEstruturaIncidenteCritico() {
   return {
     sheetIncidenteCritico: sheetIncidenteCritico,
     sheetEquipeIncidente: obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE)
+  };
+}
+
+function configurarEstruturaPPMS() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetPpms = obterOuCriarAba(ss, ABA_PPMS, CABECALHOS_PPMS);
+  garantirCabecalhoFinal(sheetPpms, "tipo_local_endereco");
+
+  return {
+    sheetPpms: sheetPpms
   };
 }
 
@@ -826,6 +862,7 @@ function obterPaginaSolicitada(valor) {
   if (pagina === "relatorio_naps") return "relatorio_naps";
   if (pagina === "eventos_coletivos") return "eventos_coletivos";
   if (pagina === "incidente_critico") return "incidente_critico";
+  if (pagina === "ppms") return "ppms";
   if (pagina === "participante_evento") return "participante_evento";
 
   return "Index";
@@ -852,6 +889,10 @@ function doPost(e) {
 
     if (paginaExigeAdministrador(pagina) && usuario.perfil !== "administrador") {
       throw new Error("Acesso permitido somente para administradores.");
+    }
+
+    if (pagina === "ppms" && !usuarioTemAcessoPPMS(usuario)) {
+      throw new Error("Acesso permitido somente para usuarios autorizados ao PPMS.");
     }
 
     return renderizarPagina(pagina, idToken, usuario, "", {
@@ -1654,7 +1695,7 @@ function prepararDadosIncidenteCritico(dados, usuario) {
 
 function gerarNumeroRelatorioIncidenteCritico(sheet) {
   const ano = new Date().getFullYear();
-  const prefixo = "IC-" + ano + "-";
+  const sufixo = "/201/" + ano;
   const ultimaLinha = sheet.getLastRow();
   const indiceNumeroRelatorio = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_INCIDENTE_CRITICO)[0];
   let maiorNumero = 0;
@@ -1666,21 +1707,22 @@ function gerarNumeroRelatorioIncidenteCritico(sheet) {
 
     valores.forEach(function(linha) {
       const texto = String(linha[0] || "").trim().toUpperCase();
+      const partes = texto.match(/^IC-(\d+)\/201\/(\d{4})$/);
 
-      if (texto.indexOf(prefixo) !== 0) return;
+      if (!partes || Number(partes[2]) !== ano) return;
 
-      const numero = Number(texto.substring(prefixo.length).replace(/\D/g, ""));
+      const numero = Number(partes[1]);
       if (numero > maiorNumero) maiorNumero = numero;
     });
   }
 
-  return prefixo + String(maiorNumero + 1).padStart(6, "0");
+  return "IC-" + String(maiorNumero + 1).padStart(3, "0") + sufixo;
 }
 
 function obterNumeroRelatorioIncidenteCriticoParaSalvar(sheet, numeroInformado) {
   const numero = String(numeroInformado || "").trim().toUpperCase();
 
-  if (/^IC-\d{4}-\d{6}$/.test(numero) && !numeroRelatorioIncidenteCriticoExiste(sheet, numero)) {
+  if (/^IC-\d{3,}\/201\/\d{4}$/.test(numero) && !numeroRelatorioIncidenteCriticoExiste(sheet, numero)) {
     return numero;
   }
 
@@ -1701,6 +1743,372 @@ function numeroRelatorioIncidenteCriticoExiste(sheet, numeroRelatorio) {
   return valores.some(function(linha) {
     return String(linha[0] || "").trim().toUpperCase() === numero;
   });
+}
+
+function obterUltimosIncidentesCriticosResponsavel(idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaIncidenteCritico();
+  const sheet = estrutura.sheetIncidenteCritico;
+
+  if (!sheet || sheet.getLastRow() < 2) return [];
+
+  const dados = lerDadosPadrao(sheet, CABECALHOS_INCIDENTE_CRITICO, 1);
+  const emailUsuario = String(usuario.email || "").toLowerCase().trim();
+  const ultimos = [];
+
+  for (let i = dados.length - 1; i >= 1; i--) {
+    const linha = dados[i];
+    const emailResponsavel = String(linha[17] || "").toLowerCase().trim();
+
+    if (emailResponsavel !== emailUsuario) continue;
+
+    ultimos.push(montarResumoIncidenteCriticoImpressao(linha));
+
+    if (ultimos.length >= 2) break;
+  }
+
+  return ultimos;
+}
+
+function obterFichaIncidenteCritico(numeroRelatorio, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const estrutura = configurarEstruturaIncidenteCritico();
+  const sheet = estrutura.sheetIncidenteCritico;
+  const numero = String(numeroRelatorio || "").trim().toUpperCase();
+
+  if (!numero) throw new Error("Incidente nao informado para impressao.");
+  if (!sheet || sheet.getLastRow() < 2) throw new Error("A aba incidente_critico nao possui registros.");
+
+  const indices = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_INCIDENTE_CRITICO);
+  const colunaNumeroRelatorio = indices[0] + 1;
+  const celula = sheet
+    .getRange(2, colunaNumeroRelatorio, sheet.getLastRow() - 1, 1)
+    .createTextFinder(numero)
+    .matchEntireCell(true)
+    .findNext();
+
+  if (!celula) throw new Error("Incidente nao localizado para impressao.");
+
+  const linha = lerLinhaPadrao(sheet, celula.getRow(), CABECALHOS_INCIDENTE_CRITICO);
+  const emailResponsavel = String(linha[17] || "").toLowerCase().trim();
+  const emailUsuario = String(usuario.email || "").toLowerCase().trim();
+
+  if (usuario.perfil !== PERFIL_ADMINISTRADOR && emailResponsavel !== emailUsuario) {
+    throw new Error("Este incidente pertence a outro usuario.");
+  }
+
+  return montarFichaIncidenteCriticoImpressao(linha);
+}
+
+function montarResumoIncidenteCriticoImpressao(linha) {
+  return {
+    numeroRelatorio: linha[0] || "",
+    nome: linha[5] || "",
+    re: linha[4] || "",
+    modalidade: linha[14] || "",
+    dataFato: formatarDataBrasil(linha[1]),
+    dataCadastro: formatarDataBrasil(linha[15]),
+    horaCadastro: formatarHoraBrasil(linha[15]),
+    dataHoraCadastro: formatarDataHoraBrasil(linha[15])
+  };
+}
+
+function montarFichaIncidenteCriticoImpressao(linha) {
+  return {
+    numeroRelatorio: linha[0] || "",
+    dataFato: formatarDataBrasil(linha[1]),
+    dataAcionamento: formatarDataBrasil(linha[2]),
+    postoGraduacao: linha[3] || "",
+    re: linha[4] || "",
+    nome: linha[5] || "",
+    opmAtual: linha[6] || "",
+    situacaoStatus: linha[7] || "",
+    oficialSobreaviso: linha[8] || "",
+    psicologo: linha[9] || "",
+    assistenteSocial: linha[10] || "",
+    motorista: linha[11] || "",
+    vitima: linha[12] || "",
+    sexo: linha[13] || "",
+    modalidade: linha[14] || "",
+    dataCadastro: formatarDataBrasil(linha[15]),
+    horaCadastro: formatarHoraBrasil(linha[15]),
+    dataHoraCadastro: formatarDataHoraBrasil(linha[15]),
+    responsavel: linha[16] || "",
+    emailResponsavel: linha[17] || "",
+    napsAtendimento: linha[18] || "",
+    servico: normalizarServicoIncidente(linha[19])
+  };
+}
+
+// PPMS
+function salvarPPMS(dados, idToken) {
+  const usuario = validarPPMSPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const estrutura = configurarEstruturaPPMS();
+    const sheet = estrutura.sheetPpms;
+
+    if (!sheet) throw new Error("A aba ppms nao foi encontrada.");
+
+    const ppms = prepararDadosPPMS(dados, usuario);
+    const dataCadastro = new Date();
+
+    gravarLinhasPadraoAbaixo(sheet, [[
+      ppms.dataFato,
+      ppms.horaFato,
+      ppms.diaSemana,
+      ppms.postoGraduacao,
+      ppms.opmAtual,
+      ppms.situacaoStatus,
+      ppms.servico,
+      ppms.dataIngresso,
+      ppms.dataInatividade,
+      ppms.meioUtilizado,
+      ppms.fatorPrecipitante,
+      ppms.tentativaAnterior,
+      ppms.acompanhamentoCaps,
+      ppms.acompanhamentoPsiquiatria,
+      ppms.passagemCaps,
+      ppms.passagemPsiquiatria,
+      ppms.numeroFilhos,
+      ppms.dataNascimento,
+      ppms.estadoCivil,
+      ppms.sexo,
+      ppms.cep,
+      ppms.rua,
+      ppms.bairro,
+      ppms.cidade,
+      ppms.estado,
+      ppms.numero,
+      ppms.complemento,
+      ppms.responsavel,
+      dataCadastro,
+      ppms.napsAtendimento,
+      ppms.tipoLocalEndereco
+    ]], CABECALHOS_PPMS);
+
+    return {
+      sucesso: true,
+      mensagem: "Registro PPMS salvo com sucesso."
+    };
+  } finally {
+    if (lockObtido) {
+      lock.releaseLock();
+    }
+  }
+}
+
+function prepararDadosPPMS(dados, usuario) {
+  dados = dados || {};
+
+  const dataFato = validarDataFormulario(dados.dataFato, "Data do Fato");
+  const dataIngresso = validarDataFormulario(dados.dataIngresso, "Data de Ingresso");
+  const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
+  const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
+  const situacaoStatus = normalizar(dados.situacaoStatus);
+  const meioUtilizado = normalizarMeioUtilizadoPPMS(dados.meioUtilizado, dados.meioUtilizadoOutros);
+  const ppms = {
+    dataFato: dataFato,
+    horaFato: normalizarHoraPPMS(dados.horaFato),
+    diaSemana: obterDiaSemanaBrasil(dataFato),
+    postoGraduacao: String(dados.postoGraduacao || "").trim(),
+    opmAtual: String(dados.opmAtual || "").trim().toUpperCase(),
+    situacaoStatus: situacaoStatus,
+    servico: normalizarServicoIncidente(dados.servico),
+    dataIngresso: dataIngresso,
+    dataInatividade: dataInatividade,
+    meioUtilizado: meioUtilizado,
+    fatorPrecipitante: normalizar(dados.fatorPrecipitante),
+    tentativaAnterior: normalizarSimNaoPPMS(dados.tentativaAnterior),
+    acompanhamentoCaps: valorCheckboxPPMS(dados.acompanhamentoCaps),
+    acompanhamentoPsiquiatria: valorCheckboxPPMS(dados.acompanhamentoPsiquiatria),
+    passagemCaps: valorCheckboxPPMS(dados.passagemCaps),
+    passagemPsiquiatria: valorCheckboxPPMS(dados.passagemPsiquiatria),
+    numeroFilhos: normalizarNumeroFilhosPPMS(dados.numeroFilhos),
+    dataNascimento: dataNascimento,
+    estadoCivil: normalizar(dados.estadoCivil),
+    sexo: normalizar(dados.sexo),
+    cep: formatarCEP(dados.cep),
+    rua: normalizar(dados.rua),
+    bairro: normalizar(dados.bairro),
+    cidade: normalizar(dados.cidade),
+    estado: String(dados.estado || "").trim().toUpperCase(),
+    numero: String(dados.numero || "").trim(),
+    complemento: normalizar(dados.complemento),
+    responsavel: normalizar(usuario.nome || usuario.email || ""),
+    napsAtendimento: String(usuario.naps || "").trim().toUpperCase(),
+    tipoLocalEndereco: normalizarTipoLocalEnderecoPPMS(dados.tipoLocalEndereco)
+  };
+
+  if (statusExigeDataInatividadePPMS(ppms.situacaoStatus) && !ppms.dataInatividade) {
+    throw new Error("Data de Inatividade e obrigatoria para a situacao/status informada.");
+  }
+
+  if (situacaoPermiteEscalaPPMS(ppms.situacaoStatus) && !ppms.servico) {
+    throw new Error("Informe se estava em servico, folga ou in tinere.");
+  }
+
+  const obrigatorios = [
+    ["Data do Fato", ppms.dataFato],
+    ["Hora do Fato", ppms.horaFato],
+    ["Posto/Graduacao", ppms.postoGraduacao],
+    ["OPM Atual", ppms.opmAtual],
+    ["Situacao/Status", ppms.situacaoStatus],
+    ["Data de Ingresso", ppms.dataIngresso],
+    ["Meio Utilizado", ppms.meioUtilizado],
+    ["Fator Precipitante", ppms.fatorPrecipitante],
+    ["Tentativa anterior", ppms.tentativaAnterior],
+    ["Data de Nascimento", ppms.dataNascimento],
+    ["Estado Civil", ppms.estadoCivil],
+    ["Sexo", ppms.sexo],
+    ["CEP", ppms.cep],
+    ["Rua", ppms.rua],
+    ["Bairro", ppms.bairro],
+    ["Cidade", ppms.cidade],
+    ["Estado", ppms.estado],
+    ["Numero", ppms.numero],
+    ["Tipo do local", ppms.tipoLocalEndereco],
+    ["Responsavel", ppms.responsavel],
+    ["NAPS", ppms.napsAtendimento]
+  ];
+
+  obrigatorios.forEach(function(item) {
+    if (!item[1]) {
+      throw new Error(item[0] + " e obrigatorio.");
+    }
+  });
+
+  return ppms;
+}
+
+function normalizarHoraPPMS(valor) {
+  const hora = String(valor || "").trim();
+
+  if (!hora) return "";
+  if (!/^\d{2}:\d{2}$/.test(hora)) {
+    throw new Error("Hora do Fato deve estar no formato hh:mm.");
+  }
+
+  const partes = hora.split(":");
+  const horas = Number(partes[0]);
+  const minutos = Number(partes[1]);
+
+  if (horas < 0 || horas > 23 || minutos < 0 || minutos > 59) {
+    throw new Error("Hora do Fato invalida.");
+  }
+
+  return hora;
+}
+
+function normalizarMeioUtilizadoPPMS(meio, detalheOutros) {
+  const texto = normalizar(meio);
+
+  if (texto !== "outros") return texto;
+
+  const detalhe = normalizar(detalheOutros);
+
+  if (!detalhe) {
+    throw new Error("Informe o meio utilizado em Outros.");
+  }
+
+  return "outros: " + detalhe;
+}
+
+function normalizarSimNaoPPMS(valor) {
+  const texto = normalizar(valor);
+
+  if (texto === "sim") return "sim";
+  if (texto === "nao" || texto === "não") return "nao";
+
+  return "";
+}
+
+function normalizarTipoLocalEnderecoPPMS(valor) {
+  const texto = normalizar(valor);
+
+  if (texto === "residencial") return "residencial";
+  if (texto === "funcional") return "funcional";
+  if (texto === "outro local relacionado") return "outro local relacionado";
+
+  return "";
+}
+
+function valorCheckboxPPMS(valor) {
+  return valor === true || normalizar(valor) === "sim" ? "sim" : "nao";
+}
+
+function normalizarNumeroFilhosPPMS(valor) {
+  const numero = Number(valor);
+
+  if (isNaN(numero) || numero < 0) return 0;
+
+  return Math.min(Math.floor(numero), 10);
+}
+
+function statusExigeDataInatividadePPMS(situacaoStatus) {
+  const status = normalizar(situacaoStatus);
+
+  return status === "inativo" || status === "exonerado(a)";
+}
+
+function situacaoPermiteEscalaPPMS(situacaoStatus) {
+  const status = normalizar(situacaoStatus);
+
+  return status === "agregado(a)" ||
+    status === "ativo administrativo" ||
+    status === "ativo operacional";
+}
+
+function obterDiaSemanaBrasil(dataISO) {
+  const data = obterData(dataISO);
+  const nomes = [
+    "domingo",
+    "segunda-feira",
+    "terca-feira",
+    "quarta-feira",
+    "quinta-feira",
+    "sexta-feira",
+    "sabado"
+  ];
+
+  return data ? nomes[data.getDay()] : "";
+}
+
+function obterUltimosPPMSResponsavel(idToken) {
+  const usuario = validarPPMSPorToken(idToken);
+  const estrutura = configurarEstruturaPPMS();
+  const sheet = estrutura.sheetPpms;
+
+  if (!sheet || sheet.getLastRow() < 2) return [];
+
+  const dados = lerDadosPadrao(sheet, CABECALHOS_PPMS, 1);
+  const responsavelUsuario = normalizar(usuario.nome || usuario.email || "");
+  const ultimos = [];
+
+  for (let i = dados.length - 1; i >= 1; i--) {
+    const linha = dados[i];
+    const responsavelLinha = normalizar(linha[27]);
+
+    if (responsavelLinha !== responsavelUsuario) continue;
+
+    ultimos.push({
+      dataFato: formatarDataBrasil(linha[0]),
+      opmAtual: linha[4] || "",
+      meioUtilizado: linha[9] || "",
+      dataCadastro: formatarDataBrasil(linha[28]),
+      horaCadastro: formatarHoraBrasil(linha[28]),
+      dataHoraCadastro: formatarDataHoraBrasil(linha[28])
+    });
+
+    if (ultimos.length >= 2) break;
+  }
+
+  return ultimos;
 }
 
 // EVENTOS COLETIVOS: WORKSHOP, PROSEN E PALESTRAS
@@ -4844,16 +5252,12 @@ function montarChavesMensaisDashboard(inicio, fim) {
 }
 
 function montarSeriesMensaisNapsDashboard(meses, contagemPorNaps, totaisPorNaps) {
-  const limiteSeries = 8;
   const todosNaps = Object.keys(totaisPorNaps).sort(function(a, b) {
     if (totaisPorNaps[b] !== totaisPorNaps[a]) return totaisPorNaps[b] - totaisPorNaps[a];
     return normalizar(a).localeCompare(normalizar(b));
   });
-  const principais = todosNaps.slice(0, limiteSeries);
-  const mapaPrincipais = {};
-  const series = principais.map(function(naps) {
-    mapaPrincipais[naps] = true;
 
+  return todosNaps.map(function(naps) {
     return {
       rotulo: naps,
       valores: meses.map(function(mes) {
@@ -4861,21 +5265,6 @@ function montarSeriesMensaisNapsDashboard(meses, contagemPorNaps, totaisPorNaps)
       })
     };
   });
-
-  if (todosNaps.length > limiteSeries) {
-    series.push({
-      rotulo: "Demais NAPS",
-      valores: meses.map(function(mes) {
-        const mapaMes = contagemPorNaps[mes] || {};
-
-        return Object.keys(mapaMes).reduce(function(total, naps) {
-          return mapaPrincipais[naps] ? total : total + Number(mapaMes[naps] || 0);
-        }, 0);
-      })
-    });
-  }
-
-  return series;
 }
 
 function montarPontosDiariosDashboard(inicio, fim, contagem) {
@@ -4991,19 +5380,19 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
     if (!textoBusca.includes(filtros.buscaLivre)) return false;
   }
 
-  if (!campoIgualRelatorio(registro.tipoAtendimento, filtros.tipoAtendimento)) return false;
-  if (!campoContemRelatorio(registro.motivo, filtros.motivo)) return false;
-  if (!campoIgualRelatorio(registro.naps, filtros.naps)) return false;
-  if (!campoIgualRelatorio(registro.opmAtual, filtros.opmAtual)) return false;
-  if (!campoIgualRelatorio(registro.cidade, filtros.cidade)) return false;
-  if (!campoIgualRelatorio(registro.bairro, filtros.bairro)) return false;
-  if (!campoIgualRelatorio(registro.estado, filtros.estado)) return false;
-  if (!campoIgualRelatorio(registro.responsavel, filtros.responsavel)) return false;
-  if (!campoIgualRelatorio(registro.situacaoStatus, filtros.situacaoStatus)) return false;
-  if (!campoIgualRelatorio(registro.sexo, filtros.sexo)) return false;
-  if (!campoIgualRelatorio(registro.estadoCivil, filtros.estadoCivil)) return false;
-  if (!campoIgualRelatorio(registro.faixaEtaria, filtros.faixaEtaria)) return false;
-  if (!campoIgualRelatorio(registro.tempoServico, filtros.tempoServico)) return false;
+  if (!campoIgualRelatorio(registro.tipoAtendimento, filtros.tipoAtendimento, "tipoAtendimento")) return false;
+  if (!campoContemRelatorio(registro.motivo, filtros.motivo, "motivo")) return false;
+  if (!campoIgualRelatorio(registro.naps, filtros.naps, "naps")) return false;
+  if (!campoIgualRelatorio(registro.opmAtual, filtros.opmAtual, "opmAtual")) return false;
+  if (!campoIgualRelatorio(registro.cidade, filtros.cidade, "cidade")) return false;
+  if (!campoIgualRelatorio(registro.bairro, filtros.bairro, "bairro")) return false;
+  if (!campoIgualRelatorio(registro.estado, filtros.estado, "estado")) return false;
+  if (!campoIgualRelatorio(registro.responsavel, filtros.responsavel, "responsavel")) return false;
+  if (!campoIgualRelatorio(registro.situacaoStatus, filtros.situacaoStatus, "situacaoStatus")) return false;
+  if (!campoIgualRelatorio(registro.sexo, filtros.sexo, "sexo")) return false;
+  if (!campoIgualRelatorio(registro.estadoCivil, filtros.estadoCivil, "estadoCivil")) return false;
+  if (!campoIgualRelatorio(registro.faixaEtaria, filtros.faixaEtaria, "faixaEtaria")) return false;
+  if (!campoIgualRelatorio(registro.tempoServico, filtros.tempoServico, "tempoServico")) return false;
 
   if (filtros.vinculos === "com" && registro.quantidadeVinculos === 0) return false;
   if (filtros.vinculos === "sem" && registro.quantidadeVinculos > 0) return false;
@@ -5017,14 +5406,16 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
   return true;
 }
 
-function campoIgualRelatorio(valor, filtro) {
+function campoIgualRelatorio(valor, filtro, campo) {
   if (!filtro) return true;
-  return normalizar(valor) === filtro;
+  return normalizar(valor) === filtro ||
+    normalizarChaveAgrupamentoRelatorio(valor, campo) === filtro;
 }
 
-function campoContemRelatorio(valor, filtro) {
+function campoContemRelatorio(valor, filtro, campo) {
   if (!filtro) return true;
-  return normalizar(valor).includes(filtro);
+  return normalizar(valor).includes(filtro) ||
+    normalizarChaveAgrupamentoRelatorio(valor, campo).includes(filtro);
 }
 
 function carregarVinculosPorAtendimento(ss) {
@@ -5377,6 +5768,118 @@ function formatarLocalidadeRelatorio(valor) {
 
 function limparEspacosRelatorio(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
+}
+
+function formatarValorAgrupamentoRelatorio(valor, campo) {
+  const texto = limparEspacosRelatorio(valor);
+
+  if (!texto) return "nao informado";
+
+  if (campo === "naps") return formatarNapsRelatorio(texto) || "nao informado";
+  if (campo === "opmAtual" || campo === "estado") return formatarCampoMaiusculoRelatorio(texto) || "nao informado";
+  if (campo === "sexo") return formatarSexoRelatorio(texto) || "nao informado";
+  if (campo === "situacaoStatus") return formatarSituacaoStatusRelatorio(texto) || "nao informado";
+  if (campo === "estadoCivil") return formatarEstadoCivilRelatorio(texto) || "nao informado";
+  if (campo === "responsavel" || campo === "responsavelNaps" || campo === "postoGraduacao") return formatarResponsavelRelatorio(texto) || "nao informado";
+  if (campo === "cidade" || campo === "bairro" || campo === "parentesco") return formatarLocalidadeRelatorio(texto) || "nao informado";
+  if (campo === "tipoAtendimento") return formatarTipoAtendimentoRelatorio(texto);
+  if (campo === "motivo") return formatarHipoteseDiagnosticoRelatorio(texto);
+
+  return texto;
+}
+
+function normalizarChaveAgrupamentoRelatorio(valor, campo) {
+  const rotulo = formatarValorAgrupamentoRelatorio(valor, campo);
+  const chave = normalizar(rotulo).replace(/\s+/g, " ").trim();
+
+  return chave || "nao informado";
+}
+
+function formatarTipoAtendimentoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto).replace(/\s+/g, " ");
+  const mapa = {
+    "alta": "Atendimento de ALTA",
+    "atendimento de alta": "Atendimento de ALTA",
+    "falta": "Registrar como FALTA",
+    "registrar falta": "Registrar como FALTA",
+    "registrar como falta": "Registrar como FALTA",
+    "arquivamento": "Arquivamento",
+    "plantao psicologico": "Plant\u00e3o Psicol\u00f3gico",
+    "psicoterapia - individual": "Psicoterapia - Individual",
+    "psicoterapia individual": "Psicoterapia - Individual",
+    "psicoterapia - casal": "Psicoterapia - Casal",
+    "psicoterapia casal": "Psicoterapia - Casal",
+    "avaliacao de porte armas de inativo": "Avalia\u00e7\u00e3o de Porte Armas de Inativo",
+    "entrevista de saida": "Entrevista de Sa\u00edda",
+    "visita externa": "Visita Externa",
+    "follow-up": "Follow-Up",
+    "follow up": "Follow-Up",
+    "entrevista motivacional - ppad": "Entrevista Motivacional - PPAD",
+    "entrevista motivacional ppad": "Entrevista Motivacional - PPAD",
+    "entrevista motivacional - ppms": "Entrevista Motivacional - PPMS",
+    "entrevista motivacional ppms": "Entrevista Motivacional - PPMS",
+    "avaliacao psicologica - ppms": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PPMS",
+    "avaliacao psicologica ppms": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PPMS",
+    "avaliacao psicologica - prosen": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PROSEN",
+    "avaliacao psicologica prosen": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PROSEN",
+    "avaliacao de inclusao no copom": "Avalia\u00e7\u00e3o de Inclus\u00e3o no Copom",
+    "entrevista ctc (pmrg)": "Entrevista CTC (PMRG)",
+    "entrevista ctc pmrg": "Entrevista CTC (PMRG)",
+    "triagem de chegada (pmrg)": "Triagem de Chegada (PMRG)",
+    "triagem de chegada pmrg": "Triagem de Chegada (PMRG)",
+    "exame criminologico (pmrg)": "Exame Criminol\u00f3gico (PMRG)",
+    "exame criminologico pmrg": "Exame Criminol\u00f3gico (PMRG)"
+  };
+
+  return mapa[chave] || formatarTextoComSiglasRelatorio(texto);
+}
+
+function formatarHipoteseDiagnosticoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto).replace(/\s+/g, " ");
+  const chaveSemCodigo = chave.replace(/\s+-\s+[a-z0-9.]+$/i, "");
+  const mapa = {
+    "conflito existencial": "Conflito Existencial - 6B43",
+    "conflito profissional": "Conflito Profissional - QD83.Z",
+    "conflito conjugal": "Conflito Conjugal - QE51.0",
+    "conflito familiar": "Conflito Familiar - QE51.0",
+    "uso abusivo de alcool e droga": "Uso Abusivo de \u00c1lcool e Droga - 6C40.2Z",
+    "luto": "Luto - QE62.0",
+    "transtorno de luto prolongado": "Transtorno de Luto Prolongado - 6B42",
+    "ideacao suicida": "Idea\u00e7\u00e3o Suicida - MB26.A",
+    "tentativa de suicidio": "Tentativa de Suic\u00eddio - MB23.R",
+    "disforia de genero": "Disforia de G\u00eanero - HA60",
+    "transtorno parafilico": "Transtorno Paraf\u00edlico - 6D3Z",
+    "ansiedade": "Ansiedade - MB24.3",
+    "depressao": "Depress\u00e3o - 6A7Z",
+    "transtorno obsessivo compulsivo": "Transtorno Obsessivo Compulsivo - 6B20",
+    "dependencia afetiva": "Depend\u00eancia Afetiva - MB24",
+    "transtorno misto ansioso e depressivo": "Transtorno Misto Ansioso e Depressivo - 6A73",
+    "transtorno do jogo ou ludopatia": "Transtorno do Jogo ou Ludopatia - 6C50.Z"
+  };
+
+  if (chave === "outros") return "Outros";
+
+  return mapa[chaveSemCodigo] || formatarTextoComSiglasRelatorio(texto);
+}
+
+function formatarTextoComSiglasRelatorio(valor) {
+  return formatarLocalidadeRelatorio(valor)
+    .replace(/\bPm\b/g, "PM")
+    .replace(/\bCaps\b/g, "CAPS")
+    .replace(/\bNaps\b/g, "NAPS")
+    .replace(/\bPpad\b/g, "PPAD")
+    .replace(/\bPpms\b/g, "PPMS")
+    .replace(/\bProsen\b/g, "PROSEN")
+    .replace(/\bCopom\b/g, "Copom")
+    .replace(/\bPmrg\b/g, "PMRG")
+    .replace(/\b([A-Za-z]{1,3}\d+[A-Za-z0-9.]*)\b/g, function(trecho) {
+      return trecho.toUpperCase();
+    })
+    .replace(/\b(\d+[A-Za-z][A-Za-z0-9.]*)\b/g, function(trecho) {
+      return trecho.toUpperCase();
+    });
 }
 
 function montarResumoRelatorio(registros) {
@@ -5940,15 +6443,15 @@ function montarOpcoesRelatorio(registros, vinculosPorAtendimento) {
 }
 
 function contarPorCampo(registros, campo) {
-  const contagem = {};
+  const agrupamento = criarAgrupamentoContagemRelatorio();
 
   registros.forEach(function(registro) {
     if (registro.eventoColetivo && campoEhPerfilIndividualRelatorio(campo)) return;
 
-    adicionarContagemRelatorio(contagem, registro[campo]);
+    adicionarContagemRelatorio(agrupamento, registro[campo], campo);
   });
 
-  return contagem;
+  return finalizarAgrupamentoContagemRelatorio(agrupamento);
 }
 
 function campoEhPerfilIndividualRelatorio(campo) {
@@ -5966,20 +6469,44 @@ function campoEhPerfilIndividualRelatorio(campo) {
 }
 
 function contarPorVinculo(registros, campo) {
-  const contagem = {};
+  const agrupamento = criarAgrupamentoContagemRelatorio();
 
   registros.forEach(function(registro) {
     registro.vinculos.forEach(function(vinculo) {
-      adicionarContagemRelatorio(contagem, vinculo[campo]);
+      adicionarContagemRelatorio(agrupamento, vinculo[campo], campo);
     });
   });
 
-  return contagem;
+  return finalizarAgrupamentoContagemRelatorio(agrupamento);
 }
 
-function adicionarContagemRelatorio(contagem, valor) {
-  const chave = valor || "nao informado";
-  contagem[chave] = (contagem[chave] || 0) + 1;
+function criarAgrupamentoContagemRelatorio() {
+  return {
+    contagem: {},
+    rotulos: {}
+  };
+}
+
+function adicionarContagemRelatorio(agrupamento, valor, campo) {
+  const rotulo = formatarValorAgrupamentoRelatorio(valor, campo);
+  const chave = normalizarChaveAgrupamentoRelatorio(rotulo, campo);
+
+  if (!agrupamento.rotulos[chave]) {
+    agrupamento.rotulos[chave] = rotulo;
+  }
+
+  agrupamento.contagem[chave] = (agrupamento.contagem[chave] || 0) + 1;
+}
+
+function finalizarAgrupamentoContagemRelatorio(agrupamento) {
+  const contagem = {};
+
+  Object.keys(agrupamento.contagem).forEach(function(chave) {
+    const rotulo = agrupamento.rotulos[chave] || "nao informado";
+    contagem[rotulo] = agrupamento.contagem[chave];
+  });
+
+  return contagem;
 }
 
 function listarUnicosRelatorio(lista, campo) {
@@ -5988,11 +6515,18 @@ function listarUnicosRelatorio(lista, campo) {
   lista.forEach(function(item) {
     const valor = item[campo];
     if (valor !== "" && valor !== null && valor !== undefined) {
-      mapa[String(valor)] = true;
+      const rotulo = formatarValorAgrupamentoRelatorio(valor, campo);
+      const chave = normalizarChaveAgrupamentoRelatorio(rotulo, campo);
+
+      if (rotulo && normalizar(rotulo) !== "nao informado") {
+        mapa[chave] = rotulo;
+      }
     }
   });
 
-  return Object.keys(mapa).sort(function(a, b) {
+  return Object.keys(mapa).map(function(chave) {
+    return mapa[chave];
+  }).sort(function(a, b) {
     return normalizar(a).localeCompare(normalizar(b));
   });
 }
@@ -6107,486 +6641,6 @@ function obterData(valor) {
   }
 
   return null;
-}
-
-// RELATORIO AUTOMATICO POR E-MAIL
-function enviarRelatorioEmailAgendado() {
-  return enviarRelatorioEmailSAIC();
-}
-
-function enviarRelatorioEmailSAIC() {
-  const configuracao = obterConfiguracaoRelatorioEmail();
-
-  if (configuracao.destinatarios.length === 0) {
-    throw new Error("Nenhum e-mail ativo encontrado na aba emails_relatorio.");
-  }
-
-  if (!deveEnviarRelatorioEmailAgora(configuracao)) {
-    return {
-      enviado: false,
-      mensagem: "Fora do dia/horario configurado para envio.",
-      destinatarios: configuracao.destinatarios
-    };
-  }
-
-  const dados = montarDadosRelatorioEmail(new Date());
-  const pdf = gerarPdfRelatorioEmail(dados);
-  const assunto = "Relatorio SAIC - " + dados.periodoSemana.rotuloCurto + " / " + dados.periodoMes.rotuloCurto;
-  const destinatarios = configuracao.destinatarios.join(",");
-
-  MailApp.sendEmail({
-    to: destinatarios,
-    subject: assunto,
-    body: "Segue em anexo o relatorio gerencial do SAIC em PDF.",
-    htmlBody: montarCorpoEmailRelatorio(dados),
-    attachments: [pdf]
-  });
-
-  return {
-    enviado: true,
-    destinatarios: configuracao.destinatarios,
-    assunto: assunto,
-    arquivo: pdf.getName()
-  };
-}
-
-function obterConfiguracaoRelatorioEmail() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = obterOuCriarAba(ss, ABA_EMAILS_RELATORIO, CABECALHOS_EMAILS_RELATORIO);
-  const ultimaLinha = sheet.getLastRow();
-
-  if (ultimaLinha < 2) {
-    return {
-      destinatarios: [],
-      diaSemana: "",
-      horario: ""
-    };
-  }
-
-  const mapa = obterMapaCabecalhos(sheet, CABECALHOS_EMAILS_RELATORIO.length);
-  const indices = {
-    email: obterIndiceCabecalho(mapa, ["email", "e-mail"], 0),
-    nome: obterIndiceCabecalho(mapa, ["nome"], 1),
-    ativo: obterIndiceCabecalho(mapa, ["ativo", "status"], 2),
-    diaSemana: obterIndiceCabecalho(mapa, ["dia_semana", "dia semana", "dia", "semana"], 3),
-    horario: obterIndiceCabecalho(mapa, ["horario", "hora", "horario_envio", "hora_envio"], 4),
-    observacao: obterIndiceCabecalho(mapa, ["observacao", "observaÃ§Ã£o", "obsercacao", "obs"], 5)
-  };
-  const linhas = sheet.getRange(2, 1, ultimaLinha - 1, Math.max(sheet.getLastColumn(), CABECALHOS_EMAILS_RELATORIO.length)).getValues();
-  const destinatarios = [];
-  const emailsIncluidos = {};
-  let diaSemana = "";
-  let horario = "";
-
-  linhas.forEach(function(linha) {
-    const ativo = normalizar(linha[indices.ativo]);
-    const email = String(linha[indices.email] || "").trim().toLowerCase();
-
-    if (!email || !email.includes("@")) return;
-    if (!valorAtivoRelatorioEmail(ativo)) return;
-
-    if (!emailsIncluidos[email]) {
-      destinatarios.push(email);
-      emailsIncluidos[email] = true;
-    }
-
-    if (!diaSemana) diaSemana = String(linha[indices.diaSemana] || "").trim();
-    if (!horario) horario = formatarHorarioConfiguracaoRelatorioEmail(linha[indices.horario]);
-  });
-
-  return {
-    destinatarios: destinatarios,
-    diaSemana: diaSemana,
-    horario: horario
-  };
-}
-
-function valorAtivoRelatorioEmail(valorNormalizado) {
-  return valorNormalizado === "sim" ||
-    valorNormalizado === "s" ||
-    valorNormalizado === "ativo" ||
-    valorNormalizado === "true" ||
-    valorNormalizado === "1";
-}
-
-function formatarHorarioConfiguracaoRelatorioEmail(valor) {
-  if (!valor) return "";
-
-  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor.getTime())) {
-    return Utilities.formatDate(valor, Session.getScriptTimeZone(), "HH:mm");
-  }
-
-  const texto = String(valor).trim();
-  const horaCheia = texto.match(/^(\d{1,2})$/);
-  const partes = texto.match(/^(\d{1,2}):(\d{2})/);
-
-  if (horaCheia) {
-    return String(Number(horaCheia[1])).padStart(2, "0") + ":00";
-  }
-
-  if (!partes) return texto;
-
-  return String(Number(partes[1])).padStart(2, "0") + ":" + partes[2];
-}
-
-function deveEnviarRelatorioEmailAgora(configuracao) {
-  if (!configuracao.diaSemana || !configuracao.horario) return false;
-
-  const agora = new Date();
-  const diaAtual = obterDiaSemanaRelatorioEmail(agora);
-  const horaAtual = Utilities.formatDate(agora, Session.getScriptTimeZone(), "HH");
-  const horaConfigurada = String(configuracao.horario || "").substring(0, 2);
-
-  return normalizarDiaSemanaRelatorioEmail(configuracao.diaSemana) === diaAtual && horaAtual === horaConfigurada;
-}
-
-function obterDiaSemanaRelatorioEmail(data) {
-  const dias = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
-  return dias[data.getDay()];
-}
-
-function normalizarDiaSemanaRelatorioEmail(valor) {
-  return normalizar(valor)
-    .replace(/-?feira/g, "")
-    .replace(/\s+/g, "")
-    .trim();
-}
-
-function configurarGatilhoRelatorioEmail() {
-  const configuracao = obterConfiguracaoRelatorioEmail();
-
-  if (!configuracao.diaSemana || !configuracao.horario) {
-    throw new Error("Informe dia_semana e horario na primeira linha ativa da aba emails_relatorio.");
-  }
-
-  removerGatilhosRelatorioEmail();
-
-  const dia = obterDiaSemanaScriptAppRelatorioEmail(configuracao.diaSemana);
-  const hora = Number(String(configuracao.horario).substring(0, 2));
-
-  ScriptApp
-    .newTrigger("enviarRelatorioEmailAgendado")
-    .timeBased()
-    .onWeekDay(dia)
-    .atHour(hora)
-    .create();
-
-  return "Gatilho configurado para " + configuracao.diaSemana + " as " + configuracao.horario + ".";
-}
-
-function removerGatilhosRelatorioEmail() {
-  ScriptApp.getProjectTriggers().forEach(function(trigger) {
-    if (trigger.getHandlerFunction() === "enviarRelatorioEmailAgendado") {
-      ScriptApp.deleteTrigger(trigger);
-    }
-  });
-}
-
-function obterDiaSemanaScriptAppRelatorioEmail(valor) {
-  const dia = normalizarDiaSemanaRelatorioEmail(valor);
-  const mapa = {
-    domingo: ScriptApp.WeekDay.SUNDAY,
-    segunda: ScriptApp.WeekDay.MONDAY,
-    terca: ScriptApp.WeekDay.TUESDAY,
-    quarta: ScriptApp.WeekDay.WEDNESDAY,
-    quinta: ScriptApp.WeekDay.THURSDAY,
-    sexta: ScriptApp.WeekDay.FRIDAY,
-    sabado: ScriptApp.WeekDay.SATURDAY
-  };
-
-  if (!mapa[dia]) {
-    throw new Error("Dia da semana invalido na aba emails_relatorio.");
-  }
-
-  return mapa[dia];
-}
-
-function montarDadosRelatorioEmail(dataBase) {
-  const estrutura = configurarEstruturaPlanilha();
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
-  const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
-  const periodos = montarPeriodosRelatorioEmail(dataBase);
-
-  const registrosSemana = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.semana.inicio, periodos.semana.fim);
-  const registrosSemanaAnterior = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.semanaAnterior.inicio, periodos.semanaAnterior.fim);
-  const registrosMes = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.mes.inicio, periodos.mes.fim);
-  const registrosMesAnterior = filtrarRegistrosPeriodoRelatorioNaps(registros, periodos.mesAnterior.inicio, periodos.mesAnterior.fim);
-  const resumoSemana = montarResumoRelatorio(registrosSemana);
-  const resumoSemanaAnterior = montarResumoRelatorio(registrosSemanaAnterior);
-  const resumoMes = montarResumoRelatorio(registrosMes);
-  const resumoMesAnterior = montarResumoRelatorio(registrosMesAnterior);
-  const distribuicoesMes = montarDistribuicoesRelatorio(registrosMes);
-  const topNaps = montarTopContagemRelatorioEmail(distribuicoesMes.porNAPS, 8);
-  const topTipos = montarTopContagemRelatorioEmail(distribuicoesMes.porTipo, 6);
-  const topMotivos = montarTopContagemRelatorioEmail(distribuicoesMes.porMotivo, 6);
-  const topOpms = montarTopContagemRelatorioEmail(distribuicoesMes.porOPM, 6);
-
-  return {
-    geradoEm: formatarDataHoraBrasil(new Date()),
-    periodoSemana: montarPeriodoTextoRelatorioEmail(periodos.semana),
-    periodoMes: montarPeriodoTextoRelatorioEmail(periodos.mes),
-    nomeArquivoPeriodo: periodos.mes.nomeArquivo,
-    semana: {
-      resumo: resumoSemana,
-      anterior: resumoSemanaAnterior,
-      variacaoAtendimentos: formatarVariacaoRelatorioEmail(resumoSemana.totalAtendimentos, resumoSemanaAnterior.totalAtendimentos),
-      variacaoFaltas: formatarVariacaoRelatorioEmail(resumoSemana.totalFaltas, resumoSemanaAnterior.totalFaltas),
-      variacaoAltas: formatarVariacaoRelatorioEmail(resumoSemana.totalAltas, resumoSemanaAnterior.totalAltas),
-      variacaoArquivamentos: formatarVariacaoRelatorioEmail(resumoSemana.totalArquivamentos, resumoSemanaAnterior.totalArquivamentos)
-    },
-    mes: {
-      resumo: resumoMes,
-      anterior: resumoMesAnterior,
-      variacaoAtendimentos: formatarVariacaoRelatorioEmail(resumoMes.totalAtendimentos, resumoMesAnterior.totalAtendimentos),
-      variacaoFaltas: formatarVariacaoRelatorioEmail(resumoMes.totalFaltas, resumoMesAnterior.totalFaltas),
-      variacaoAltas: formatarVariacaoRelatorioEmail(resumoMes.totalAltas, resumoMesAnterior.totalAltas),
-      variacaoArquivamentos: formatarVariacaoRelatorioEmail(resumoMes.totalArquivamentos, resumoMesAnterior.totalArquivamentos)
-    },
-    cards: montarCardsRelatorioEmail(resumoSemana, resumoSemanaAnterior, resumoMes, resumoMesAnterior),
-    topNaps: topNaps,
-    stackNaps: montarStackNapsRelatorioEmail(registrosMes, 7),
-    topTipos: topTipos,
-    topMotivos: topMotivos,
-    topOpms: topOpms,
-    perfilSituacao: montarTopContagemRelatorioEmail(distribuicoesMes.porSituacao, 5),
-    perfilSexo: montarTopContagemRelatorioEmail(distribuicoesMes.porSexo, 5),
-    faixaEtaria: montarTopContagemRelatorioEmail(distribuicoesMes.porFaixaEtaria, 8),
-    tempoServico: montarTopContagemRelatorioEmail(distribuicoesMes.porTempoServico, 8),
-    leitura: montarLeituraGerencialRelatorioEmail(resumoMes, resumoSemana, topNaps, topMotivos, topOpms)
-  };
-}
-
-function montarPeriodosRelatorioEmail(dataBase) {
-  const hoje = obterDataInicio(dataBase || new Date()) || new Date();
-  const referencia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
-  const diaSemana = referencia.getDay();
-  const diasDesdeSegunda = (diaSemana + 6) % 7;
-  const inicioSemana = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate() - diasDesdeSegunda);
-  const fimSemana = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate());
-  fimSemana.setHours(23, 59, 59, 999);
-
-  const inicioSemanaAnterior = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() - 7);
-  const fimSemanaAnterior = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() - 1);
-  fimSemanaAnterior.setHours(23, 59, 59, 999);
-
-  const inicioMes = new Date(referencia.getFullYear(), referencia.getMonth(), 1);
-  const fimMes = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate());
-  fimMes.setHours(23, 59, 59, 999);
-
-  const inicioMesAnterior = new Date(referencia.getFullYear(), referencia.getMonth() - 1, 1);
-  const fimMesAnterior = new Date(referencia.getFullYear(), referencia.getMonth(), 0);
-  fimMesAnterior.setHours(23, 59, 59, 999);
-
-  return {
-    semana: { inicio: inicioSemana, fim: fimSemana, nomeArquivo: obterMesAno(fimSemana) },
-    semanaAnterior: { inicio: inicioSemanaAnterior, fim: fimSemanaAnterior, nomeArquivo: obterMesAno(fimSemanaAnterior) },
-    mes: { inicio: inicioMes, fim: fimMes, nomeArquivo: obterMesAno(fimMes) },
-    mesAnterior: { inicio: inicioMesAnterior, fim: fimMesAnterior, nomeArquivo: obterMesAno(fimMesAnterior) }
-  };
-}
-
-function montarPeriodoTextoRelatorioEmail(periodo) {
-  return {
-    inicio: formatarDataBrasil(periodo.inicio),
-    fim: formatarDataBrasil(periodo.fim),
-    rotulo: formatarDataBrasil(periodo.inicio) + " a " + formatarDataBrasil(periodo.fim),
-    rotuloCurto: formatarDataBrasil(periodo.inicio) + " - " + formatarDataBrasil(periodo.fim)
-  };
-}
-
-function montarCardsRelatorioEmail(resumoSemana, resumoSemanaAnterior, resumoMes, resumoMesAnterior) {
-  return [
-    {
-      titulo: "Atendimentos no mes",
-      valor: resumoMes.totalAtendimentos,
-      classe: "",
-      detalhe: formatarVariacaoRelatorioEmail(resumoMes.totalAtendimentos, resumoMesAnterior.totalAtendimentos) + " vs. mes anterior"
-    },
-    {
-      titulo: "Pessoas no mes",
-      valor: resumoMes.pessoasDistintas,
-      classe: "",
-      detalhe: resumoMes.pessoasTotalGeral + " pessoas no total geral"
-    },
-    {
-      titulo: "Faltas no mes",
-      valor: resumoMes.totalFaltas,
-      classe: "warning",
-      detalhe: formatarPercentualRelatorioEmail(resumoMes.totalFaltas, resumoMes.totalRegistros) + " dos registros"
-    },
-    {
-      titulo: "Altas no mes",
-      valor: resumoMes.totalAltas,
-      classe: "success",
-      detalhe: formatarPercentualRelatorioEmail(resumoMes.totalAltas, resumoMes.totalAtendimentos) + " dos atendimentos"
-    },
-    {
-      titulo: "Arquivamentos",
-      valor: resumoMes.totalArquivamentos,
-      classe: "",
-      detalhe: formatarVariacaoRelatorioEmail(resumoMes.totalArquivamentos, resumoMesAnterior.totalArquivamentos) + " vs. mes anterior"
-    },
-    {
-      titulo: "Grupos e Palestras",
-      valor: resumoMes.totalEventosColetivos,
-      classe: "event",
-      detalhe: resumoMes.pessoasEventos + " participantes"
-    },
-    {
-      titulo: "Semana atual",
-      valor: resumoSemana.totalAtendimentos,
-      classe: "",
-      detalhe: formatarVariacaoRelatorioEmail(resumoSemana.totalAtendimentos, resumoSemanaAnterior.totalAtendimentos) + " vs. semana anterior"
-    }
-  ];
-}
-
-function montarTopContagemRelatorioEmail(contagem, limite) {
-  const itens = Object.keys(contagem || {}).map(function(chave) {
-    return {
-      nome: String(chave || "nao informado").trim() || "nao informado",
-      valor: Number(contagem[chave] || 0)
-    };
-  }).filter(function(item) {
-    return item.valor > 0;
-  }).sort(function(a, b) {
-    return b.valor - a.valor || a.nome.localeCompare(b.nome);
-  });
-  const lista = itens.slice(0, limite || 6);
-  const total = itens.reduce(function(soma, item) {
-    return soma + item.valor;
-  }, 0);
-  const maior = lista.length > 0 ? lista[0].valor : 0;
-
-  return lista.map(function(item, indice) {
-    return {
-      nome: item.nome,
-      valor: item.valor,
-      percentual: formatarPercentualRelatorioEmail(item.valor, total),
-      largura: maior > 0 ? Math.max(6, Math.round((item.valor / maior) * 100)) : 0,
-      cor: "c" + ((indice % 6) + 1)
-    };
-  });
-}
-
-function montarStackNapsRelatorioEmail(registros, limite) {
-  const mapa = {};
-
-  registros.forEach(function(registro) {
-    const naps = formatarNapsRelatorio(registro.naps || registro.napsAtendimento || "nao informado");
-
-    if (!mapa[naps]) {
-      mapa[naps] = {
-        naps: naps,
-        atendimentos: 0,
-        faltas: 0,
-        altas: 0,
-        arquivamentos: 0
-      };
-    }
-
-    if (ehRegistroFalta(registro)) {
-      mapa[naps].faltas++;
-      return;
-    }
-
-    if (ehRegistroArquivamento(registro)) {
-      mapa[naps].arquivamentos++;
-      return;
-    }
-
-    mapa[naps].atendimentos++;
-
-    if (ehRegistroAlta(registro)) {
-      mapa[naps].altas++;
-    }
-  });
-
-  return Object.keys(mapa).map(function(chave) {
-    const item = mapa[chave];
-    item.totalVisual = item.atendimentos + item.faltas + item.altas + item.arquivamentos;
-    item.larguraAtendimentos = item.totalVisual > 0 ? Math.round((item.atendimentos / item.totalVisual) * 100) : 0;
-    item.larguraFaltas = item.totalVisual > 0 ? Math.round((item.faltas / item.totalVisual) * 100) : 0;
-    item.larguraAltas = item.totalVisual > 0 ? Math.round((item.altas / item.totalVisual) * 100) : 0;
-    item.larguraArquivamentos = Math.max(0, 100 - item.larguraAtendimentos - item.larguraFaltas - item.larguraAltas);
-    return item;
-  }).sort(function(a, b) {
-    return b.totalVisual - a.totalVisual || a.naps.localeCompare(b.naps);
-  }).slice(0, limite || 7);
-}
-
-function montarLeituraGerencialRelatorioEmail(resumoMes, resumoSemana, topNaps, topMotivos, topOpms) {
-  const principalNaps = topNaps[0];
-  const principalMotivo = topMotivos[0];
-  const principalOpm = topOpms[0];
-  const leituras = [];
-
-  if (principalNaps) {
-    leituras.push("O " + principalNaps.nome + " concentrou " + principalNaps.percentual + " dos registros do mes.");
-  }
-
-  if (principalMotivo) {
-    leituras.push("O motivo mais frequente foi " + principalMotivo.nome + ", com " + principalMotivo.valor + " registro(s), equivalente a " + principalMotivo.percentual + ".");
-  }
-
-  if (principalOpm) {
-    leituras.push("A OPM com maior incidencia foi " + principalOpm.nome + ", com " + principalOpm.valor + " registro(s).");
-  }
-
-  leituras.push("No mes, houve " + resumoMes.totalAtendimentos + " atendimento(s), " + resumoMes.totalFaltas + " falta(s), " + resumoMes.totalAltas + " alta(s) e " + resumoMes.totalEventosColetivos + " grupo(s) ou palestra(s).");
-  leituras.push("Arquivamentos no mes: " + resumoMes.totalArquivamentos + ". Na semana: " + resumoSemana.totalArquivamentos + ".");
-  leituras.push("Na semana, houve " + resumoSemana.totalAtendimentos + " atendimento(s), com " + resumoSemana.totalFaltas + " falta(s) e " + resumoSemana.totalAltas + " alta(s).");
-
-  return leituras;
-}
-
-function formatarPercentualRelatorioEmail(valor, total) {
-  const numero = Number(valor || 0);
-  const base = Number(total || 0);
-
-  if (!base) return "0%";
-
-  return ((numero / base) * 100).toFixed(1).replace(".", ",") + "%";
-}
-
-function formatarVariacaoRelatorioEmail(atual, anterior) {
-  const numeroAtual = Number(atual || 0);
-  const numeroAnterior = Number(anterior || 0);
-
-  if (numeroAnterior === 0 && numeroAtual === 0) return "0%";
-  if (numeroAnterior === 0) return "+100%";
-
-  const variacao = ((numeroAtual - numeroAnterior) / numeroAnterior) * 100;
-  const sinal = variacao > 0 ? "+" : "";
-
-  return sinal + variacao.toFixed(1).replace(".", ",") + "%";
-}
-
-function gerarPdfRelatorioEmail(dados) {
-  const template = HtmlService.createTemplateFromFile("relatorio_email_pdf");
-  template.dados = dados;
-
-  const html = template.evaluate().getContent();
-  const nomeArquivo = "relatorio_saic_" + dados.nomeArquivoPeriodo + ".pdf";
-
-  return Utilities
-    .newBlob(html, "text/html", "relatorio_saic.html")
-    .getAs("application/pdf")
-    .setName(nomeArquivo);
-}
-
-function montarCorpoEmailRelatorio(dados) {
-  return [
-    "<div style='font-family:Arial,Helvetica,sans-serif;color:#293033;line-height:1.5'>",
-    "<h2 style='margin:0 0 8px'>Relatorio SAIC</h2>",
-    "<p>Segue em anexo o relatorio gerencial em PDF.</p>",
-    "<p><strong>Semana:</strong> " + dados.periodoSemana.rotulo + "<br>",
-    "<strong>Mes:</strong> " + dados.periodoMes.rotulo + "</p>",
-    "<p style='color:#66737b;font-size:12px'>Gerado em " + dados.geradoEm + ".</p>",
-    "</div>"
-  ].join("");
 }
 
 // UTILITARIOS GERAIS E AUTORIZACAO
