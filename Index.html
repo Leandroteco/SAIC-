@@ -333,6 +333,39 @@
       text-transform: uppercase;
     }
 
+    .campo-cid-link-wrapper {
+      position: relative;
+    }
+
+    .campo-cid-link-wrapper input {
+      padding-right: 88px;
+    }
+
+    .link-consulta-cid {
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--primary);
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 900;
+      height: 28px;
+      justify-content: center;
+      padding: 0 11px;
+      position: absolute;
+      right: 8px;
+      text-decoration: none;
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+    }
+
+    .link-consulta-cid:hover {
+      background: rgba(37, 109, 133, 0.1);
+      color: #1f4f60;
+    }
+
     .hipotese-diagnostico-linha {
       align-items: stretch;
       display: grid;
@@ -1670,6 +1703,16 @@ body {
     padding: 13px 14px !important;
   }
 
+  .campo-cid-link-wrapper input {
+    padding-right: 86px !important;
+  }
+
+  .link-consulta-cid {
+    font-size: 12px !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+  }
+
   textarea {
     min-height: 112px !important;
   }
@@ -2383,10 +2426,18 @@ body {
         <span id="cidHipotese" class="cid-hipotese-badge vazio">CID</span>
       </div>
       <div id="grupoMotivoOutros" class="campo-outros-condicional">
-        <input
-          id="motivoOutros"
-          placeholder="CÓDIGO CID"
-          oninput="converterMaiusculas(this); limparErroCampo(this)">
+        <div class="campo-cid-link-wrapper">
+          <input
+            id="motivoOutros"
+            placeholder="CÓDIGO CID"
+            oninput="converterMaiusculas(this); limparErroCampo(this)">
+          <a
+            class="link-consulta-cid"
+            href="https://icd.who.int/pt/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Consultar CID">CID</a>
+        </div>
       </div>
     </div>
   </div>
@@ -2482,7 +2533,7 @@ body {
 
 <div class="copyright">
   © 2026 - Sistema de Gestão dos Atendimentos do SiSMen (versão 2.0)<br>
-  Desenvolvido por Major Isabela,Subtenente Tome, Sargento PM Felix e Cabo PM Myazaki
+  Desenvolvido por Major Isabela, Subtenente Tome, Sargento PM Felix e Cabo PM Myazaki
 </div>
 </div>
 
@@ -4198,6 +4249,7 @@ function configurarMenuPorPerfil() {
     if (!botao) return;
 
     botao.disabled = !admin;
+    botao.style.display = admin ? "" : "none";
     botao.title = admin
       ? ""
       : "Disponível somente para administradores";
@@ -4379,12 +4431,7 @@ function abrirPPMS() {
     return;
   }
 
-  const mensagem = document.getElementById("mensagem");
-
-  if (mensagem) {
-    mensagem.style.color = "#475569";
-    mensagem.innerText = "Modulo PPMS reservado para implantacao.";
-  }
+  abrirPaginaComToken("ppms", "_top", "Carregando PPMS...");
 }
 
 function limparAvisosBusca() {
