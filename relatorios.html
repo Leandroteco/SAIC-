@@ -2406,8 +2406,8 @@ function formatarDataInput(data) {
         ? `<p>O último atendimento considerado no filtro foi em ${destacarRelatorio(dados.dataReferencia)}, com hipótese de diagnóstico ${motivoReferencia}, e responsável ${responsavelReferencia}.</p>`
         : "";
       const textoDistancia = dados.distanciaDisponivel
-        ? `Sua residência fica aproximadamente ${distanciaDestacada} do NAPS ${naps}.`
-        : `A distância da residência até o NAPS ${naps} está ${distanciaDestacada}.`;
+        ? `Sua residência fica aproximadamente ${distanciaDestacada} do ${naps}.`
+        : `A distância da residência até ${naps} está ${distanciaDestacada}.`;
 
       return `
         <div class="individual-report">
