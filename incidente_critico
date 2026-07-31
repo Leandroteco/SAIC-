@@ -385,6 +385,128 @@
       padding: 11px 16px;
     }
 
+    .btn-imprimir-incidente {
+      align-items: center;
+      background: var(--green);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(47, 125, 85, 0.16);
+      color: #ffffff;
+      display: none;
+      min-height: 44px;
+      padding: 11px 16px;
+    }
+
+    .btn-imprimir-incidente.ativo {
+      display: inline-flex;
+    }
+
+    .ultimos-incidentes-wrapper {
+      position: relative;
+    }
+
+    .btn-ultimos-incidentes {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--blue);
+      display: inline-flex;
+      height: 44px;
+      justify-content: center;
+      padding: 0;
+      width: 44px;
+    }
+
+    .icone-relogio {
+      border: 3px solid currentColor;
+      border-radius: 50%;
+      display: inline-block;
+      height: 20px;
+      position: relative;
+      width: 20px;
+    }
+
+    .icone-relogio::before,
+    .icone-relogio::after {
+      background: currentColor;
+      border-radius: 999px;
+      content: "";
+      left: 8px;
+      position: absolute;
+      top: 3px;
+      transform-origin: bottom center;
+      width: 2px;
+    }
+
+    .icone-relogio::before {
+      height: 7px;
+    }
+
+    .icone-relogio::after {
+      height: 5px;
+      transform: rotate(90deg);
+    }
+
+    .ultimos-incidentes-popover {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      bottom: calc(100% + 8px);
+      box-shadow: 0 20px 42px rgba(15, 23, 42, 0.18);
+      display: none;
+      min-width: 320px;
+      padding: 10px;
+      position: absolute;
+      right: 0;
+      z-index: 20;
+    }
+
+    .ultimos-incidentes-popover.ativo {
+      display: block;
+    }
+
+    .ultimos-titulo {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      margin: 2px 2px 8px;
+    }
+
+    .ultimo-incidente-item {
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      display: block;
+      margin-top: 8px;
+      padding: 9px 10px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .ultimo-incidente-item strong,
+    .ultimo-incidente-item span {
+      display: block;
+    }
+
+    .ultimo-incidente-item strong {
+      font-size: 13px;
+    }
+
+    .ultimo-incidente-item span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+
+    .ultimos-vazio {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 2px;
+    }
+
     .saving-inline {
       align-items: center;
       color: var(--muted);
@@ -604,14 +726,13 @@
 
           <div>
             <label for="situacaoStatus">Situa&ccedil;&atilde;o/Status</label>
-            <select id="situacaoStatus" required>
+            <select id="situacaoStatus" onchange="atualizarEscalaPorSituacao()" required>
               <option value="">Selecione</option>
               <option>agregado(a)</option>
               <option>ativo administrativo</option>
               <option>ativo operacional</option>
               <option>exonerado(a)</option>
               <option>inativo</option>
-              <option>inativo (falecido/a)</option>
             </select>
           </div>
 
@@ -917,14 +1038,14 @@
             <label for="modalidade">Modalidade</label>
             <select id="modalidade" required>
               <option value="">Selecione</option>
-              <option value="caso fortuito">CASO FORTUITO</option>
-              <option value="falecimento de familiar">FALECIMENTO DE FAMILIAR</option>
-              <option value="homicidio">HOMIC&Iacute;DIO</option>
-              <option value="morte natural/patologias">MORTE NATURAL/ PATOLOGIAS</option>
-              <option value="suicidio">SUIC&Iacute;DIO</option>
-              <option value="tentativa de suicidio">TENTATIVA DE SUIC&Iacute;DIO</option>
-              <option value="acidente de transito">ACIDENTE DE TR&Acirc;NSITO</option>
-              <option value="morte em servico">MORTE EM SERVI&Ccedil;O</option>
+              <option value="caso fortuito">Caso Fortuito</option>
+              <option value="falecimento de familiar">Falecimento de Familiar</option>
+              <option value="homicidio">Homic&iacute;dio</option>
+              <option value="morte natural/patologias">Morte Natural / Patologias</option>
+              <option value="suicidio">Suic&iacute;dio</option>
+              <option value="tentativa de suicidio">Tentativa de Suic&iacute;dio</option>
+              <option value="acidente de transito">Acidente de Tr&acirc;nsito</option>
+              <option value="morte em servico">Morte em Servi&ccedil;o</option>
             </select>
           </div>
         </div>
@@ -965,6 +1086,13 @@
         <div class="actions">
           <button id="btnSalvarIncidente" type="button" class="btn-primary" onclick="salvarIncidente()">Salvar Incidente Cr&iacute;tico</button>
           <span id="statusSalvarIncidente" class="saving-inline"></span>
+          <button id="btnImprimirFichaIncidente" type="button" class="btn-imprimir-incidente" onclick="imprimirFichaIncidenteSalva()">Imprimir ficha</button>
+          <div class="ultimos-incidentes-wrapper">
+            <button id="btnUltimosIncidentes" type="button" class="btn-ultimos-incidentes" title="&Uacute;ltimos incidentes" aria-label="&Uacute;ltimos incidentes" onclick="alternarUltimosIncidentes(event)">
+              <span class="icone-relogio" aria-hidden="true"></span>
+            </button>
+            <div id="painelUltimosIncidentes" class="ultimos-incidentes-popover"></div>
+          </div>
         </div>
       </section>
     </main>
@@ -975,6 +1103,9 @@
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
     let mensagemLoginInicial = <?!= JSON.stringify(mensagemLoginInicial || "") ?>;
+    let ultimoIncidenteSalvoNumero = "";
+    let ultimosIncidentesCarregados = false;
+    let ultimosIncidentesCarregando = false;
 
     window.addEventListener("load", function() {
       if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
@@ -990,7 +1121,16 @@
       carregarNumeroRelatorioIncidente();
       carregarOpcoesEquipeIncidente();
       registrarLimpezaStatusAoEditar();
+      atualizarEscalaPorSituacao();
       mostrarStatus("Pronto para registrar incidente critico.", "");
+    });
+
+    document.addEventListener("click", function(evento) {
+      const wrapper = document.querySelector(".ultimos-incidentes-wrapper");
+
+      if (wrapper && !wrapper.contains(evento.target)) {
+        fecharUltimosIncidentes();
+      }
     });
 
     function voltarAoAtendimento() {
@@ -1041,8 +1181,11 @@
       google.script.run
         .withSuccessHandler(function(retorno) {
           definirStatusSalvar(false, "Salvo.", "success");
+          ultimoIncidenteSalvoNumero = retorno && retorno.numeroRelatorio ? retorno.numeroRelatorio : valorCampo("numeroRelatorio");
           limparFormularioIncidente();
           carregarNumeroRelatorioIncidente();
+          mostrarBotaoFichaIncidente(ultimoIncidenteSalvoNumero);
+          ultimosIncidentesCarregados = false;
           mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Incidente Cr\u00edtico salvo com sucesso.", "success");
         })
         .withFailureHandler(function(erro) {
@@ -1050,6 +1193,303 @@
           mostrarStatus(obterMensagemErro(erro), "error");
         })
         .salvarIncidenteCritico(montarDadosIncidente(), tokenGoogle);
+    }
+
+    function mostrarBotaoFichaIncidente(numeroRelatorio) {
+      const botao = document.getElementById("btnImprimirFichaIncidente");
+
+      if (!botao) return;
+
+      ultimoIncidenteSalvoNumero = numeroRelatorio || "";
+      botao.classList.toggle("ativo", !!ultimoIncidenteSalvoNumero);
+    }
+
+    function ocultarBotaoFichaIncidente() {
+      const botao = document.getElementById("btnImprimirFichaIncidente");
+
+      ultimoIncidenteSalvoNumero = "";
+      if (botao) botao.classList.remove("ativo");
+    }
+
+    function imprimirFichaIncidenteSalva() {
+      if (!ultimoIncidenteSalvoNumero) {
+        mostrarStatus("Salve o incidente antes de imprimir a ficha.", "error");
+        return;
+      }
+
+      imprimirFichaIncidentePorNumero(ultimoIncidenteSalvoNumero, true);
+    }
+
+    function alternarUltimosIncidentes(evento) {
+      if (evento) evento.stopPropagation();
+
+      const painel = document.getElementById("painelUltimosIncidentes");
+      if (!painel) return;
+
+      const estaAberto = painel.classList.contains("ativo");
+
+      if (estaAberto) {
+        fecharUltimosIncidentes();
+        return;
+      }
+
+      painel.classList.add("ativo");
+      carregarUltimosIncidentes(false);
+    }
+
+    function fecharUltimosIncidentes() {
+      const painel = document.getElementById("painelUltimosIncidentes");
+      if (painel) painel.classList.remove("ativo");
+    }
+
+    function carregarUltimosIncidentes(forcarAtualizacao) {
+      const painel = document.getElementById("painelUltimosIncidentes");
+      if (!painel || ultimosIncidentesCarregando) return;
+      if (ultimosIncidentesCarregados && !forcarAtualizacao) return;
+
+      if (!window.google || !google.script || !google.script.run) {
+        painel.innerHTML = '<div class="ultimos-vazio">Abra pelo Apps Script para carregar a lista.</div>';
+        return;
+      }
+
+      ultimosIncidentesCarregando = true;
+      painel.innerHTML = '<div class="ultimos-vazio">Carregando...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          ultimosIncidentesCarregando = false;
+          ultimosIncidentesCarregados = true;
+          renderizarUltimosIncidentes(lista || []);
+        })
+        .withFailureHandler(function(erro) {
+          ultimosIncidentesCarregando = false;
+          painel.innerHTML = '<div class="ultimos-vazio">Erro ao carregar: ' + escaparHtml(obterMensagemErro(erro)) + '</div>';
+        })
+        .obterUltimosIncidentesCriticosResponsavel(tokenGoogle);
+    }
+
+    function renderizarUltimosIncidentes(lista) {
+      const painel = document.getElementById("painelUltimosIncidentes");
+      if (!painel) return;
+
+      if (!lista.length) {
+        painel.innerHTML = '<div class="ultimos-titulo">&Uacute;ltimos incidentes</div>' +
+          '<div class="ultimos-vazio">Nenhum incidente salvo por este usu&aacute;rio.</div>';
+        return;
+      }
+
+      painel.innerHTML = '<div class="ultimos-titulo">&Uacute;ltimos incidentes</div>' + lista.map(function(item) {
+        const numero = escaparHtml(item.numeroRelatorio || "");
+        const nome = escaparHtml(formatarTextoFichaIncidente(item.nome || "Sem nome", "nome"));
+        const detalhe = [
+          item.dataFato ? "Fato em " + item.dataFato : "",
+          item.modalidade ? formatarTextoFichaIncidente(item.modalidade, "titulo") : "",
+          item.re ? "R.E. " + item.re : ""
+        ].filter(Boolean).join(" - ");
+
+        return '<button type="button" class="ultimo-incidente-item" data-numero="' + numero + '">' +
+          '<strong>' + nome + '</strong>' +
+          '<span>' + escaparHtml(numero + (detalhe ? " - " + detalhe : "")) + '</span>' +
+        '</button>';
+      }).join("");
+
+      painel.querySelectorAll(".ultimo-incidente-item").forEach(function(botao) {
+        botao.addEventListener("click", function() {
+          imprimirFichaIncidentePorNumero(this.getAttribute("data-numero"), false);
+          fecharUltimosIncidentes();
+        });
+      });
+    }
+
+    function imprimirFichaIncidentePorNumero(numeroRelatorio, ocultarBotaoDepois) {
+      const numero = String(numeroRelatorio || "").trim();
+      const janela = window.open("", "_blank");
+
+      if (!numero) {
+        mostrarStatus("Incidente n\u00e3o informado para impress\u00e3o.", "error");
+        return;
+      }
+
+      if (!janela) {
+        mostrarStatus("O navegador bloqueou a janela de impress\u00e3o. Libere pop-ups para o sistema.", "error");
+        return;
+      }
+
+      janela.document.write("<p style='font-family:Arial;padding:24px;'>Carregando ficha de incidente cr&iacute;tico...</p>");
+
+      google.script.run
+        .withSuccessHandler(function(ficha) {
+          janela.document.open();
+          janela.document.write(montarHtmlFichaIncidenteCritico(ficha || {}));
+          janela.document.close();
+
+          setTimeout(function() {
+            janela.focus();
+          }, 250);
+
+          if (ocultarBotaoDepois) ocultarBotaoFichaIncidente();
+        })
+        .withFailureHandler(function(erro) {
+          janela.document.open();
+          janela.document.write("<p style='font-family:Arial;padding:24px;color:#b42318;'>Erro ao carregar ficha: " + escaparHtml(obterMensagemErro(erro)) + "</p>");
+          janela.document.close();
+        })
+        .obterFichaIncidenteCritico(numero, tokenGoogle);
+    }
+
+    function montarHtmlFichaIncidenteCritico(ficha) {
+      const statusNormalizado = normalizarTextoFichaIncidente(ficha.situacaoStatus);
+      const servicoNormalizado = normalizarTextoFichaIncidente(ficha.servico);
+      const statusInativo = statusNormalizado.indexOf("inativo") >= 0 || statusNormalizado.indexOf("exonerado") >= 0;
+      const statusAtivo = !statusInativo && (statusNormalizado.indexOf("ativo") >= 0 || statusNormalizado.indexOf("agregado") >= 0);
+
+      return "<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'><title>Relat&oacute;rio de Incidente Cr&iacute;tico</title>" +
+        "<style>" +
+          "@page{size:A4;margin:10mm;}*{box-sizing:border-box;}body{font-family:Arial,Helvetica,sans-serif;color:#111827;margin:0;background:#eef4f7;font-size:11px;line-height:1.25;}.barra-impressao{align-items:center;background:#26373d;color:#fff;display:flex;gap:12px;justify-content:center;padding:10px;position:sticky;top:0;z-index:5;}.barra-impressao button{background:#315f72;border:0;border-radius:6px;color:#fff;cursor:pointer;font-weight:800;padding:9px 14px;}.barra-impressao span{font-size:12px;font-weight:700;}.pagina-incidente{background:#fff;box-shadow:0 18px 38px rgba(31,48,56,.14);display:flex;flex-direction:column;margin:18px auto;max-width:190mm;min-height:277mm;padding:10mm;}.pagina-incidente>*{flex-shrink:0;}.cabecalho-ficha{text-align:center;text-transform:uppercase;}.cabecalho-ficha p{font-size:10px;font-weight:800;margin:0 0 2px;}.cabecalho-ficha h1{font-size:14px;margin:8px 0 10px;}.anexo{border:1px solid #111827;display:inline-block;font-size:10px;font-weight:800;margin-top:2px;padding:2px 8px;}.secao-ficha{background:#e5e7eb;border:1px solid #111827;font-size:11px;font-weight:900;margin:8px 0 5px;padding:4px;text-align:center;text-transform:uppercase;}.grid{display:grid;gap:5px;margin-bottom:5px;}.grid-2{grid-template-columns:1fr 1fr;}.grid-3{grid-template-columns:1fr 1fr 1fr;}.grid-4{grid-template-columns:1fr 1fr 1fr 1fr;}.campo{border:1px solid #111827;min-height:28px;padding:3px 5px;}.campo .rotulo{display:block;font-size:9px;font-weight:900;text-transform:uppercase;}.campo .valor{display:block;font-size:11px;margin-top:2px;min-height:12px;white-space:pre-wrap;word-break:break-word;}.campo.grande{min-height:68px;}.linha-checks{align-items:center;border:1px solid #111827;display:flex;flex-wrap:wrap;gap:12px;margin-bottom:5px;min-height:28px;padding:5px;}.check{font-weight:800;white-space:nowrap;}.box{border:1px solid #111827;display:inline-block;height:12px;line-height:10px;margin-right:4px;text-align:center;vertical-align:-1px;width:12px;}table{border-collapse:collapse;margin-bottom:6px;width:100%;}th,td{border:1px solid #111827;padding:4px;text-align:left;vertical-align:top;}th{background:#e5e7eb;font-size:9px;text-align:center;text-transform:uppercase;}.tabela-acionamento th{font-size:12px;line-height:1.05;}.tabela-acionamento td{height:26px;padding:3px 5px;}.tabela-acionamento .col-data{width:18%;}.tabela-acionamento .col-local{width:32%;}.editavel{min-height:18px;outline:none;white-space:pre-wrap;word-break:break-word;}.editavel.bloco,.editavel.grande{min-height:52px;}.editavel[data-placeholder]:empty::before{color:#6b7280;content:attr(data-placeholder);font-style:italic;}.assinatura{display:grid;gap:42px;grid-template-columns:1fr 1fr;margin-top:52px;}.linha-assinatura{border-top:1px solid #111827;padding-top:4px;text-align:center;}.rodape-ficha{font-size:7.2px;font-weight:800;margin-top:auto;padding-top:14px;text-align:center;white-space:nowrap;}@media print{body{background:#fff;}.barra-impressao{display:none;}.pagina-incidente{box-shadow:none;margin:0;max-width:none;padding:0;}.editavel[data-placeholder]:empty::before{content:'';}}" +
+        "</style></head><body>" +
+          "<div class='barra-impressao'><button onclick='window.print()'>Imprimir / salvar PDF</button><span>Preencha os campos em branco antes de imprimir.</span></div>" +
+          "<main class='pagina-incidente'>" +
+            "<div class='cabecalho-ficha'>" +
+              "<p>Secretaria da Seguran&ccedil;a P&uacute;blica</p>" +
+              "<p>Pol&iacute;cia Militar do Estado de S&atilde;o Paulo</p>" +
+              "<p>Centro de Aten&ccedil;&atilde;o Psicol&oacute;gica e Social - CAPS</p>" +
+              "<h1>Relat&oacute;rio de Apoio em Incidentes Cr&iacute;ticos</h1>" +
+              "<span class='anexo'>Anexo I</span>" +
+            "</div>" +
+            "<div class='grid grid-4'>" +
+              campoFichaIncidente("Relat\u00f3rio n\u00ba", ficha.numeroRelatorio, "upper") +
+              campoFichaIncidente("Data do fato", ficha.dataFato) +
+              campoFichaIncidente("Data do acionamento", ficha.dataAcionamento) +
+              campoFichaIncidente("NAPS", ficha.napsAtendimento, "upper") +
+            "</div>" +
+            "<div class='secao-ficha'>Dados do PM</div>" +
+            "<div class='grid grid-4'>" +
+              campoFichaIncidente("Posto/Gradua\u00e7\u00e3o", ficha.postoGraduacao) +
+              campoFichaIncidente("R.E.", ficha.re, "upper") +
+              campoFichaIncidente("OPM Atual/\u00daltima", ficha.opmAtual, "upper") +
+              campoFichaIncidente("Situa\u00e7\u00e3o/Status", ficha.situacaoStatus, "titulo") +
+            "</div>" +
+            "<div class='grid grid-3'>" +
+              campoFichaIncidente("Nome", ficha.nome, "nome") +
+              campoFichaIncidente("Sexo", ficha.sexo, "titulo") +
+              campoFichaIncidente("V\u00edtima", ficha.vitima, "titulo") +
+            "</div>" +
+            "<div class='secao-ficha'>Motivo do Acionamento</div>" +
+            "<div class='grid grid-2'>" +
+              campoFichaIncidente("Modalidade", ficha.modalidade, "titulo") +
+              campoFichaIncidente("Respons\u00e1vel pelo registro", ficha.responsavel, "nome") +
+            "</div>" +
+            "<div class='linha-checks'>" +
+              opcaoMarcadaFichaIncidente("Servi\u00e7o", servicoNormalizado === "servico") +
+              opcaoMarcadaFichaIncidente("Folga", servicoNormalizado === "folga") +
+              opcaoMarcadaFichaIncidente("In tinere", servicoNormalizado === "in tinere") +
+              opcaoMarcadaFichaIncidente("Outros", !servicoNormalizado) +
+              opcaoMarcadaFichaIncidente("Ativo", statusAtivo) +
+              opcaoMarcadaFichaIncidente("Inativo", statusInativo) +
+            "</div>" +
+            campoEditavelFichaIncidente("Detalhar", "grande") +
+            "<div class='secao-ficha'>Hist&oacute;rico</div>" +
+            campoAreaEditavelPlaceholderFichaIncidente("Hist\u00f3rico da Ocorr\u00eancia", "grande") +
+            campoEditavelFichaIncidente("Outras Situa\u00e7\u00f5es (morte de familiares/apoio)", "grande") +
+            "<div class='secao-ficha'>Acionamento e Encerramento</div>" +
+            "<table class='tabela-acionamento'><thead><tr>" +
+              "<th class='col-data'>DATA-HORA<br>(in&iacute;cio)</th>" +
+              "<th class='col-local'>LOCAL/PROVID&Ecirc;NCIA</th>" +
+              "<th class='col-data'>DATA-HORA<br>(t&eacute;rmino)</th>" +
+              "<th class='col-local'>LOCAL/PROVID&Ecirc;NCIA</th>" +
+            "</tr></thead><tbody>" +
+              montarLinhasAcionamentoFichaIncidente(6) +
+            "</tbody></table>" +
+            "<div class='secao-ficha'>&Oacute;rg&atilde;os de Apoio</div>" +
+            "<table><tbody>" +
+              linhaTabelaEditavelFichaIncidente("Unidades") +
+              linhaTabelaEditavelFichaIncidente("Associa\u00e7\u00f5es") +
+              linhaTabelaEditavelFichaIncidente("Outros") +
+            "</tbody></table>" +
+            "<div class='secao-ficha'>Descri&ccedil;&atilde;o de Procedimentos</div>" +
+            "<table><tbody>" +
+              linhaTabelaEditavelFichaIncidente("Vel\u00f3rio") +
+              linhaTabelaEditavelFichaIncidente("Sepultamento") +
+              linhaTabelaEditavelFichaIncidente("Outros") +
+            "</tbody></table>" +
+            "<div class='secao-ficha'>Relat&oacute;rio de Atendimento</div>" +
+            campoAreaEditavelPlaceholderFichaIncidente("Relat\u00f3rio de Atendimento", "grande") +
+            "<div class='secao-ficha'>Equipe</div>" +
+            "<div class='grid grid-2'>" +
+              campoFichaIncidente("Oficial de Sobreaviso", ficha.oficialSobreaviso, "nome") +
+              campoFichaIncidente("Psic\u00f3logo", ficha.psicologo, "nome") +
+              campoFichaIncidente("Assistente Social", ficha.assistenteSocial, "nome") +
+              campoFichaIncidente("Motorista", ficha.motorista, "nome") +
+            "</div>" +
+            campoEditavelFichaIncidente("Transporte utilizado") +
+            "<div class='assinatura'><div class='linha-assinatura'>Assinatura e carimbo</div><div class='linha-assinatura'>Respons&aacute;vel</div></div>" +
+            "<div class='rodape-ficha'>&quot;N&oacute;s, Policiais Militares, sob a prote&ccedil;&atilde;o de Deus, estamos compromissados com a defesa da Vida, da Integridade F&iacute;sica e da Dignidade da Pessoa Humana.&quot;</div>" +
+          "</main>" +
+        "</body></html>";
+    }
+
+    function campoFichaIncidente(rotulo, valor, modo) {
+      return "<div class='campo'><span class='rotulo'>" + escaparHtml(rotulo) + "</span><span class='valor'>" +
+        valorFichaIncidente(formatarTextoFichaIncidente(valor, modo)) + "</span></div>";
+    }
+
+    function campoEditavelFichaIncidente(rotulo, classe) {
+      return "<div class='campo " + (classe || "") + "'><span class='rotulo'>" + escaparHtml(rotulo) +
+        "</span><div class='valor editavel " + (classe || "") + "' contenteditable='true'></div></div>";
+    }
+
+    function campoAreaEditavelPlaceholderFichaIncidente(placeholder, classe) {
+      return "<div class='campo " + (classe || "") + "'><div class='valor editavel " + (classe || "") +
+        "' contenteditable='true' data-placeholder='" + escaparHtml(placeholder) + "'></div></div>";
+    }
+
+    function montarLinhasAcionamentoFichaIncidente(quantidade) {
+      const total = quantidade || 6;
+      const linhas = [];
+
+      for (let i = 0; i < total; i++) {
+        linhas.push(
+          "<tr>" +
+            "<td><div class='editavel' contenteditable='true'></div></td>" +
+            "<td><div class='editavel' contenteditable='true'></div></td>" +
+            "<td><div class='editavel' contenteditable='true'></div></td>" +
+            "<td><div class='editavel' contenteditable='true'></div></td>" +
+          "</tr>"
+        );
+      }
+
+      return linhas.join("");
+    }
+
+    function linhaTabelaEditavelFichaIncidente(rotulo) {
+      return "<tr><th>" + escaparHtml(rotulo) + "</th><td><div class='editavel' contenteditable='true'></div></td></tr>";
+    }
+
+    function opcaoMarcadaFichaIncidente(rotulo, marcado) {
+      return "<span class='check'><span class='box'>" + (marcado ? "X" : "") + "</span>" + escaparHtml(rotulo) + "</span>";
+    }
+
+    function valorFichaIncidente(valor) {
+      const texto = String(valor === null || valor === undefined ? "" : valor).trim();
+      return texto ? escaparHtml(texto) : "&nbsp;";
+    }
+
+    function formatarTextoFichaIncidente(valor, modo) {
+      const texto = String(valor === null || valor === undefined ? "" : valor).trim();
+
+      if (!texto) return "";
+      if (modo === "upper") return texto.toUpperCase();
+      if (modo === "nome" || modo === "titulo") return formatarResponsavelSistema(texto);
+
+      return texto;
+    }
+
+    function normalizarTextoFichaIncidente(valor) {
+      return String(valor || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
     }
 
     function montarDadosIncidente() {
@@ -1127,6 +1567,7 @@
 
       preencherPsicologoResponsavel();
       preencherDatasIncidenteSeVazias();
+      atualizarEscalaPorSituacao();
     }
 
     function carregarNumeroRelatorioIncidente() {
@@ -1172,6 +1613,25 @@
         const campo = document.getElementById(id);
         if (campo && campo !== campoMarcado) campo.checked = false;
       });
+    }
+
+    function atualizarEscalaPorSituacao() {
+      const situacao = normalizarTextoFichaIncidente(valorCampo("situacaoStatus"));
+      const permiteEscala = situacaoPermiteEscalaIncidente(situacao);
+
+      ["servico", "folga", "inTinere"].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+
+        campo.disabled = !permiteEscala;
+        if (!permiteEscala) campo.checked = false;
+      });
+    }
+
+    function situacaoPermiteEscalaIncidente(situacaoNormalizada) {
+      return situacaoNormalizada === "agregado(a)" ||
+        situacaoNormalizada === "ativo administrativo" ||
+        situacaoNormalizada === "ativo operacional";
     }
 
     function obterServicoIncidente() {
@@ -1248,8 +1708,17 @@
 
     function registrarLimpezaStatusAoEditar() {
       document.querySelectorAll("input, select, textarea").forEach(function(campo) {
-        campo.addEventListener("input", limparStatusOperacao);
-        campo.addEventListener("change", limparStatusOperacao);
+        const deveOcultarFicha = campo.id !== "numeroRelatorio" && campo.id !== "psicologo";
+
+        campo.addEventListener("input", function() {
+          limparStatusOperacao();
+          if (deveOcultarFicha) ocultarBotaoFichaIncidente();
+        });
+
+        campo.addEventListener("change", function() {
+          limparStatusOperacao();
+          if (deveOcultarFicha) ocultarBotaoFichaIncidente();
+        });
       });
     }
 
