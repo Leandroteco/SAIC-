@@ -344,6 +344,50 @@
       font-weight: 700;
     }
 
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: var(--text);
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 3px solid rgba(49, 95, 114, 0.18);
+      border-radius: 999px;
+      border-top-color: var(--primary);
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .metrics-grid {
       display: grid;
       gap: 14px;
@@ -396,6 +440,7 @@
     .metric:nth-child(6) strong { color: var(--blue); }
     .metric:nth-child(7) strong { color: var(--rose); }
     .metric:nth-child(8) strong { color: var(--amber); }
+    .metric:nth-child(9) strong { color: var(--purple); }
     .metric:nth-child(1)::before { background: var(--green); }
     .metric:nth-child(2)::before { background: var(--blue); }
     .metric:nth-child(3)::before { background: var(--rose); }
@@ -404,6 +449,7 @@
     .metric:nth-child(6)::before { background: var(--blue); }
     .metric:nth-child(7)::before { background: var(--rose); }
     .metric:nth-child(8)::before { background: var(--amber); }
+    .metric:nth-child(9)::before { background: var(--purple); }
 
     .dashboard-grid {
       display: grid;
@@ -1463,6 +1509,14 @@ h3,
 .metric:nth-child(4) strong { color: var(--chart-slate) !important; }
 .metric:nth-child(5)::before { background: var(--chart-blue-soft) !important; }
 .metric:nth-child(5) strong { color: var(--chart-blue-soft) !important; }
+.metric:nth-child(6)::before { background: var(--chart-amber) !important; }
+.metric:nth-child(6) strong { color: var(--chart-amber) !important; }
+.metric:nth-child(7)::before { background: var(--chart-slate) !important; }
+.metric:nth-child(7) strong { color: var(--chart-slate) !important; }
+.metric:nth-child(8)::before { background: var(--chart-blue) !important; }
+.metric:nth-child(8) strong { color: var(--chart-blue) !important; }
+.metric:nth-child(9)::before { background: var(--chart-green-dark) !important; }
+.metric:nth-child(9) strong { color: var(--chart-green-dark) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -1781,6 +1835,13 @@ h3,
 </head>
 
 <body>
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+    <div class="navegacao-card">
+      <span class="navegacao-spinner"></span>
+      <strong id="navegacaoMensagem">Carregando...</strong>
+    </div>
+  </div>
+
   <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
     <h2>SiSMen</h2>
     <p>Entre com sua Conta Google para acessar o dashboard.</p>
@@ -1886,8 +1947,12 @@ h3,
           <strong id="metricEventos">0</strong>
         </div>
         <div class="metric">
-          <span>Pessoas em eventos</span>
-          <strong id="metricPessoasEventos">0</strong>
+          <span>Pessoas em grupos</span>
+          <strong id="metricPessoasGrupos">0</strong>
+        </div>
+        <div class="metric">
+          <span>Pessoas em palestras</span>
+          <strong id="metricPessoasPalestras">0</strong>
         </div>
         <div class="metric">
           <span>Total de pessoas</span>
@@ -2115,6 +2180,20 @@ h3,
       };
     }
 
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function ocultarCarregamentoNavegacao() {
+      const overlay = document.getElementById("navegacaoOverlay");
+
+      if (overlay) overlay.style.display = "none";
+    }
+
     function carregarDashboard() {
       const status = document.getElementById("status");
       const botao = document.getElementById("btnAplicar");
@@ -2122,14 +2201,17 @@ h3,
       status.className = "status";
       status.innerText = "Carregando dashboard...";
       botao.disabled = true;
+      mostrarCarregamentoNavegacao("Carregando dashboard...");
 
       google.script.run
         .withSuccessHandler(function(resposta) {
           botao.disabled = false;
+          ocultarCarregamentoNavegacao();
           renderizarDashboard(resposta);
         })
         .withFailureHandler(function(erro) {
           botao.disabled = false;
+          ocultarCarregamentoNavegacao();
           status.className = "status error";
           status.innerText = "Erro ao carregar dashboard: " + erro.message;
         })
@@ -2161,7 +2243,8 @@ h3,
       document.getElementById("metricTotal").innerText = formatarNumero(resumo.totalAtendimentos);
       document.getElementById("metricPessoas").innerText = formatarNumero(resumo.pessoasDistintas);
       document.getElementById("metricEventos").innerText = formatarNumero(resumo.totalEventosColetivos);
-      document.getElementById("metricPessoasEventos").innerText = formatarNumero(resumo.pessoasEventos);
+      document.getElementById("metricPessoasGrupos").innerText = formatarNumero(resumo.pessoasGrupos);
+      document.getElementById("metricPessoasPalestras").innerText = formatarNumero(resumo.pessoasPalestras);
       document.getElementById("metricPessoasTotal").innerText = formatarNumero(resumo.pessoasTotalGeral);
       document.getElementById("metricFaltas").innerText = formatarNumero(resumo.totalFaltas);
       document.getElementById("metricAltas").innerText = formatarNumero(resumo.totalAltas);
@@ -2176,7 +2259,9 @@ h3,
       const atendimentos = Number(resumo.totalAtendimentos || 0);
       const pessoas = Number(resumo.pessoasDistintas || 0);
       const eventos = Number(resumo.totalEventosColetivos || 0);
-      const pessoasEventos = Number(resumo.pessoasEventos || 0);
+      const pessoasGrupos = Number(resumo.pessoasGrupos || 0);
+      const pessoasPalestras = Number(resumo.pessoasPalestras || 0);
+      const pessoasEventos = Number(resumo.pessoasEventos || pessoasGrupos + pessoasPalestras);
       const pessoasTotal = Number(resumo.pessoasTotalGeral || pessoas + pessoasEventos);
       const faltas = Number(resumo.totalFaltas || 0);
       const altas = Number(resumo.totalAltas || 0);
@@ -2191,8 +2276,8 @@ h3,
       document.getElementById("insightSintese").innerText = atendimentos > 0
         ? formatarNumero(atendimentos) + " atendimento(s), incluindo " + formatarNumero(eventos) + " evento(s), com alcance de " + formatarNumero(pessoasTotal) + " pessoa(s)"
         : "Sem atendimentos no período";
-      document.getElementById("insightDestaque").innerText = pessoas > 0
-        ? "Média de " + atendimentosPorPessoa.toFixed(1).replace(".", ",") + " atendimento(s) por pessoa. Grupos e Palestras somaram " + formatarNumero(pessoasEventos) + " participante(s). Arquivamentos: " + formatarNumero(arquivamentos) + "."
+      document.getElementById("insightDestaque").innerText = pessoasTotal > 0
+        ? "Média de " + atendimentosPorPessoa.toFixed(1).replace(".", ",") + " atendimento(s) por pessoa. Grupos somaram " + formatarNumero(pessoasGrupos) + " participante(s) e palestras somaram " + formatarNumero(pessoasPalestras) + ". Arquivamentos: " + formatarNumero(arquivamentos) + "."
         : "Ajuste o período ou atualize para analisar a demanda.";
 
       document.getElementById("insightFaltas").innerText = formatarPercentual(taxaFaltas);
