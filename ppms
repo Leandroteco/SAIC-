@@ -108,7 +108,9 @@
     }
 
     .sidebar {
-      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      background: linear-gradient(180deg, #5f6668 0%, #50575a 52%, #454b4e 100%);
+      border-right: 3px solid #df0209;
+      box-shadow: 12px 0 28px rgba(41, 48, 51, 0.10);
       color: #ffffff;
       height: 100vh;
       overflow-y: auto;
@@ -118,13 +120,7 @@
     }
 
     .sidebar::after {
-      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
-      content: "";
-      height: 100%;
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 2px;
+      content: none;
     }
 
     .brand {
@@ -705,9 +701,10 @@
       </div>
 
       <nav class="side-nav">
-        <button type="button" class="active">PPMS</button>
-        <div class="side-nav-separator" aria-hidden="true"></div>
-        <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
+        <button type="button" onclick="navegarModuloPrincipal('index')">Atendimento</button>
+        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')">Grupos e Palestras</button>
+        <button type="button" onclick="navegarModuloPrincipal('incidente_critico')">Incidente Cr&iacute;tico</button>
+        <button id="btnNavPPMS" type="button" class="active" onclick="navegarModuloPrincipal('ppms')">PPMS</button>
       </nav>
     </aside>
 
@@ -718,11 +715,6 @@
             <p class="eyebrow">PPMS</p>
             <h1>Registro PPMS</h1>
             <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
-          </div>
-          <div class="summary-card">
-            <small>Respons&aacute;vel</small>
-            <strong id="resumoResponsavel">Carregando</strong>
-            <span id="resumoNaps">NAPS n&atilde;o informado</span>
           </div>
         </div>
       </header>
@@ -832,7 +824,7 @@
 
           <div>
             <label for="opmAtual">OPM Atual/&Uacute;ltima</label>
-            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this)" required>
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)" required>
             <datalist id="listaOPM">
               <option value="CAPS"></option>
               <option value="PMRG"></option>
@@ -1075,6 +1067,7 @@
     let mensagemLoginInicial = <?!= JSON.stringify(mensagemLoginInicial || "") ?>;
     let ultimosPPMSCarregados = false;
     let ultimosPPMSCarregando = false;
+    let navegacaoAlteracoesPendentes = false;
 
     window.addEventListener("load", function() {
       if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
@@ -1089,8 +1082,6 @@
         return;
       }
 
-      document.getElementById("resumoResponsavel").innerText = formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email || "Responsavel");
-      document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
       document.getElementById("responsavel").value = formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email || "");
       preencherDataFatoSeVazia();
       atualizarDiaSemana();
@@ -1098,6 +1089,7 @@
       atualizarEscalaPorSituacao();
       atualizarObrigatoriedadeDataInatividade();
       registrarLimpezaStatusAoEditar();
+      configurarMenuPrincipalPorPerfil();
       mostrarStatus("Pronto para registrar PPMS.", "");
     });
 
@@ -1120,19 +1112,25 @@
           .trim() === "sim";
     }
 
-    function voltarAoAtendimento() {
+    function configurarMenuPrincipalPorPerfil() {
+      const botaoPPMS = document.getElementById("btnNavPPMS");
+
+      if (botaoPPMS) {
+        botaoPPMS.style.display = usuarioPodeAcessarPPMS() ? "" : "none";
+      }
+    }
+
+    function navegarModuloPrincipal(pagina) {
+      if (pagina === "ppms") return;
+
       if (!tokenGoogle || !webAppUrl) {
         mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
         return;
       }
 
-      const botao = document.getElementById("nav-voltar-atendimento");
-      if (botao) {
-        botao.disabled = true;
-        botao.innerText = "Carregando Atendimento...";
-      }
+      if (!confirmarNavegacaoComAlteracoesPendentes()) return;
 
-      mostrarCarregamentoNavegacao("Carregando Atendimento...");
+      mostrarCarregamentoNavegacao(obterMensagemCarregamentoModulo(pagina));
 
       const form = document.createElement("form");
       form.method = "post";
@@ -1148,7 +1146,7 @@
       const campoDestino = document.createElement("input");
       campoDestino.type = "hidden";
       campoDestino.name = "state";
-      campoDestino.value = "index";
+      campoDestino.value = pagina;
 
       form.appendChild(campoToken);
       form.appendChild(campoDestino);
@@ -1160,6 +1158,30 @@
       }, 80);
     }
 
+    function obterMensagemCarregamentoModulo(pagina) {
+      const mensagens = {
+        index: "Carregando Atendimento...",
+        eventos_coletivos: "Carregando Grupos e Palestras...",
+        incidente_critico: "Carregando Incidente Cr\u00edtico..."
+      };
+
+      return mensagens[pagina] || "Carregando...";
+    }
+
+    function confirmarNavegacaoComAlteracoesPendentes() {
+      if (!navegacaoAlteracoesPendentes) return true;
+
+      return window.confirm("Há dados preenchidos que ainda não foram salvos. Deseja sair mesmo assim?");
+    }
+
+    function marcarAlteracaoPendenteNavegacao() {
+      navegacaoAlteracoesPendentes = true;
+    }
+
+    function limparAlteracaoPendenteNavegacao() {
+      navegacaoAlteracoesPendentes = false;
+    }
+
     function salvarRegistroPPMS() {
       if (!validarFormularioPPMS()) return;
 
@@ -1169,6 +1191,7 @@
         .withSuccessHandler(function(retorno) {
           definirStatusSalvar(false, "Salvo.", "success");
           limparFormularioPPMS();
+          limparAlteracaoPendenteNavegacao();
           ultimosPPMSCarregados = false;
           mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Registro PPMS salvo com sucesso.", "success");
         })
@@ -1253,6 +1276,7 @@
       }
 
       let valido = true;
+      let opmInvalida = false;
       camposObrigatorios.forEach(function(id) {
         const campo = document.getElementById(id);
         if (!campo) return;
@@ -1263,12 +1287,19 @@
         }
       });
 
+      const campoOPM = document.getElementById("opmAtual");
+      if (campoOPM && campoOPM.value.trim() && !padronizarCampoOPM(campoOPM)) {
+        marcarCampoObrigatorio(campoOPM);
+        valido = false;
+        opmInvalida = true;
+      }
+
       if (!validarDatasFormulario(["dataFato", "dataIngresso", "dataInatividade", "dataNascimento"], ["dataFato", "dataIngresso", "dataNascimento"])) {
         valido = false;
       }
 
       if (!valido) {
-        mostrarStatus("Preencha os campos obrigatorios destacados.", "error");
+        mostrarStatus(opmInvalida ? "Selecione uma OPM válida da lista." : "Preencha os campos obrigatorios destacados.", "error");
       }
 
       return valido;
@@ -1365,6 +1396,7 @@
       atualizarMeioOutros();
       atualizarEscalaPorSituacao();
       atualizarObrigatoriedadeDataInatividade();
+      limparAlteracaoPendenteNavegacao();
     }
 
     function preencherDataFatoSeVazia() {
@@ -1562,8 +1594,14 @@
 
     function registrarLimpezaStatusAoEditar() {
       document.querySelectorAll("input, select, textarea").forEach(function(campo) {
-        campo.addEventListener("input", limparStatusOperacao);
-        campo.addEventListener("change", limparStatusOperacao);
+        campo.addEventListener("input", function() {
+          marcarAlteracaoPendenteNavegacao();
+          limparStatusOperacao();
+        });
+        campo.addEventListener("change", function() {
+          marcarAlteracaoPendenteNavegacao();
+          limparStatusOperacao();
+        });
       });
     }
 
@@ -1573,7 +1611,7 @@
     }
 
     function bloquearTela() {
-      document.querySelectorAll("input, select, textarea, button:not(#nav-voltar-atendimento)").forEach(function(campo) {
+      document.querySelectorAll("input, select, textarea, button").forEach(function(campo) {
         campo.disabled = true;
       });
     }
@@ -1614,6 +1652,45 @@
         .toUpperCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function chaveComparacaoOPM(valor) {
+      return String(valor || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]/g, "");
+    }
+
+    function obterOpcoesOPM() {
+      const lista = document.getElementById("listaOPM");
+
+      if (!lista) return [];
+
+      return Array.from(lista.options)
+        .map(function(opcao) {
+          return String(opcao.value || "").trim();
+        })
+        .filter(Boolean);
+    }
+
+    function padronizarCampoOPM(campo) {
+      const valor = campo ? String(campo.value || "").trim() : "";
+
+      if (!campo || !valor) return true;
+
+      const chave = chaveComparacaoOPM(valor);
+      const encontrado = obterOpcoesOPM().find(function(opcao) {
+        return chaveComparacaoOPM(opcao) === chave;
+      });
+
+      if (encontrado) {
+        campo.value = encontrado;
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      return false;
     }
 
     function mascaraCEP(campo) {
