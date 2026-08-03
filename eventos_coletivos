@@ -101,19 +101,15 @@
       top: 0;
       height: 100vh;
       padding: 24px 18px;
-      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      background: linear-gradient(180deg, #5f6668 0%, #50575a 52%, #454b4e 100%);
+      border-right: 3px solid #df0209;
+      box-shadow: 12px 0 28px rgba(41, 48, 51, 0.10);
       color: #ffffff;
       overflow-y: auto;
     }
 
     .sidebar::after {
-      content: "";
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 2px;
-      height: 100%;
-      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
+      content: none;
     }
 
     .brand {
@@ -153,6 +149,12 @@
     .side-nav button.active {
       background: rgba(255, 255, 255, 0.14);
       color: #ffffff;
+    }
+
+    .side-nav button.nav-subitem {
+      font-size: 13px;
+      min-height: 38px;
+      padding-left: 24px;
     }
 
     .side-nav-separator {
@@ -781,14 +783,17 @@
     <aside class="sidebar" aria-label="Grupos e Palestras">
       <div class="brand">
         <strong>Grupos e Palestras</strong>
-        <span>Workshop, PROSEN e Palestras</span>
+        <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
       </div>
 
       <nav class="side-nav">
-        <button id="nav-grupo" type="button" class="active" onclick="selecionarEvento('grupo')">Grupos</button>
-        <button id="nav-palestra" type="button" onclick="selecionarEvento('palestra')">Palestras</button>
+        <button type="button" onclick="navegarModuloPrincipal('index')">Atendimento</button>
+        <button type="button" class="active" onclick="navegarModuloPrincipal('eventos_coletivos')">Grupos e Palestras</button>
+        <button type="button" onclick="navegarModuloPrincipal('incidente_critico')">Incidente Cr&iacute;tico</button>
+        <button id="btnNavPPMS" type="button" onclick="navegarModuloPrincipal('ppms')" style="display:none;">PPMS</button>
         <div class="side-nav-separator" aria-hidden="true"></div>
-        <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
+        <button id="nav-grupo" type="button" class="nav-subitem active" onclick="selecionarEvento('grupo')">Grupos</button>
+        <button id="nav-palestra" type="button" class="nav-subitem" onclick="selecionarEvento('palestra')">Palestras</button>
       </nav>
     </aside>
 
@@ -799,11 +804,6 @@
             <p class="eyebrow">Grupos e Palestras</p>
             <h1 id="tituloPagina">Grupos</h1>
             <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
-          </div>
-          <div class="summary-card">
-            <small>Respons&aacute;vel</small>
-            <strong id="resumoResponsavel">Carregando</strong>
-            <span id="resumoNaps">NAPS n&atilde;o informado</span>
           </div>
         </div>
       </header>
@@ -836,16 +836,6 @@
             </select>
           </div>
 
-          <div>
-            <label for="motivo">Motivo</label>
-            <input id="motivo" type="text" placeholder="Motivo ou objetivo principal" oninput="converterMaiusculasSemAcento(this)">
-          </div>
-
-          <div id="quantityPanel" class="quantity-panel">
-            <label for="quantidadeInformada">Quantidade de participantes</label>
-            <input id="quantidadeInformada" type="number" min="1" step="1" placeholder="Ex.: 80">
-          </div>
-
           <div id="modalidadePanel" class="quantity-panel">
             <label for="modalidadeEvento">Modalidade</label>
             <select id="modalidadeEvento">
@@ -855,7 +845,12 @@
             </select>
           </div>
 
-          <div class="field-full">
+          <div id="quantityPanel" class="quantity-panel">
+            <label for="quantidadeInformada">Quantidade de participantes</label>
+            <input id="quantidadeInformada" type="number" min="1" step="1" placeholder="Ex.: 80">
+          </div>
+
+          <div id="observacoesPanel">
             <label for="observacoes">Observa&ccedil;&otilde;es</label>
             <textarea id="observacoes" placeholder="Informa&ccedil;&otilde;es relevantes do evento"></textarea>
             <div class="event-cancel-row">
@@ -940,7 +935,7 @@
           </div>
           <div class="manual-opm">
             <label for="opmAtual">OPM atual</label>
-            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this)">
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)">
             <datalist id="listaOPM">
   <option value="1.BAEP">1.BAEP</option>
 <option value="1.BPAMB">1.BPAMB</option>
@@ -1312,6 +1307,7 @@
     let participantesLink = [];
     let eventoRascunhoAberto = false;
     let idParticipanteCancelamentoAtual = "";
+    let navegacaoAlteracoesPendentes = false;
 
     const rotulosEvento = {
       grupo: "Grupo",
@@ -1327,26 +1323,26 @@
       grupo: [
         "PPAD",
         "PROSEN",
-        "GRP DE CONFLITOS INTERNOS",
-        "GRUPO PrAP",
-        "GRP DE FAMÍLIA",
-        "GRP DE MULHERES",
+        "Grupo de Conflitos Internos",
+        "Grupo PrAP",
+        "Grupo de Família",
+        "Grupo de Mulheres",
         "Estresse",
-        "Intervenção focal APMBB",
+        "Intervenção Focal APMBB",
         "Conflitos Profissionais",
         "Workshop"
       ],
       palestra: [
         "PrAP",
-        "QUALIDADE DE VIDA / INATIVIDADE",
-        "ÁLCOOL E OUTRAS DROGAS",
+        "Qualidade de Vida / Inatividade",
+        "Álcool e Outras Drogas",
         "PPMS",
-        "PROSEN: REL. CONJ. / INTERPES",
-        "INTELIGÊNCIA EMOCIONAL",
-        "FATORES DE RISCO E DE PROTEÇÃO",
-        "MUDANÇA DE IDENTIDADE",
+        "PROSEN: Relacionamento Conjugal / Interpessoal",
+        "Inteligência Emocional",
+        "Fatores de Risco e de Proteção",
+        "Mudança de Identidade",
         "CAPS na OPM",
-        "FUNCIONAMENTO NAPS",
+        "Funcionamento NAPS",
         "Gestão das Emoções",
         "Relacionamento Interno no Trabalho",
         "Pós-Venção"
@@ -1363,10 +1359,9 @@
         return;
       }
 
-      document.getElementById("resumoResponsavel").innerText = usuarioLogado.nome || usuarioLogado.email || "Responsavel";
-      document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
       document.getElementById("napsAtendimento").value = usuarioLogado.naps || "";
       selecionarEvento(rotulosEvento[tipoEventoInicial] ? tipoEventoInicial : "grupo");
+      configurarMenuPrincipalPorPerfil();
       registrarLimpezaStatusAoEditarEvento();
       carregarRascunhoEventoAberto();
     });
@@ -1403,6 +1398,7 @@
       document.getElementById("linkActions").style.display = usaParticipantes ? "flex" : "none";
       document.getElementById("quantityPanel").style.display = usaParticipantes ? "none" : "block";
       document.getElementById("modalidadePanel").style.display = usaModalidade ? "block" : "none";
+      document.getElementById("observacoesPanel").className = usaModalidade ? "field-span-2" : "";
       if (!usaModalidade) document.getElementById("modalidadeEvento").value = "";
       document.getElementById("btnSalvarEvento").innerText = "Salvar " + rotulo;
       atualizarContador();
@@ -1458,19 +1454,41 @@
       if (overlay) overlay.style.display = "flex";
     }
 
-    function voltarAoAtendimento() {
+    function usuarioPodeAcessarPPMS() {
+      const valor = usuarioLogado && usuarioLogado.acessoPpms;
+
+      return valor === true ||
+        String(valor || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim() === "sim";
+    }
+
+    function configurarMenuPrincipalPorPerfil() {
+      const botaoPPMS = document.getElementById("btnNavPPMS");
+
+      if (botaoPPMS) {
+        botaoPPMS.style.display = usuarioPodeAcessarPPMS() ? "" : "none";
+      }
+    }
+
+    function navegarModuloPrincipal(pagina) {
+      if (pagina === "eventos_coletivos") return;
+
       if (!tokenGoogle || !webAppUrl) {
         mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
         return;
       }
 
-      const botao = document.getElementById("nav-voltar-atendimento");
-      if (botao) {
-        botao.disabled = true;
-        botao.innerText = "Carregando Atendimento...";
+      if (pagina === "ppms" && !usuarioPodeAcessarPPMS()) {
+        mostrarStatus("Recurso disponivel somente para usuarios autorizados.", "error");
+        return;
       }
 
-      mostrarCarregamentoNavegacao("Carregando Atendimento...");
+      if (!confirmarNavegacaoComAlteracoesPendentes()) return;
+
+      mostrarCarregamentoNavegacao(obterMensagemCarregamentoModulo(pagina));
 
       const form = document.createElement("form");
       form.method = "post";
@@ -1486,7 +1504,7 @@
       const campoDestino = document.createElement("input");
       campoDestino.type = "hidden";
       campoDestino.name = "state";
-      campoDestino.value = "index";
+      campoDestino.value = pagina;
 
       form.appendChild(campoToken);
       form.appendChild(campoDestino);
@@ -1496,6 +1514,30 @@
         form.submit();
         form.remove();
       }, 80);
+    }
+
+    function obterMensagemCarregamentoModulo(pagina) {
+      const mensagens = {
+        index: "Carregando Atendimento...",
+        incidente_critico: "Carregando Incidente Cr\u00edtico...",
+        ppms: "Carregando PPMS..."
+      };
+
+      return mensagens[pagina] || "Carregando...";
+    }
+
+    function confirmarNavegacaoComAlteracoesPendentes() {
+      if (!navegacaoAlteracoesPendentes) return true;
+
+      return window.confirm("Há dados preenchidos que ainda não foram salvos. Deseja sair mesmo assim?");
+    }
+
+    function marcarAlteracaoPendenteNavegacao() {
+      navegacaoAlteracoesPendentes = true;
+    }
+
+    function limparAlteracaoPendenteNavegacao() {
+      navegacaoAlteracoesPendentes = false;
     }
 
     function resetarEstadoEvento() {
@@ -1515,7 +1557,6 @@
     function limparIdentificacaoEvento() {
       document.getElementById("dataEvento").value = formatarDataBrasilInput(new Date());
       document.getElementById("tema").value = "";
-      document.getElementById("motivo").value = "";
       document.getElementById("observacoes").value = "";
       document.getElementById("quantidadeInformada").value = "";
       document.getElementById("modalidadeEvento").value = "";
@@ -1524,8 +1565,14 @@
 
     function registrarLimpezaStatusAoEditarEvento() {
       document.querySelectorAll(".event-grid input, .event-grid select, .event-grid textarea, .participant-form-grid input, .participant-form-grid select").forEach(function(campo) {
-        campo.addEventListener("input", limparStatusDeOperacaoAnterior);
-        campo.addEventListener("change", limparStatusDeOperacaoAnterior);
+        campo.addEventListener("input", function() {
+          marcarAlteracaoPendenteNavegacao();
+          limparStatusDeOperacaoAnterior();
+        });
+        campo.addEventListener("change", function() {
+          marcarAlteracaoPendenteNavegacao();
+          limparStatusDeOperacaoAnterior();
+        });
       });
     }
 
@@ -1563,7 +1610,7 @@
         responsavelNome: usuarioLogado ? usuarioLogado.nome : "",
         responsavelEmail: usuarioLogado ? usuarioLogado.email : "",
         tema: document.getElementById("tema").value,
-        motivo: document.getElementById("motivo").value,
+        motivo: "",
         quantidadeInformada: document.getElementById("quantidadeInformada").value,
         modalidadeEvento: document.getElementById("modalidadeEvento").value,
         observacoes: document.getElementById("observacoes").value
@@ -1606,7 +1653,6 @@
       document.getElementById("dataEvento").value = rascunho.dataEvento || document.getElementById("dataEvento").value;
       document.getElementById("napsAtendimento").value = rascunho.napsAtendimento || usuarioLogado.naps || "";
       atualizarOpcoesTemaEvento(tipoEventoAtual, rascunho.tema || "");
-      document.getElementById("motivo").value = rascunho.motivo || "";
       document.getElementById("quantidadeInformada").value = rascunho.quantidadeInformada || "";
       document.getElementById("modalidadeEvento").value = rascunho.modalidade || "";
       document.getElementById("observacoes").value = rascunho.observacoes || "";
@@ -1616,6 +1662,7 @@
       renderizarParticipantes();
       atualizarContador();
       atualizarBotaoCancelarEvento();
+      marcarAlteracaoPendenteNavegacao();
       mostrarStatus("Evento em aberto carregado. Finalize este evento antes de iniciar outro.", "success");
     }
 
@@ -1637,6 +1684,7 @@
           eventoRascunhoAberto = true;
           document.getElementById("linkParticipante").value = linkParticipanteAtual;
           document.getElementById("linkBox").style.display = "block";
+          marcarAlteracaoPendenteNavegacao();
           atualizarBotaoCancelarEvento();
           atualizarParticipantesDoLink(true);
           mostrarStatus(retorno.mensagem || "Link preparado.", "success");
@@ -1668,6 +1716,14 @@
       if (!validarTemaEvento("Informe o tema do grupo antes de adicionar participantes.")) return;
       if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], [])) return;
 
+      const campoOPM = document.getElementById("opmAtual");
+      if (campoOPM && campoOPM.value.trim() && !padronizarCampoOPM(campoOPM)) {
+        marcarCampoOPMInvalido(campoOPM);
+        mostrarStatus("Selecione uma OPM válida da lista.", "error");
+        campoOPM.focus();
+        return;
+      }
+
       const participante = lerFormularioParticipante();
 
       if (!participante.nome) {
@@ -1690,6 +1746,7 @@
           tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
           linkParticipanteAtual = retorno.linkParticipante || linkParticipanteAtual;
           eventoRascunhoAberto = true;
+          marcarAlteracaoPendenteNavegacao();
           participantesManuais = [];
           participantesLink = retorno.participantes || [];
           document.getElementById("linkParticipante").value = linkParticipanteAtual;
@@ -1745,6 +1802,7 @@
           renderizarParticipantes();
           atualizarContador();
           atualizarBotaoCancelarEvento();
+          limparAlteracaoPendenteNavegacao();
           mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Evento cancelado com sucesso.", "success", true);
         })
         .withFailureHandler(function(erro) {
@@ -1843,6 +1901,49 @@
         .toUpperCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function chaveComparacaoOPM(valor) {
+      return String(valor || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]/g, "");
+    }
+
+    function obterOpcoesOPM() {
+      const lista = document.getElementById("listaOPM");
+
+      if (!lista) return [];
+
+      return Array.from(lista.options)
+        .map(function(opcao) {
+          return String(opcao.value || "").trim();
+        })
+        .filter(Boolean);
+    }
+
+    function padronizarCampoOPM(campo) {
+      const valor = campo ? String(campo.value || "").trim() : "";
+
+      if (!campo || !valor) return true;
+
+      const chave = chaveComparacaoOPM(valor);
+      const encontrado = obterOpcoesOPM().find(function(opcao) {
+        return chaveComparacaoOPM(opcao) === chave;
+      });
+
+      if (encontrado) {
+        campo.value = encontrado;
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      return false;
+    }
+
+    function marcarCampoOPMInvalido(campo) {
+      if (campo) campo.style.border = "2px solid #d32f2f";
     }
 
     function sugerirDominioEmail(campo) {
@@ -2142,6 +2243,7 @@
           renderizarParticipantes();
           atualizarContador();
           atualizarBotaoCancelarEvento();
+          limparAlteracaoPendenteNavegacao();
           mostrarStatus("Pronto para iniciar um grupo ou palestra.", "success", true);
         })
         .withFailureHandler(function(erro) {
