@@ -1158,6 +1158,50 @@ body {
   color: var(--danger);
 }
 
+.navegacao-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.42);
+  display: none;
+  inset: 0;
+  justify-content: center;
+  padding: 22px;
+  position: fixed;
+  z-index: 150;
+}
+
+.navegacao-card {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  color: var(--text);
+  display: inline-flex;
+  gap: 12px;
+  min-width: 260px;
+  padding: 18px 22px;
+}
+
+.navegacao-spinner {
+  animation: girar 0.8s linear infinite;
+  border: 3px solid rgba(49, 95, 114, 0.18);
+  border-radius: 999px;
+  border-top-color: #315f72;
+  height: 22px;
+  width: 22px;
+}
+
+.navegacao-card strong {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .decision-grid {
   display: grid;
   gap: 14px;
@@ -1661,6 +1705,13 @@ body.mapa-tema-escuro .btn-map-theme:hover {
 </head>
 
 <body>
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+    <div class="navegacao-card">
+      <span class="navegacao-spinner"></span>
+      <strong id="navegacaoMensagem">Carregando...</strong>
+    </div>
+  </div>
+
   <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
     <h2>Mapa de Calor</h2>
     <p>Entre com sua Conta Google de administrador.</p>
@@ -2003,16 +2054,32 @@ body.mapa-tema-escuro .btn-map-theme:hover {
       L.control.scale({ metric: true, imperial: false }).addTo(mapaCalorLeaflet);
     }
 
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function ocultarCarregamentoNavegacao() {
+      const overlay = document.getElementById("navegacaoOverlay");
+
+      if (overlay) overlay.style.display = "none";
+    }
+
     function carregarMapaCalor() {
       const botao = document.getElementById("btnAtualizarMapa");
       const status = document.getElementById("statusMapa");
 
       botao.disabled = true;
+      mostrarCarregamentoNavegacao("Carregando mapa de calor...");
       status.className = "status-line";
       status.innerText = "Carregando mapa de calor...";
 
       if (!window.google || !google.script || !google.script.run) {
         botao.disabled = false;
+        ocultarCarregamentoNavegacao();
         status.className = "status-line error";
         status.innerText = "Abra esta pagina pelo Apps Script para carregar os dados reais.";
         return;
@@ -2021,10 +2088,12 @@ body.mapa-tema-escuro .btn-map-theme:hover {
       google.script.run
         .withSuccessHandler(function(resposta) {
           botao.disabled = false;
+          ocultarCarregamentoNavegacao();
           renderizarMapaCalor(resposta || {});
         })
         .withFailureHandler(function(erro) {
           botao.disabled = false;
+          ocultarCarregamentoNavegacao();
           status.className = "status-line error";
           status.innerText = "Erro ao carregar mapa de calor: " + (erro && erro.message ? erro.message : erro);
         })
