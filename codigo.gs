@@ -26,6 +26,7 @@ const ABA_PARTICIPANTES_EVENTO_INDICE = "participantes_evento_indice";
 const ABA_INCIDENTE_CRITICO = "incidente_critico";
 const ABA_EQUIPE_INCIDENTE = "equipe_incidente";
 const ABA_PPMS = "ppms";
+const ABA_AVALIACOES_SISTEMA = "avaliacoes_sistema";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 const CACHE_USUARIO_TOKEN_SEGUNDOS = 300;
 
@@ -242,6 +243,21 @@ const CABECALHOS_PPMS = [
   "tipo_local_endereco"
 ];
 
+const CABECALHOS_AVALIACOES_SISTEMA = [
+  "id_avaliacao",
+  "data_avaliacao",
+  "email_usuario",
+  "nome_usuario",
+  "naps_usuario",
+  "nota_geral",
+  "facilidade",
+  "velocidade",
+  "confiabilidade",
+  "campo_mais_dificil",
+  "sugestao",
+  "erro_relatado"
+];
+
 const ALIASES_CABECALHOS_PADRAO = {
   idatendimento: ["id atendimento", "id do atendimento", "id"],
   emailcadastro: ["email cadastrado", "email_cadastrado", "emailcadastrado", "email cadastro", "email do cadastro", "email responsavel", "email do responsavel"],
@@ -307,6 +323,7 @@ function configurarEstruturaPlanilha() {
   const sheetEquipeIncidente = obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE);
   const sheetPpms = obterOuCriarAba(ss, ABA_PPMS, CABECALHOS_PPMS);
   garantirCabecalhoFinal(sheetPpms, "tipo_local_endereco");
+  const sheetAvaliacoesSistema = obterOuCriarAba(ss, ABA_AVALIACOES_SISTEMA, CABECALHOS_AVALIACOES_SISTEMA);
 
   return {
     sheetDados: sheetDados,
@@ -320,7 +337,8 @@ function configurarEstruturaPlanilha() {
     sheetParticipantesEventoIndice: sheetParticipantesEventoIndice,
     sheetIncidenteCritico: sheetIncidenteCritico,
     sheetEquipeIncidente: sheetEquipeIncidente,
-    sheetPpms: sheetPpms
+    sheetPpms: sheetPpms,
+    sheetAvaliacoesSistema: sheetAvaliacoesSistema
   };
 }
 
@@ -1288,6 +1306,85 @@ function normalizarCorRecado(cor) {
   };
 
   return coresPermitidas[corNormalizada] ? corNormalizada : "amarelo";
+}
+
+function salvarAvaliacaoSistema(dados, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(10000);
+    lockObtido = true;
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = obterOuCriarAba(ss, ABA_AVALIACOES_SISTEMA, CABECALHOS_AVALIACOES_SISTEMA);
+    const notaGeral = validarOpcaoAvaliacaoSistema(dados && dados.notaGeral, ["1", "2", "3", "4", "5"], "Nota geral");
+    const facilidade = validarOpcaoAvaliacaoSistema(dados && dados.facilidade, ["Sim", "Parcialmente", "Não"], "Facilidade de uso");
+    const velocidade = validarOpcaoAvaliacaoSistema(dados && dados.velocidade, ["Sim", "Parcialmente", "Não"], "Velocidade");
+    const confiabilidade = validarOpcaoAvaliacaoSistema(dados && dados.confiabilidade, ["Sim", "Parcialmente", "Não"], "Confiabilidade");
+    const campoMaisDificil = validarOpcaoAvaliacaoSistema(dados && dados.campoMaisDificil, [
+      "Busca",
+      "Preenchimento do atendimento",
+      "Pessoa vinculada",
+      "Imprimir ficha",
+      "Grupos e Palestras",
+      "Relatório NAPS",
+      "Outro"
+    ], "Campo com mais dificuldade");
+    const sugestao = limparTextoAvaliacaoSistema(dados && dados.sugestao, 1000);
+    const erroRelatado = limparTextoAvaliacaoSistema(dados && dados.erroRelatado, 1000);
+
+    gravarLinhasPadraoAbaixo(sheet, [[
+      gerarIdSeguro("AVL"),
+      new Date(),
+      usuario.email || "",
+      usuario.nome || "",
+      usuario.naps || "",
+      Number(notaGeral),
+      facilidade,
+      velocidade,
+      confiabilidade,
+      campoMaisDificil,
+      sugestao,
+      erroRelatado
+    ]], CABECALHOS_AVALIACOES_SISTEMA);
+
+    return {
+      sucesso: true,
+      mensagem: "Avaliação enviada. Obrigado pelo retorno."
+    };
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+}
+
+function validarOpcaoAvaliacaoSistema(valor, permitidos, nomeCampo) {
+  const texto = String(valor || "").trim();
+
+  if (!texto) {
+    throw new Error(nomeCampo + " e obrigatorio.");
+  }
+
+  const encontrado = permitidos.some(function(opcao) {
+    return normalizar(opcao) === normalizar(texto);
+  });
+
+  if (!encontrado) {
+    throw new Error(nomeCampo + " invalido.");
+  }
+
+  return permitidos.filter(function(opcao) {
+    return normalizar(opcao) === normalizar(texto);
+  })[0];
+}
+
+function limparTextoAvaliacaoSistema(valor, limite) {
+  const texto = String(valor || "").trim();
+
+  if (!texto) return "";
+
+  return texto.substring(0, limite || 1000);
 }
 
 
@@ -4255,6 +4352,8 @@ function montarIndicadoresRelatorioNaps(registros) {
     atendimentosIndividuais: resumo.totalAtendimentosIndividuais,
     eventosColetivos: resumo.totalEventosColetivos,
     pessoas: resumo.pessoasDistintas,
+    pessoasGrupos: resumo.pessoasGrupos,
+    pessoasPalestras: resumo.pessoasPalestras,
     pessoasEventos: resumo.pessoasEventos,
     pessoasTotal: resumo.pessoasTotalGeral,
     faltas: resumo.totalFaltas,
@@ -5036,6 +5135,8 @@ function montarResumoDashboard(registros, filtros) {
     totalAtendimentosIndividuais: resumoRelatorio.totalAtendimentosIndividuais,
     totalEventosColetivos: resumoRelatorio.totalEventosColetivos,
     pessoasDistintas: resumoRelatorio.pessoasDistintas,
+    pessoasGrupos: resumoRelatorio.pessoasGrupos,
+    pessoasPalestras: resumoRelatorio.pessoasPalestras,
     pessoasEventos: resumoRelatorio.pessoasEventos,
     pessoasTotalGeral: resumoRelatorio.pessoasTotalGeral,
     totalFaltas: resumoRelatorio.totalFaltas,
@@ -5895,6 +5996,8 @@ function montarResumoRelatorio(registros) {
   let totalAtendimentosIndividuais = 0;
   let totalEventosColetivos = 0;
   let pessoasEventos = 0;
+  let pessoasGrupos = 0;
+  let pessoasPalestras = 0;
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) {
@@ -5910,8 +6013,18 @@ function montarResumoRelatorio(registros) {
     totalAtendimentos++;
 
     if (registro.eventoColetivo) {
+      const quantidadePessoasEvento = Number(registro.quantidadePessoasEvento || 0);
+      const tipoEventoColetivo = normalizarTipoEventoColetivo(registro.tipoEventoColetivo || registro.tipoAtendimento);
+
       totalEventosColetivos++;
-      pessoasEventos += Number(registro.quantidadePessoasEvento || 0);
+      pessoasEventos += quantidadePessoasEvento;
+
+      if (tipoEventoColetivo === "palestra") {
+        pessoasPalestras += quantidadePessoasEvento;
+      } else {
+        pessoasGrupos += quantidadePessoasEvento;
+      }
+
       return;
     }
 
@@ -5950,6 +6063,8 @@ function montarResumoRelatorio(registros) {
     totalAtendimentosIndividuais: totalAtendimentosIndividuais,
     totalEventosColetivos: totalEventosColetivos,
     pessoasDistintas: Object.keys(pessoas).length,
+    pessoasGrupos: pessoasGrupos,
+    pessoasPalestras: pessoasPalestras,
     pessoasEventos: pessoasEventos,
     pessoasTotalGeral: Object.keys(pessoas).length + pessoasEventos,
     totalFaltas: totalFaltas,
