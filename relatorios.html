@@ -516,6 +516,50 @@
       color: var(--danger);
     }
 
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: var(--text);
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 3px solid rgba(49, 95, 114, 0.18);
+      border-radius: 999px;
+      border-top-color: var(--primary);
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     table {
       border-collapse: collapse;
       width: 100%;
@@ -1493,6 +1537,10 @@ h3,
 .metric:nth-child(6) strong { color: var(--chart-amber) !important; }
 .metric:nth-child(7)::before { background: var(--chart-slate) !important; }
 .metric:nth-child(7) strong { color: var(--chart-slate) !important; }
+.metric:nth-child(8)::before { background: var(--chart-blue) !important; }
+.metric:nth-child(8) strong { color: var(--chart-blue) !important; }
+.metric:nth-child(9)::before { background: var(--chart-green-dark) !important; }
+.metric:nth-child(9) strong { color: var(--chart-green-dark) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -1658,6 +1706,13 @@ h3,
 </head>
 
 <body>
+<div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+  <div class="navegacao-card">
+    <span class="navegacao-spinner"></span>
+    <strong id="navegacaoMensagem">Carregando...</strong>
+  </div>
+</div>
+
 <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
   <h2>Relatórios Gerenciais</h2>
   <p>Entre com sua Conta Google de administrador.</p>
@@ -1832,7 +1887,6 @@ h3,
             <option value="26 a 30 anos">26 a 30 anos</option>
             <option value="31 a 35 anos">31 a 35 anos</option>
             <option value="mais de 35 anos">Mais de 35 anos</option>
-            <option value="nao informado">Não informado</option>
           </select>
         </div>
 
@@ -1997,12 +2051,27 @@ function formatarDataInput(data) {
       return document.getElementById(id).value || "";
     }
 
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function ocultarCarregamentoNavegacao() {
+      const overlay = document.getElementById("navegacaoOverlay");
+
+      if (overlay) overlay.style.display = "none";
+    }
+
     function carregarRelatorio() {
       const botao = document.getElementById("btnGerar");
       const mensagem = document.getElementById("mensagem");
       const painel = document.getElementById("painelResultado");
 
       botao.disabled = true;
+      mostrarCarregamentoNavegacao("Carregando relatório...");
       mensagem.className = "loading";
       mensagem.innerText = "Carregando relatório...";
       mensagem.style.display = "block";
@@ -2012,6 +2081,7 @@ function formatarDataInput(data) {
         .withSuccessHandler(function(relatorio) {
           relatorioAtual = relatorio;
           botao.disabled = false;
+          ocultarCarregamentoNavegacao();
           mensagem.style.display = "none";
           painel.style.display = "block";
 
@@ -2025,6 +2095,7 @@ function formatarDataInput(data) {
         })
         .withFailureHandler(function(erro) {
           botao.disabled = false;
+          ocultarCarregamentoNavegacao();
           painel.style.display = "none";
           mensagem.className = "error";
           mensagem.innerText = "Erro ao carregar relatório: " + erro.message;
@@ -2112,6 +2183,7 @@ function formatarDataInput(data) {
 
       document.getElementById("metricas").innerHTML = montarMetricas(relatorioAtual.resumo);
       document.getElementById("conteudoAba").innerHTML = montarConteudoAba();
+      aplicarTitulosTabelasRelatorio();
 
       const total = relatorioAtual.totalRegistros || 0;
       const exibidos = (relatorioAtual.registros || []).length;
@@ -2123,12 +2195,21 @@ function formatarDataInput(data) {
           : `${total} registro(s) filtrado(s).`;
     }
 
+    function aplicarTitulosTabelasRelatorio() {
+      document.querySelectorAll("#painelResultado td, #painelResultado th").forEach(function(celula) {
+        const texto = String(celula.textContent || "").replace(/\s+/g, " ").trim();
+
+        if (texto) celula.setAttribute("title", texto);
+      });
+    }
+
     function montarMetricas(resumo) {
       return [
         montarMetrica("Atendimentos", resumo.totalAtendimentos),
         montarMetrica("Pessoas", resumo.pessoasDistintas),
         montarMetrica("Grupos e Palestras", resumo.totalEventosColetivos),
-        montarMetrica("Pessoas em eventos", resumo.pessoasEventos),
+        montarMetrica("Pessoas em grupos", resumo.pessoasGrupos),
+        montarMetrica("Pessoas em palestras", resumo.pessoasPalestras),
         montarMetrica("Total de pessoas", resumo.pessoasTotalGeral),
         montarMetrica("Faltas", resumo.totalFaltas),
         montarMetrica("Altas", resumo.totalAltas),
@@ -2320,7 +2401,7 @@ function formatarDataInput(data) {
       ${montarGraficoBarras("Sexo", d.porSexo, { limite: 8 })}
       ${montarGraficoBarras("Faixa etária", d.porFaixaEtaria, { ordem: ordemFaixaEtaria() })}
       ${montarGraficoBarras("Estado civil", d.porEstadoCivil, { limite: 8 })}
-      ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico() })}
+      ${montarGraficoBarras("Tempo de serviço", d.porTempoServico, { ordem: ordemTempoServico(), omitir: ["nao informado"] })}
       ${montarGraficoBarras("Responsável", d.porResponsavelNaps || d.porResponsavel, { limite: 10, classe: "wide" })}
     </div>
   `;
@@ -2790,12 +2871,18 @@ function formatarDataInput(data) {
 
     function montarTabelaDetalhada() {
       const registros = relatorioAtual.registros || [];
+      const limiteRelatorioIndividual = 100;
 
       if (registros.length === 0) {
         return `<div class="empty-state">Nenhum registro para detalhar.</div>`;
       }
 
-      const linhas = registros.map(function(registro) {
+      const registrosExibidos = registros.slice(0, limiteRelatorioIndividual);
+      const avisoLimite = registros.length > limiteRelatorioIndividual
+        ? `<div class="empty-state" style="margin-bottom:12px;">Foram encontrados ${registros.length.toLocaleString("pt-BR")} registros individuais no período. Exibindo os ${limiteRelatorioIndividual.toLocaleString("pt-BR")} primeiros registros carregados. Reduza o período ou use filtros para detalhar melhor.</div>`
+        : "";
+
+      const linhas = registrosExibidos.map(function(registro) {
         return `
           <tr>
             <td>${escaparHtml(registro.dataCadastro || "-")}</td>
@@ -2819,6 +2906,7 @@ function formatarDataInput(data) {
       return `
         <section class="table-box wide">
           <h3>Tabela detalhada</h3>
+          ${avisoLimite}
           <div class="table-scroll">
             <table>
               <thead>
@@ -2854,6 +2942,12 @@ function formatarDataInput(data) {
           total: dados[nome]
         };
       });
+
+      if (config.omitir && config.omitir.length) {
+        itens = itens.filter(function(item) {
+          return config.omitir.indexOf(normalizarTexto(item.nome)) === -1;
+        });
+      }
 
       if (config.ordem) {
         const ordem = config.ordem;
@@ -2902,8 +2996,7 @@ function formatarDataInput(data) {
         "21 a 25 anos",
         "26 a 30 anos",
         "31 a 35 anos",
-        "mais de 35 anos",
-        "nao informado"
+        "mais de 35 anos"
       ];
     }
 
