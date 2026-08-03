@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <!--
   SAIC - Cadastro publico de participante
-  Aberto por token do evento coletivo. Nao exige conta Google.
+  Aberto por token do grupo. Nao exige conta Google.
 -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Participante - Evento Coletivo</title>
+  <title>Participante - Grupo</title>
   <style>
     :root {
       --bg: #eef4f7;
@@ -280,6 +280,54 @@
       to {
         transform: rotate(360deg);
       }
+    }
+
+    .loading-inicial {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(238, 244, 247, 0.94);
+    }
+
+    .loading-inicial.ativo {
+      display: flex;
+    }
+
+    .loading-box {
+      width: min(360px, 92vw);
+      padding: 24px 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .loading-box .saving-spinner {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 14px;
+      border-width: 3px;
+    }
+
+    .loading-box strong {
+      display: block;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .loading-box span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
     }
 
     .note {
@@ -759,9 +807,17 @@
 </head>
 
 <body>
+  <div id="loadingInicial" class="loading-inicial ativo" role="status" aria-live="polite">
+    <div class="loading-box">
+      <span class="saving-spinner" aria-hidden="true"></span>
+      <strong>Carregando evento...</strong>
+      <span>Aguarde enquanto o link &eacute; validado.</span>
+    </div>
+  </div>
+
   <main class="page">
     <header class="banner">
-      <p class="eyebrow">Evento Coletivo</p>
+      <p class="eyebrow">Grupo</p>
       <h1 id="tituloEvento">Cadastro de Participante</h1>
       <span class="subtitle">Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
     </header>
@@ -867,7 +923,7 @@
         </div>
         <div class="campo-participante etapa-2 ordem-3">
           <label for="opmAtual">OPM atual</label>
-          <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this)">
+          <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)">
           <datalist id="listaOPM">
   <option value="1.BAEP">1.BAEP</option>
 <option value="1.BPAMB">1.BPAMB</option>
@@ -1204,9 +1260,11 @@
     aplicarClasseAndroidParticipante();
 
     window.addEventListener("load", function() {
+      mostrarCarregamentoInicial("Carregando evento...");
       inicializarSelectsMobile();
 
       if (!tokenEvento) {
+        ocultarCarregamentoInicial();
         mostrarStatus("Link do evento nao informado.", "error");
         return;
       }
@@ -1214,6 +1272,7 @@
       google.script.run
         .withSuccessHandler(function(evento) {
           if (!evento || !evento.encontrado) {
+            ocultarCarregamentoInicial();
             mostrarStatus(evento && evento.mensagem ? evento.mensagem : "Evento nao localizado.", "error");
             return;
           }
@@ -1223,8 +1282,10 @@
           document.getElementById("conteudo").style.display = "block";
           inicializarEtapasParticipante();
           mostrarStatus("Preencha seus dados e envie ao responsavel pelo evento.", "");
+          ocultarCarregamentoInicial();
         })
         .withFailureHandler(function(erro) {
+          ocultarCarregamentoInicial();
           mostrarStatus(obterMensagemErro(erro), "error");
         })
         .obterEventoPorTokenPublico(tokenEvento);
@@ -1483,10 +1544,10 @@
     }
 
     function enviarCadastro() {
-      const participante = lerFormulario();
-
       if (!validarCamposObrigatoriosParticipante()) return;
       if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], ["dataIngresso", "dataNascimento"])) return;
+
+      const participante = lerFormulario();
 
       document.getElementById("btnEnviar").disabled = true;
       definirStatusEnvioCadastro(true, "Enviando cadastro...");
@@ -1544,6 +1605,14 @@
         }
 
         limparErroVisualCampo(campo);
+      }
+
+      const campoOPM = document.getElementById("opmAtual");
+      if (campoOPM && campoOPM.value.trim() && !padronizarCampoOPM(campoOPM)) {
+        marcarErroVisualCampo(campoOPM);
+        mostrarStatus("Selecione uma OPM válida da lista.", "error");
+        irParaCampoParticipante("opmAtual");
+        return false;
       }
 
       const campoCep = document.getElementById("cep");
@@ -1607,6 +1676,45 @@
         .toUpperCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function chaveComparacaoOPM(valor) {
+      return String(valor || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]/g, "");
+    }
+
+    function obterOpcoesOPM() {
+      const lista = document.getElementById("listaOPM");
+
+      if (!lista) return [];
+
+      return Array.from(lista.options)
+        .map(function(opcao) {
+          return String(opcao.value || "").trim();
+        })
+        .filter(Boolean);
+    }
+
+    function padronizarCampoOPM(campo) {
+      const valor = campo ? String(campo.value || "").trim() : "";
+
+      if (!campo || !valor) return true;
+
+      const chave = chaveComparacaoOPM(valor);
+      const encontrado = obterOpcoesOPM().find(function(opcao) {
+        return chaveComparacaoOPM(opcao) === chave;
+      });
+
+      if (encontrado) {
+        campo.value = encontrado;
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      return false;
     }
 
     function sugerirDominioEmail(campo) {
@@ -1861,6 +1969,23 @@
       const el = document.getElementById("statusPagina");
       el.className = "status" + (tipo ? " " + tipo : "");
       el.innerText = mensagem || "";
+    }
+
+    function mostrarCarregamentoInicial(texto) {
+      const overlay = document.getElementById("loadingInicial");
+      if (!overlay) return;
+
+      const titulo = overlay.querySelector(".loading-box strong");
+      if (titulo && texto) titulo.innerText = texto;
+
+      overlay.classList.add("ativo");
+    }
+
+    function ocultarCarregamentoInicial() {
+      const overlay = document.getElementById("loadingInicial");
+      if (!overlay) return;
+
+      overlay.classList.remove("ativo");
     }
 
     function obterMensagemErro(erro) {
