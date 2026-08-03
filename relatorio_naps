@@ -85,19 +85,15 @@
       top: 0;
       height: 100vh;
       padding: 24px 18px;
-      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      background: linear-gradient(180deg, #5f6668 0%, #50575a 52%, #454b4e 100%);
+      border-right: 3px solid #df0209;
+      box-shadow: 12px 0 28px rgba(41, 48, 51, 0.10);
       color: #ffffff;
       overflow-y: auto;
     }
 
     .sidebar::after {
-      content: "";
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 2px;
-      height: 100%;
-      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
+      content: none;
     }
 
     .brand {
@@ -320,6 +316,50 @@
 
     .status-line.erro {
       color: #a51b24;
+    }
+
+    .navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 150;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      color: var(--ink);
+      display: inline-flex;
+      gap: 12px;
+      min-width: 260px;
+      padding: 18px 22px;
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 3px solid rgba(49, 95, 114, 0.18);
+      border-radius: 999px;
+      border-top-color: var(--blue);
+      height: 22px;
+      width: 22px;
+    }
+
+    .navegacao-card strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .cards-grid {
@@ -609,6 +649,13 @@
 </head>
 
 <body>
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+    <div class="navegacao-card">
+      <span class="navegacao-spinner"></span>
+      <strong id="navegacaoMensagem">Carregando...</strong>
+    </div>
+  </div>
+
   <div id="conteudoSistema" style="display:block;">
     <div class="app-shell">
       <aside class="sidebar" aria-label="Navegação do relatório NAPS">
@@ -714,6 +761,20 @@
       document.getElementById("napsFixo").innerText = corrigirTexto(usuarioLogado.naps || "NAPS não informado");
     }
 
+    function mostrarCarregamentoNavegacao(texto) {
+      const overlay = document.getElementById("navegacaoOverlay");
+      const mensagem = document.getElementById("navegacaoMensagem");
+
+      if (mensagem) mensagem.innerText = texto || "Carregando...";
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function ocultarCarregamentoNavegacao() {
+      const overlay = document.getElementById("navegacaoOverlay");
+
+      if (overlay) overlay.style.display = "none";
+    }
+
     function carregarRelatorioNaps() {
       if (!tokenGoogle) {
         mostrarErro("Sessão expirada. Faça login novamente.");
@@ -727,16 +788,19 @@
       };
 
       btn.disabled = true;
+      mostrarCarregamentoNavegacao("Carregando Relatório NAPS...");
       document.getElementById("statusRelatorio").className = "status-line";
       document.getElementById("statusRelatorio").innerText = "Carregando relatório...";
 
       google.script.run
         .withSuccessHandler(function(dados) {
           btn.disabled = false;
+          ocultarCarregamentoNavegacao();
           renderizarRelatorioNaps(dados);
         })
         .withFailureHandler(function(erro) {
           btn.disabled = false;
+          ocultarCarregamentoNavegacao();
           mostrarErro(erro && erro.message ? erro.message : "Não foi possível carregar o relatório.");
         })
         .obterDadosRelatorioNaps(filtros, tokenGoogle);
