@@ -97,7 +97,9 @@
     }
 
     .sidebar {
-      background: linear-gradient(180deg, #26373d 0%, #37545e 62%, #4a6870 100%);
+      background: linear-gradient(180deg, #5f6668 0%, #50575a 52%, #454b4e 100%);
+      border-right: 3px solid #df0209;
+      box-shadow: 12px 0 28px rgba(41, 48, 51, 0.10);
       color: #ffffff;
       height: 100vh;
       overflow-y: auto;
@@ -107,13 +109,7 @@
     }
 
     .sidebar::after {
-      background: linear-gradient(180deg, transparent, rgba(179, 31, 42, 0.78), transparent);
-      content: "";
-      height: 100%;
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 2px;
+      content: none;
     }
 
     .brand {
@@ -652,9 +648,10 @@
       </div>
 
       <nav class="side-nav">
-        <button type="button" class="active">Incidente Cr&iacute;tico</button>
-        <div class="side-nav-separator" aria-hidden="true"></div>
-        <button id="nav-voltar-atendimento" type="button" class="nav-voltar" onclick="voltarAoAtendimento()">Voltar ao Atendimento</button>
+        <button type="button" onclick="navegarModuloPrincipal('index')">Atendimento</button>
+        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')">Grupos e Palestras</button>
+        <button type="button" class="active" onclick="navegarModuloPrincipal('incidente_critico')">Incidente Cr&iacute;tico</button>
+        <button id="btnNavPPMS" type="button" onclick="navegarModuloPrincipal('ppms')" style="display:none;">PPMS</button>
       </nav>
     </aside>
 
@@ -665,11 +662,6 @@
             <p class="eyebrow">Incidente Cr&iacute;tico</p>
             <h1>Registro de Incidente</h1>
             <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
-          </div>
-          <div class="summary-card">
-            <small>Respons&aacute;vel</small>
-            <strong id="resumoResponsavel">Carregando</strong>
-            <span id="resumoNaps">NAPS n&atilde;o informado</span>
           </div>
         </div>
       </header>
@@ -753,7 +745,7 @@
 
           <div>
             <label for="opmAtual">OPM Atual/&Uacute;ltima</label>
-            <input id="opmAtual" type="text" list="listaOPM" placeholder="OPM ou unidade" oninput="converterMaiusculasSemAcento(this)" required>
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="OPM ou unidade" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)" required>
             <datalist id="listaOPM">
               <option value="1.BAEP">1.BAEP</option>
               <option value="1.BPAMB">1.BPAMB</option>
@@ -1106,6 +1098,7 @@
     let ultimoIncidenteSalvoNumero = "";
     let ultimosIncidentesCarregados = false;
     let ultimosIncidentesCarregando = false;
+    let navegacaoAlteracoesPendentes = false;
 
     window.addEventListener("load", function() {
       if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
@@ -1114,12 +1107,11 @@
         return;
       }
 
-      document.getElementById("resumoResponsavel").innerText = formatarResponsavelSistema(usuarioLogado.nome || usuarioLogado.email || "Responsavel");
-      document.getElementById("resumoNaps").innerText = usuarioLogado.naps || "NAPS nao informado";
       preencherPsicologoResponsavel();
       preencherDatasIncidenteSeVazias();
       carregarNumeroRelatorioIncidente();
       carregarOpcoesEquipeIncidente();
+      configurarMenuPrincipalPorPerfil();
       registrarLimpezaStatusAoEditar();
       atualizarEscalaPorSituacao();
       mostrarStatus("Pronto para registrar incidente critico.", "");
@@ -1133,19 +1125,41 @@
       }
     });
 
-    function voltarAoAtendimento() {
+    function usuarioPodeAcessarPPMS() {
+      const valor = usuarioLogado && usuarioLogado.acessoPpms;
+
+      return valor === true ||
+        String(valor || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim() === "sim";
+    }
+
+    function configurarMenuPrincipalPorPerfil() {
+      const botaoPPMS = document.getElementById("btnNavPPMS");
+
+      if (botaoPPMS) {
+        botaoPPMS.style.display = usuarioPodeAcessarPPMS() ? "" : "none";
+      }
+    }
+
+    function navegarModuloPrincipal(pagina) {
+      if (pagina === "incidente_critico") return;
+
       if (!tokenGoogle || !webAppUrl) {
         mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
         return;
       }
 
-      const botao = document.getElementById("nav-voltar-atendimento");
-      if (botao) {
-        botao.disabled = true;
-        botao.innerText = "Carregando Atendimento...";
+      if (pagina === "ppms" && !usuarioPodeAcessarPPMS()) {
+        mostrarStatus("Recurso disponivel somente para usuarios autorizados.", "error");
+        return;
       }
 
-      mostrarCarregamentoNavegacao("Carregando Atendimento...");
+      if (!confirmarNavegacaoComAlteracoesPendentes()) return;
+
+      mostrarCarregamentoNavegacao(obterMensagemCarregamentoModulo(pagina));
 
       const form = document.createElement("form");
       form.method = "post";
@@ -1161,7 +1175,7 @@
       const campoDestino = document.createElement("input");
       campoDestino.type = "hidden";
       campoDestino.name = "state";
-      campoDestino.value = "index";
+      campoDestino.value = pagina;
 
       form.appendChild(campoToken);
       form.appendChild(campoDestino);
@@ -1171,6 +1185,30 @@
         form.submit();
         form.remove();
       }, 80);
+    }
+
+    function obterMensagemCarregamentoModulo(pagina) {
+      const mensagens = {
+        index: "Carregando Atendimento...",
+        eventos_coletivos: "Carregando Grupos e Palestras...",
+        ppms: "Carregando PPMS..."
+      };
+
+      return mensagens[pagina] || "Carregando...";
+    }
+
+    function confirmarNavegacaoComAlteracoesPendentes() {
+      if (!navegacaoAlteracoesPendentes) return true;
+
+      return window.confirm("Há dados preenchidos que ainda não foram salvos. Deseja sair mesmo assim?");
+    }
+
+    function marcarAlteracaoPendenteNavegacao() {
+      navegacaoAlteracoesPendentes = true;
+    }
+
+    function limparAlteracaoPendenteNavegacao() {
+      navegacaoAlteracoesPendentes = false;
     }
 
     function salvarIncidente() {
@@ -1183,6 +1221,7 @@
           definirStatusSalvar(false, "Salvo.", "success");
           ultimoIncidenteSalvoNumero = retorno && retorno.numeroRelatorio ? retorno.numeroRelatorio : valorCampo("numeroRelatorio");
           limparFormularioIncidente();
+          limparAlteracaoPendenteNavegacao();
           carregarNumeroRelatorioIncidente();
           mostrarBotaoFichaIncidente(ultimoIncidenteSalvoNumero);
           ultimosIncidentesCarregados = false;
@@ -1527,6 +1566,7 @@
         "modalidade"
       ];
       const camposComErro = [];
+      let opmInvalida = false;
 
       document.querySelectorAll("input, select, textarea").forEach(limparErroVisualCampo);
 
@@ -1543,8 +1583,15 @@
         camposComErro.push(document.getElementById("dataFato"));
       }
 
+      const campoOPM = document.getElementById("opmAtual");
+      if (campoOPM && campoOPM.value.trim() && !padronizarCampoOPM(campoOPM)) {
+        marcarCampoObrigatorio(campoOPM);
+        if (!camposComErro.includes(campoOPM)) camposComErro.push(campoOPM);
+        opmInvalida = true;
+      }
+
       if (camposComErro.length > 0) {
-        mostrarStatus("Preencha os campos obrigatorios destacados.", "error");
+        mostrarStatus(opmInvalida ? "Selecione uma OPM válida da lista." : "Preencha os campos obrigatorios destacados.", "error");
         camposComErro[0].focus();
         return false;
       }
@@ -1568,6 +1615,7 @@
       preencherPsicologoResponsavel();
       preencherDatasIncidenteSeVazias();
       atualizarEscalaPorSituacao();
+      limparAlteracaoPendenteNavegacao();
     }
 
     function carregarNumeroRelatorioIncidente() {
@@ -1711,11 +1759,13 @@
         const deveOcultarFicha = campo.id !== "numeroRelatorio" && campo.id !== "psicologo";
 
         campo.addEventListener("input", function() {
+          if (deveOcultarFicha) marcarAlteracaoPendenteNavegacao();
           limparStatusOperacao();
           if (deveOcultarFicha) ocultarBotaoFichaIncidente();
         });
 
         campo.addEventListener("change", function() {
+          if (deveOcultarFicha) marcarAlteracaoPendenteNavegacao();
           limparStatusOperacao();
           if (deveOcultarFicha) ocultarBotaoFichaIncidente();
         });
@@ -1728,7 +1778,7 @@
     }
 
     function bloquearTela() {
-      document.querySelectorAll("input, select, textarea, button:not(#nav-voltar-atendimento)").forEach(function(campo) {
+      document.querySelectorAll("input, select, textarea, button").forEach(function(campo) {
         campo.disabled = true;
       });
     }
@@ -1769,6 +1819,45 @@
         .toUpperCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function chaveComparacaoOPM(valor) {
+      return String(valor || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]/g, "");
+    }
+
+    function obterOpcoesOPM() {
+      const lista = document.getElementById("listaOPM");
+
+      if (!lista) return [];
+
+      return Array.from(lista.options)
+        .map(function(opcao) {
+          return String(opcao.value || "").trim();
+        })
+        .filter(Boolean);
+    }
+
+    function padronizarCampoOPM(campo) {
+      const valor = campo ? String(campo.value || "").trim() : "";
+
+      if (!campo || !valor) return true;
+
+      const chave = chaveComparacaoOPM(valor);
+      const encontrado = obterOpcoesOPM().find(function(opcao) {
+        return chaveComparacaoOPM(opcao) === chave;
+      });
+
+      if (encontrado) {
+        campo.value = encontrado;
+        limparErroVisualCampo(campo);
+        return true;
+      }
+
+      return false;
     }
 
     function mascaraRE(campo) {
