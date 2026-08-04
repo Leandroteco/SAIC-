@@ -970,6 +970,68 @@
       padding: 18px 22px;
     }
 
+    .confirmacao-navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.44);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 180;
+    }
+
+    .confirmacao-navegacao-overlay.ativo {
+      display: flex;
+    }
+
+    .confirmacao-navegacao-modal {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+      padding: 24px;
+      width: min(460px, 94vw);
+    }
+
+    .confirmacao-navegacao-modal span {
+      color: var(--primary);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .confirmacao-navegacao-modal h2 {
+      border: 0;
+      color: #293033;
+      font-size: 24px;
+      margin: 0 0 10px;
+      padding: 0;
+    }
+
+    .confirmacao-navegacao-modal p {
+      color: #475569;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .confirmacao-navegacao-acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .confirmacao-navegacao-acoes button {
+      margin-top: 0;
+      width: auto;
+    }
+
     .navegacao-spinner {
       animation: girar 0.8s linear infinite;
       border: 3px solid rgba(49, 95, 114, 0.18);
@@ -1864,6 +1926,18 @@ body {
   </div>
 </div>
 
+<div id="confirmacaoNavegacaoOverlay" class="confirmacao-navegacao-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmacaoNavegacaoTitulo">
+  <div class="confirmacao-navegacao-modal">
+    <span>Dados n&atilde;o salvos</span>
+    <h2 id="confirmacaoNavegacaoTitulo">Sair sem salvar?</h2>
+    <p>Existem dados preenchidos que ainda n&atilde;o foram salvos. Deseja sair desta tela mesmo assim?</p>
+    <div class="confirmacao-navegacao-acoes">
+      <button type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">Continuar preenchendo</button>
+      <button type="button" class="btn-primary" onclick="confirmarSaidaSemSalvar()">Sair sem salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Conteudo principal: formulario de atendimento exibido apos a autenticacao do usuario. -->
 <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
   <div class="app-shell">
@@ -2245,10 +2319,11 @@ body {
   min="0"
   max="10"
   step="1"
-  placeholder="0"
-  onkeydown="bloquearDigitacaoNumeroFilhos(event)"
-  onpaste="return false"
+  value="0"
+  inputmode="numeric"
+  pattern="[0-9]*"
   oninput="ajustarNumeroFilhos(this); limparErroCampo(this)"
+  onblur="normalizarNumeroFilhos(this)"
   onwheel="this.blur()">
     </div>
 
@@ -2716,6 +2791,7 @@ let conflitoIdentificacaoAtual = null;
 let ultimaChaveIdentificacaoVerificada = "";
 let timerValidacaoIdentificacao = null;
 let navegacaoAlteracoesPendentes = false;
+let acaoConfirmadaNavegacao = null;
 
 // Inicializacao da tela apos carregar o HTML.
 document.addEventListener("DOMContentLoaded", function() {
@@ -2767,10 +2843,29 @@ function limparAlteracaoPendenteAtendimento() {
   navegacaoAlteracoesPendentes = false;
 }
 
-function confirmarNavegacaoComAlteracoesPendentes() {
-  if (!navegacaoAlteracoesPendentes) return true;
+function abrirConfirmacaoNavegacao(acaoConfirmada) {
+  acaoConfirmadaNavegacao = typeof acaoConfirmada === "function" ? acaoConfirmada : null;
 
-  return window.confirm("Há dados preenchidos que ainda não foram salvos. Deseja sair mesmo assim?");
+  const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+  if (overlay) overlay.classList.add("ativo");
+}
+
+function fecharConfirmacaoNavegacao() {
+  acaoConfirmadaNavegacao = null;
+
+  const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+  if (overlay) overlay.classList.remove("ativo");
+}
+
+function confirmarSaidaSemSalvar() {
+  const acao = acaoConfirmadaNavegacao;
+  acaoConfirmadaNavegacao = null;
+  navegacaoAlteracoesPendentes = false;
+
+  const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+  if (overlay) overlay.classList.remove("ativo");
+
+  if (typeof acao === "function") acao();
 }
 
 // Controla quando o botao de imprimir ficha deve aparecer apos salvar.
@@ -3399,21 +3494,29 @@ function escaparAttr(valor) {
       });
   }
 
-// Mantem numero de filhos controlado pelo campo numerico.
-function bloquearDigitacaoNumeroFilhos(event) {
-  if (event.key !== "Tab") {
-    event.preventDefault();
-  }
-}
-
+// Mantem numero de filhos controlado e permite digitacao simples.
 function ajustarNumeroFilhos(campo) {
-  let valor = Number(campo.value);
+  let texto = String(campo.value || "").replace(/\D/g, "");
 
-  if (campo.value === "") return;
+  if (texto === "") {
+    campo.value = "";
+    return;
+  }
+
+  let valor = parseInt(texto, 10);
   if (valor < 0) valor = 0;
   if (valor > 10) valor = 10;
 
   campo.value = valor;
+}
+
+function normalizarNumeroFilhos(campo) {
+  if (campo.value === "") {
+    campo.value = "0";
+    return;
+  }
+
+  ajustarNumeroFilhos(campo);
 }
 
 
@@ -4281,7 +4384,7 @@ function preencherFormulario(r) {
   document.getElementById("email").value = "";
   document.getElementById("dataNascimento").value = "";
   document.getElementById("estadoCivil").value = "";
-  document.getElementById("numeroFilhos").value = "";
+  document.getElementById("numeroFilhos").value = "0";
   document.getElementById("opmAtual").value = "";
   document.getElementById("situacaoStatus").value = "";
   document.getElementById("dataIngresso").value = "";
@@ -4304,7 +4407,7 @@ function preencherFormulario(r) {
   document.getElementById("email").value = r.email || "";
   document.getElementById("dataNascimento").value = r.dataNascimento || "";
   document.getElementById("estadoCivil").value = r.estadoCivil || "";
-  document.getElementById("numeroFilhos").value = r.numeroFilhos || "";
+  document.getElementById("numeroFilhos").value = r.numeroFilhos || "0";
   document.getElementById("opmAtual").value = converterMaiusculas(r.opmAtual || "");
   document.getElementById("situacaoStatus").value = r.situacaoStatus || "";
   document.getElementById("dataIngresso").value = r.dataIngresso || "";
@@ -4571,7 +4674,12 @@ function abrirPaginaComToken(pagina, alvo, mensagemCarregando) {
     return;
   }
 
-  if (!confirmarNavegacaoComAlteracoesPendentes()) return;
+  if (navegacaoAlteracoesPendentes) {
+    abrirConfirmacaoNavegacao(function() {
+      abrirPaginaComToken(pagina, alvo, mensagemCarregando);
+    });
+    return;
+  }
 
   fecharMenu();
   if (mensagemCarregando) mostrarCarregamentoNavegacao(mensagemCarregando);
