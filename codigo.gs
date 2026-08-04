@@ -1415,7 +1415,7 @@ function salvarAtendimento(dados, idToken) {
     const tipoAtendimento = normalizarTipoAtendimento(dados.tipoAtendimento);
     const motivoAtendimento = normalizar(dados.motivo);
     const responsavelAtendimento = normalizar(usuario.nome || dados.responsavel);
-    const napsAtendimento = normalizar(usuario.naps || dados.napsAtendimento || dados.naps);
+    const napsAtendimento = normalizarSiglaCodigo(usuario.naps || dados.napsAtendimento || dados.naps);
 
     if (!tipoAtendimento) {
       throw new Error("Tipo de atendimento e obrigatorio.");
@@ -1436,7 +1436,7 @@ function salvarAtendimento(dados, idToken) {
       usuario.email,
       tipoAtendimento,
       motivoAtendimento,
-      normalizar(dados.re),
+      normalizarSiglaCodigo(dados.re),
       normalizar(dados.nome),
       formatarCPF(dados.cpf),
       normalizarTelefone(dados.telefone),
@@ -1444,7 +1444,7 @@ function salvarAtendimento(dados, idToken) {
       dataIngresso,
       dataNascimento,
       normalizar(dados.sexo),
-      normalizar(dados.opmAtual),
+      normalizarSiglaCodigo(dados.opmAtual),
       normalizar(dados.situacaoStatus),
       dataInatividade,
       normalizar(dados.estadoCivil),
@@ -1453,7 +1453,7 @@ function salvarAtendimento(dados, idToken) {
       normalizar(dados.rua),
       normalizar(dados.bairro),
       normalizar(dados.cidade),
-      normalizar(dados.estado),
+      normalizarSiglaCodigo(dados.estado),
       dados.numero || "",
       normalizar(dados.complemento),
       normalizar(dados.observacoes),
@@ -1749,9 +1749,9 @@ function prepararDadosIncidenteCritico(dados, usuario) {
     dataFato: dataFato,
     dataAcionamento: dataAcionamento,
     postoGraduacao: String(dados.postoGraduacao || "").trim(),
-    re: normalizar(dados.re),
+    re: normalizarSiglaCodigo(dados.re),
     nome: normalizar(dados.nome),
-    opmAtual: normalizar(dados.opmAtual),
+    opmAtual: normalizarSiglaCodigo(dados.opmAtual),
     situacaoStatus: normalizar(dados.situacaoStatus),
     oficialSobreaviso: normalizar(dados.oficialSobreaviso),
     psicologo: responsavel,
@@ -3030,7 +3030,7 @@ function prepararDadosParticipanteEvento(participante) {
   const dados = participante || {};
   const nome = normalizar(dados.nome);
   const cpf = formatarCPF(dados.cpf);
-  const re = normalizar(dados.re);
+  const re = normalizarSiglaCodigo(dados.re);
 
   if (!nome) {
     throw new Error("Nome do participante e obrigatorio.");
@@ -3051,7 +3051,7 @@ function prepararDadosParticipanteEvento(participante) {
     dataIngresso: validarDataFormulario(dados.dataIngresso, "Data de Ingresso"),
     dataNascimento: validarDataFormulario(dados.dataNascimento, "Data de Nascimento"),
     sexo: normalizar(dados.sexo),
-    opmAtual: normalizar(dados.opmAtual),
+    opmAtual: normalizarSiglaCodigo(dados.opmAtual),
     dataInatividade: validarDataFormulario(dados.dataInatividade, "Data de Inatividade"),
     estadoCivil: normalizar(dados.estadoCivil),
     numeroFilhos: dados.numeroFilhos || "",
@@ -3059,7 +3059,7 @@ function prepararDadosParticipanteEvento(participante) {
     rua: normalizar(dados.rua),
     bairro: normalizar(dados.bairro),
     cidade: normalizar(dados.cidade),
-    estado: normalizar(dados.estado),
+    estado: normalizarSiglaCodigo(dados.estado),
     numero: dados.numero || "",
     complemento: normalizar(dados.complemento)
   };
@@ -3101,7 +3101,7 @@ function montarLinhaParticipanteEvento(idParticipante, idEvento, tipoEvento, dad
 function montarLinhasIndiceParticipanteEvento(idParticipante, idEvento, dados, linhaParticipante) {
   const cpf = formatarCPF(dados.cpf);
   const cpfNumeros = somenteNumeros(cpf);
-  const re = normalizar(dados.re);
+  const re = normalizarSiglaCodigo(dados.re);
   const reNumeros = somenteNumeros(re);
   const nome = normalizar(dados.nome);
   const linhas = [];
@@ -3625,7 +3625,7 @@ function validarDataFormulario(valor, nomeCampo) {
 function montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados) {
   const cpf = formatarCPF(dados.cpf);
   const cpfNumeros = somenteNumeros(cpf);
-  const re = normalizar(dados.re);
+  const re = normalizarSiglaCodigo(dados.re);
   const reNumeros = somenteNumeros(re);
   const nome = normalizar(dados.nome);
   const linhas = [];
@@ -3706,6 +3706,17 @@ function normalizar(texto) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+}
+
+function normalizarSiglaCodigo(valor) {
+  if (!valor) return "";
+
+  return String(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 }
 
 function normalizarTipoAtendimento(valor) {
