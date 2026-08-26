@@ -1970,7 +1970,389 @@ body {
   .btn {
     font-size: 17px !important;
   }
-}</style>
+}
+
+/* Tela inicial: area de trabalho exibida logo apos o login. */
+.app-shell.tela-inicial-ativa {
+  grid-template-columns: 1fr;
+}
+
+.app-shell.tela-inicial-ativa .sidebar,
+.app-shell.tela-inicial-ativa .preview-institutional-header,
+.app-shell.tela-inicial-ativa .container {
+  display: none;
+}
+
+.app-shell.tela-inicial-ativa .form-content {
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.tela-inicial-sistema {
+  display: none;
+}
+
+.app-shell.tela-inicial-ativa .tela-inicial-sistema {
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 1180px;
+  width: 100%;
+}
+
+.home-institutional-band {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(237, 246, 249, 0.96) 100%);
+  border: 1px solid rgba(215, 227, 232, 0.92);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 14px 32px rgba(35, 54, 63, 0.10);
+  overflow: hidden;
+  position: relative;
+}
+
+.home-institutional-band::before,
+.home-institutional-band::after {
+  content: "";
+  height: 4px;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.home-institutional-band::before {
+  background: linear-gradient(90deg, #b32432 0%, rgba(179, 36, 50, 0.50) 68%, rgba(179, 36, 50, 0) 100%);
+  top: 0;
+}
+
+.home-institutional-band::after {
+  background: linear-gradient(270deg, #46535b 0%, rgba(70, 83, 91, 0.52) 70%, rgba(70, 83, 91, 0) 100%);
+  bottom: 0;
+}
+
+.home-band-content {
+  align-items: center;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(260px, 1fr) auto minmax(180px, 1fr);
+  min-height: 106px;
+  padding: 20px 24px;
+}
+
+.home-brand-copy {
+  align-items: center;
+  color: #2d3940;
+  display: flex;
+  flex: 1 1 260px;
+  gap: 14px;
+  min-width: 230px;
+}
+
+.home-sismen-symbol-frame {
+  align-items: center;
+  background: #ffffff;
+  border: 3px solid #df0209;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(179, 36, 50, 0.14);
+  display: inline-flex;
+  height: 66px;
+  justify-content: center;
+  overflow: hidden;
+  width: 66px;
+}
+
+.home-sismen-symbol {
+  border-radius: 999px;
+  display: block;
+  height: 100%;
+  image-rendering: auto;
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+}
+
+.home-brand-copy strong {
+  color: #2d3940;
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.home-brand-copy span {
+  color: #6a7880;
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 5px;
+}
+
+.home-institutional-logos {
+  align-items: center;
+  display: flex;
+  flex: 1 1 390px;
+  gap: 14px;
+  justify-content: center;
+  justify-self: center;
+}
+
+.home-institutional-logo {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.32);
+  border-radius: 8px;
+  display: flex;
+  height: 76px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 6px;
+  width: 90px;
+}
+
+.home-institutional-logo img {
+  display: block;
+  filter: contrast(1.08) saturate(1.12);
+  max-height: 100%;
+  max-width: 100%;
+  mix-blend-mode: multiply;
+  object-fit: contain;
+  opacity: 0.94;
+}
+
+.home-sismen-symbol:not([src]),
+.home-institutional-logo img:not([src]) {
+  visibility: hidden;
+}
+
+.home-access-badge {
+  align-items: center;
+  background: rgba(49, 95, 114, 0.09);
+  border: 1px solid rgba(49, 95, 114, 0.17);
+  border-radius: 999px;
+  color: #315f72;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 9px;
+  justify-self: end;
+  padding: 9px 12px;
+  white-space: nowrap;
+}
+
+.home-access-badge::before {
+  background: #315f72;
+  border-radius: 999px;
+  box-shadow: 0 0 0 5px rgba(49, 95, 114, 0.12);
+  content: "";
+  height: 8px;
+  width: 8px;
+}
+
+.home-stage {
+  display: grid;
+  gap: 18px;
+}
+
+.home-workspace-card {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(215, 227, 232, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 18px 38px rgba(35, 54, 63, 0.12);
+  overflow: hidden;
+}
+
+.home-workspace-head {
+  align-items: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f4fafc 100%);
+  border-bottom: 1px solid #d8e4ea;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 22px 24px;
+}
+
+.home-workspace-head h2 {
+  color: #2d3940;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.home-workspace-head p {
+  color: #6a7880;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 6px 0 0;
+}
+
+.home-time {
+  color: #254b5b;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.home-modules-area {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.home-module-card {
+  background: #ffffff;
+  border: 1px solid #d8e4ea;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(35, 54, 63, 0.08);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 14px;
+  min-height: 168px;
+  overflow: hidden;
+  padding: 18px;
+  position: relative;
+  text-align: left;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  width: 100%;
+}
+
+.home-module-card::before {
+  background: #315f72;
+  content: "";
+  height: 4px;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.home-primary-module {
+  background: linear-gradient(135deg, #ffffff 0%, #eef7fa 100%);
+  border-color: rgba(49, 95, 114, 0.18);
+}
+
+.home-primary-module::before {
+  background: #b32432;
+  height: 100%;
+  width: 5px;
+}
+
+.home-module-card.incident::before {
+  background: #c99a2e;
+}
+
+.home-module-card.restricted::before {
+  background: #2d3940;
+}
+
+.home-module-card:hover,
+.home-module-card:focus-visible {
+  border-color: rgba(49, 95, 114, 0.38);
+  box-shadow: 0 18px 38px rgba(35, 54, 63, 0.13);
+  outline: none;
+  transform: translateY(-3px);
+}
+
+.home-module-icon {
+  align-items: center;
+  background: #315f72;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 16px;
+  font-weight: 950;
+  height: 52px;
+  justify-content: center;
+  width: 52px;
+}
+
+.home-primary-module .home-module-icon {
+  background: linear-gradient(135deg, #b32432 0%, #315f72 100%);
+}
+
+.home-module-card.incident .home-module-icon {
+  background: #c99a2e;
+}
+
+.home-module-card.restricted .home-module-icon {
+  background: #2d3940;
+}
+
+.home-module-title {
+  color: #2d3940;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.home-module-text {
+  color: #6a7880;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.home-footer {
+  color: #6a7880;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 0 4px 8px;
+  text-align: center;
+}
+
+.home-footer strong {
+  color: #46535b;
+  font-weight: 900;
+}
+
+@media (max-width: 980px) {
+  .app-shell.tela-inicial-ativa .form-content {
+    padding: 12px;
+  }
+
+  .home-band-content {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  .home-workspace-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .home-institutional-logos {
+    justify-self: start;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .home-access-badge {
+    justify-self: start;
+  }
+
+  .home-time {
+    text-align: left;
+  }
+
+  .home-modules-area {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .home-modules-area {
+    grid-template-columns: 1fr;
+  }
+
+  .home-institutional-logo {
+    height: 64px;
+    width: 76px;
+  }
+}
+</style>
 </head>
 <body>
 <!-- Tela de login: aparece quando o Apps Script ainda nao recebeu um token valido do Google. -->
@@ -2030,7 +2412,7 @@ body {
 
 <!-- Conteudo principal: formulario de atendimento exibido apos a autenticacao do usuario. -->
 <div id="conteudoSistema" style="<?= tokenGoogleInicial ? 'display:block;' : 'display:none;' ?>">
-  <div class="app-shell">
+  <div id="appShell" class="app-shell tela-inicial-ativa">
     <aside class="sidebar" aria-label="Navegação do cadastro">
       <div class="brand">
         <div class="brand-mark preview-brand-logo">
@@ -2043,10 +2425,10 @@ body {
       </div>
 
       <nav class="side-nav">
-        <button type="button" class="nav-item active" onclick="abrirAtendimento()"><span class="nav-dot"></span>Atendimento</button>
-        <button type="button" class="nav-item" onclick="abrirEventosColetivos()"><span class="nav-dot"></span>Grupos e Palestras</button>
-        <button id="btnNavIncidenteCritico" type="button" class="nav-item" onclick="abrirIncidenteCritico()"><span class="nav-dot"></span>Incidente Cr&iacute;tico</button>
-        <button id="btnNavPPMS" type="button" class="nav-item" onclick="abrirPPMS()" style="display:none;"><span class="nav-dot"></span>PPMS</button>
+        <button type="button" class="nav-item active" data-nav-modulo="atendimento" onclick="abrirAtendimento()"><span class="nav-dot"></span>Atendimento</button>
+        <button type="button" class="nav-item" data-nav-modulo="grupos" onclick="abrirEventosColetivos()"><span class="nav-dot"></span>Grupos e Palestras</button>
+        <button id="btnNavIncidenteCritico" type="button" class="nav-item" data-nav-modulo="incidente" onclick="abrirIncidenteCritico()"><span class="nav-dot"></span>Incidente Cr&iacute;tico</button>
+        <button id="btnNavPPMS" type="button" class="nav-item" data-nav-modulo="ppms" onclick="abrirPPMS()" style="display:none;"><span class="nav-dot"></span>PPMS</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -2057,6 +2439,87 @@ body {
     </aside>
 
     <div class="form-content">
+
+      <section id="telaInicialSistema" class="tela-inicial-sistema" aria-label="Tela inicial do sistema">
+        <header class="home-institutional-band">
+          <div class="home-band-content">
+            <div class="home-brand-copy">
+              <span class="home-sismen-symbol-frame">
+                <img id="homeLogoSismen" class="home-sismen-symbol" alt="SiSMen">
+              </span>
+              <div>
+                <strong>SiSMen</strong>
+                <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+              </div>
+            </div>
+
+            <div class="home-institutional-logos" aria-label="Institui&ccedil;&otilde;es">
+              <div class="home-institutional-logo">
+                <img id="homeLogoSSP" alt="Secretaria de Seguran&ccedil;a P&uacute;blica">
+              </div>
+              <div class="home-institutional-logo">
+                <img id="homeLogoPM" alt="Pol&iacute;cia Militar">
+              </div>
+              <div class="home-institutional-logo">
+                <img id="homeLogoCAPS" alt="CAPS">
+              </div>
+            </div>
+
+            <div class="home-access-badge">Acesso autorizado</div>
+          </div>
+        </header>
+
+        <main class="home-stage">
+          <section class="home-workspace-card">
+            <div class="home-workspace-head">
+              <div>
+                <h2>&Aacute;rea de Trabalho</h2>
+                <p><span id="homeUsuarioTexto">Usu&aacute;rio autorizado</span>, <span id="homeUnidadeTexto">CAPS/NAPS</span></p>
+              </div>
+              <div id="homeDataTexto" class="home-time"></div>
+            </div>
+
+            <div class="home-modules-area" aria-label="M&oacute;dulos do sistema">
+              <button type="button" class="home-module-card home-primary-module" onclick="abrirAtendimento()">
+                <div class="home-module-icon">A</div>
+                <div>
+                  <h3 class="home-module-title">Atendimento</h3>
+                </div>
+                <p class="home-module-text">Plant&atilde;o, Psicoterapia, Avalia&ccedil;&atilde;o, Entrevista, Triagem, Follow-up, Exame, Alta, Falta e Arquivamento.</p>
+              </button>
+
+              <button type="button" class="home-module-card" onclick="abrirEventosColetivos()">
+                <div class="home-module-icon">G</div>
+                <div>
+                  <h3 class="home-module-title">Grupos e Palestras</h3>
+                </div>
+                <p class="home-module-text">Registro dos participantes, link para preenchimento individual, valida&ccedil;&atilde;o e encerramento.</p>
+              </button>
+
+              <button type="button" class="home-module-card incident" onclick="abrirIncidenteCritico()">
+                <div class="home-module-icon">I</div>
+                <div>
+                  <h3 class="home-module-title">Incidente Cr&iacute;tico</h3>
+                </div>
+                <p class="home-module-text">Registro do fato, modalidade, equipe, impress&atilde;o de ficha e &uacute;ltimos registros.</p>
+              </button>
+
+              <button id="cardHomePPMS" type="button" class="home-module-card restricted" onclick="abrirPPMS()" style="display:none;">
+                <div class="home-module-icon">P</div>
+                <div>
+                  <h3 class="home-module-title">PPMS</h3>
+                </div>
+                <p class="home-module-text">Registro reservado aos usu&aacute;rios autorizados no cadastro do sistema.</p>
+              </button>
+            </div>
+          </section>
+
+          <footer class="home-footer">
+            <strong>&copy; 2026 - Sistema de Gest&atilde;o dos Atendimentos do SiSMen (vers&atilde;o 2.0)</strong><br>
+            Desenvolvido por Major Isabela, Subtenente Tome, Sargento PM Felix e Cabo PM Myazaki
+          </footer>
+        </main>
+      </section>
 
 <!-- Recados: post-it institucional exibido ao abrir o formulario quando houver recado ativo. -->
 <div id="recadoOverlay" class="recado-overlay">
@@ -2858,10 +3321,6 @@ body {
 
   <div id="mensagem"></div>
 
-<div class="copyright">
-  © 2026 - Sistema de Gestão dos Atendimentos do SiSMen (versão 2.0)<br>
-  Desenvolvido por Major Isabela,Subtenente Tome, Sargento PM Felix e Cabo PM Myazaki
-</div>
 </div>
 
 </div>
@@ -2875,6 +3334,7 @@ body {
 let tokenGoogle = "<?= tokenGoogleInicial ?>";
 let webAppUrl = "<?= webAppUrl ?>";
 let usuarioLogado = <?!= usuarioInicialJson ?>;
+let estadoPaginaInicial = "<?= estadoPaginaInicial ?>";
 let ultimoAtendimentoSalvoId = "";
 let ultimosAtendimentosCarregados = false;
 let ultimosAtendimentosCarregando = false;
@@ -2883,6 +3343,7 @@ let ultimaChaveIdentificacaoVerificada = "";
 let timerValidacaoIdentificacao = null;
 let navegacaoAlteracoesPendentes = false;
 let acaoConfirmadaNavegacao = null;
+let recadoAtivoCarregado = false;
 
 // Inicializacao da tela apos carregar o HTML.
 document.addEventListener("DOMContentLoaded", function() {
@@ -2893,7 +3354,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
   if (autorizado) {
     configurarMenuPorPerfil();
-    carregarRecadoAtivo();
+    sincronizarLogosTelaInicial();
+    atualizarContextoTelaInicial();
+    if (deveAbrirAtendimentoInicial()) {
+      mostrarTelaAtendimento();
+    } else {
+      configurarTelaInicial();
+    }
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeEmail();
     atualizarCamposOutros();
@@ -2904,6 +3371,95 @@ document.addEventListener("DOMContentLoaded", function() {
     registrarControleAlteracoesAtendimento();
   }
 });
+
+function deveAbrirAtendimentoInicial() {
+  return String(estadoPaginaInicial || "")
+    .toLowerCase()
+    .trim()
+    .split(":")[0] === "atendimento";
+}
+
+function configurarTelaInicial() {
+  const appShell = document.getElementById("appShell");
+
+  if (appShell) {
+    appShell.classList.add("tela-inicial-ativa");
+  }
+
+  marcarNavegacaoAtiva("");
+}
+
+function mostrarTelaAtendimento() {
+  const appShell = document.getElementById("appShell");
+
+  if (appShell) {
+    appShell.classList.remove("tela-inicial-ativa");
+  }
+
+  marcarNavegacaoAtiva("atendimento");
+
+  if (!recadoAtivoCarregado) {
+    recadoAtivoCarregado = true;
+    carregarRecadoAtivo();
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function marcarNavegacaoAtiva(modulo) {
+  document.querySelectorAll(".side-nav .nav-item").forEach(function(botao) {
+    botao.classList.toggle("active", botao.getAttribute("data-nav-modulo") === modulo);
+  });
+}
+
+function sincronizarLogosTelaInicial() {
+  copiarImagemTelaInicial(".brand-mark.preview-brand-logo img", "homeLogoSismen");
+  copiarImagemTelaInicial(".preview-logo-card.logo-ssp img", "homeLogoSSP");
+  copiarImagemTelaInicial(".preview-logo-card.logo-pm img", "homeLogoPM");
+  copiarImagemTelaInicial(".preview-logo-card.logo-caps img", "homeLogoCAPS");
+}
+
+function copiarImagemTelaInicial(seletorOrigem, idDestino) {
+  const origem = document.querySelector(seletorOrigem);
+  const destino = document.getElementById(idDestino);
+
+  if (origem && destino && origem.src) {
+    destino.src = origem.src;
+  }
+}
+
+function atualizarContextoTelaInicial() {
+  const usuario = document.getElementById("homeUsuarioTexto");
+  const unidade = document.getElementById("homeUnidadeTexto");
+  const data = document.getElementById("homeDataTexto");
+
+  if (usuario) {
+    usuario.textContent = formatarTextoRetornoBusca((usuarioLogado && usuarioLogado.nome) || "Usuario autorizado");
+  }
+
+  if (unidade) {
+    unidade.textContent = obterUnidadeUsuarioTelaInicial();
+  }
+
+  if (data) {
+    data.textContent = new Date().toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  }
+}
+
+function obterUnidadeUsuarioTelaInicial() {
+  if (!usuarioLogado) return "CAPS/NAPS";
+
+  return usuarioLogado.naps ||
+    usuarioLogado.NAPS ||
+    usuarioLogado.napsAtendimento ||
+    usuarioLogado.unidade ||
+    "CAPS/NAPS";
+}
 
 // Preenche o responsavel com o nome do usuario logado.
 function preencherResponsavelLogado() {
@@ -4728,6 +5284,12 @@ function configurarMenuPorPerfil() {
   if (botaoPPMS) {
     botaoPPMS.style.display = usuarioPodeAcessarPPMS() ? "flex" : "none";
   }
+
+  const cardHomePPMS = document.getElementById("cardHomePPMS");
+
+  if (cardHomePPMS) {
+    cardHomePPMS.style.display = usuarioPodeAcessarPPMS() ? "grid" : "none";
+  }
 }
 
 function bloquearAcessoAdministrativoMenu() {
@@ -5036,15 +5598,17 @@ function abrirRelatorioNaps() {
 
 function abrirAtendimento() {
   fecharMenu();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  mostrarTelaAtendimento();
 }
 
 function abrirEventosColetivos(tipo) {
+  marcarNavegacaoAtiva("grupos");
   const tipoEvento = tipo ? ":" + tipo : "";
   abrirPaginaComToken("eventos_coletivos" + tipoEvento, "_top", "Carregando Grupos e Palestras...");
 }
 
 function abrirIncidenteCritico() {
+  marcarNavegacaoAtiva("incidente");
   abrirPaginaComToken("incidente_critico", "_top", "Carregando Incidente Cr\u00edtico...");
 }
 
@@ -5060,6 +5624,7 @@ function abrirPPMS() {
     return;
   }
 
+  marcarNavegacaoAtiva("ppms");
   abrirPaginaComToken("ppms", "_top", "Carregando PPMS...");
 }
 
