@@ -112,6 +112,8 @@
       border-right: 3px solid #df0209;
       box-shadow: 12px 0 28px rgba(41, 48, 51, 0.10);
       color: #ffffff;
+      display: flex;
+      flex-direction: column;
       height: 100vh;
       overflow-y: auto;
       padding: 24px 18px;
@@ -130,14 +132,17 @@
 
     .brand strong {
       display: block;
-      font-size: 20px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0;
       line-height: 1.1;
     }
 
     .brand span {
-      color: rgba(255, 255, 255, 0.76);
+      color: rgba(255, 255, 255, 0.72);
       display: block;
       font-size: 12px;
+      font-weight: 700;
       margin-top: 4px;
     }
 
@@ -148,18 +153,33 @@
     }
 
     .side-nav button {
+      align-items: center;
       background: transparent;
+      border: 0;
       border-radius: var(--radius);
       color: rgba(255, 255, 255, 0.84);
+      display: flex;
+      font-size: 14px;
+      font-weight: 800;
+      gap: 10px;
+      justify-content: flex-start;
       min-height: 42px;
       padding: 10px 12px;
       text-align: left;
+      width: 100%;
     }
 
     .side-nav button.active,
     .side-nav button:hover {
       background: rgba(255, 255, 255, 0.14);
       color: #ffffff;
+    }
+
+    .nav-dot {
+      background: #ffffff;
+      border-radius: 999px;
+      height: 7px;
+      width: 7px;
     }
 
     .side-nav-separator {
@@ -172,6 +192,31 @@
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.18);
       color: #ffffff;
+    }
+
+    .session-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+      margin-top: auto;
+      padding-top: 14px;
+    }
+
+    .btn-encerrar-sessao {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius);
+      color: #ffffff;
+      cursor: pointer;
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      min-height: 36px;
+      padding: 8px 10px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .btn-encerrar-sessao:hover {
+      background: rgba(255, 255, 255, 0.16);
     }
 
     .content {
@@ -612,6 +657,66 @@
       padding: 18px 22px;
     }
 
+    .confirmacao-navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.44);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 180;
+    }
+
+    .confirmacao-navegacao-overlay.ativo {
+      display: flex;
+    }
+
+    .confirmacao-navegacao-modal {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+      padding: 24px;
+      width: min(460px, 94vw);
+    }
+
+    .confirmacao-navegacao-modal span {
+      color: var(--red);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .confirmacao-navegacao-modal h2 {
+      color: var(--ink);
+      font-size: 24px;
+      margin: 0 0 10px;
+    }
+
+    .confirmacao-navegacao-modal p {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .confirmacao-navegacao-acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .confirmacao-navegacao-acoes button {
+      margin-top: 0;
+      width: auto;
+    }
+
     .navegacao-spinner {
       border-color: rgba(49, 95, 114, 0.18);
       border-top-color: var(--blue);
@@ -623,6 +728,64 @@
     .navegacao-card strong {
       font-size: 15px;
       font-weight: 900;
+    }
+
+    .sessao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.44);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 20px;
+      position: fixed;
+      z-index: 190;
+    }
+
+    .sessao-overlay.ativo {
+      display: flex;
+    }
+
+    .sessao-modal {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+      max-width: 420px;
+      padding: 22px;
+      width: min(420px, 100%);
+    }
+
+    .sessao-modal span {
+      color: var(--red);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .sessao-modal h2 {
+      color: var(--ink);
+      font-size: 20px;
+      margin: 8px 0 8px;
+    }
+
+    .sessao-modal p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .sessao-acoes {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+
+    .sessao-acoes button {
+      margin-top: 0;
+      width: auto;
     }
 
     @media (max-width: 980px) {
@@ -693,6 +856,30 @@
     </div>
   </div>
 
+  <div id="confirmacaoNavegacaoOverlay" class="confirmacao-navegacao-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmacaoNavegacaoTitulo">
+    <div class="confirmacao-navegacao-modal">
+      <span>Dados n&atilde;o salvos</span>
+      <h2 id="confirmacaoNavegacaoTitulo">Sair sem salvar?</h2>
+      <p>Existem dados preenchidos que ainda n&atilde;o foram salvos. Deseja sair desta tela mesmo assim?</p>
+      <div class="confirmacao-navegacao-acoes">
+        <button type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">Continuar preenchendo</button>
+        <button type="button" class="btn-primary" onclick="confirmarSaidaSemSalvar()">Sair sem salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sessaoOverlay" class="sessao-overlay" role="dialog" aria-modal="true" aria-labelledby="sessaoTitulo">
+    <div class="sessao-modal">
+      <span>Sess&atilde;o</span>
+      <h2 id="sessaoTitulo">Encerrar sess&atilde;o?</h2>
+      <p id="sessaoTexto">Ao encerrar, o SAIC voltar&aacute; para a tela de login neste navegador.</p>
+      <div class="sessao-acoes">
+        <button type="button" class="btn-secondary" onclick="fecharModalEncerrarSessao()">Continuar no SAIC</button>
+        <button type="button" class="btn-primary" onclick="confirmarEncerrarSessaoSAIC()">Encerrar sess&atilde;o</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-shell">
     <aside class="sidebar" aria-label="PPMS">
       <div class="brand">
@@ -701,11 +888,15 @@
       </div>
 
       <nav class="side-nav">
-        <button type="button" onclick="navegarModuloPrincipal('index')">Atendimento</button>
-        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')">Grupos e Palestras</button>
-        <button type="button" onclick="navegarModuloPrincipal('incidente_critico')">Incidente Cr&iacute;tico</button>
-        <button id="btnNavPPMS" type="button" class="active" onclick="navegarModuloPrincipal('ppms')">PPMS</button>
+        <button type="button" onclick="navegarModuloPrincipal('atendimento')"><span class="nav-dot"></span>Atendimento</button>
+        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')"><span class="nav-dot"></span>Grupos e Palestras</button>
+        <button type="button" onclick="navegarModuloPrincipal('incidente_critico')"><span class="nav-dot"></span>Incidente Cr&iacute;tico</button>
+        <button id="btnNavPPMS" type="button" class="active" onclick="navegarModuloPrincipal('ppms')"><span class="nav-dot"></span>PPMS</button>
       </nav>
+
+      <div class="session-footer">
+        <button type="button" class="btn-encerrar-sessao" onclick="encerrarSessaoSAIC()">Encerrar sess&atilde;o</button>
+      </div>
     </aside>
 
     <main class="content">
@@ -772,7 +963,52 @@
 
           <div>
             <label for="fatorPrecipitante">Fator Precipitante</label>
-            <input id="fatorPrecipitante" type="text" placeholder="Descreva o fator precipitante" required>
+            <select id="fatorPrecipitante" required>
+              <option value="">Selecione</option>
+              <option>Conflito conjugal/relacionamento</option>
+              <option>Separa&ccedil;&atilde;o ou div&oacute;rcio</option>
+              <option>Luto (falecimento de familiar, amigo ou colega)</option>
+              <option>Problemas familiares</option>
+              <option>Conflito com filhos</option>
+              <option>Doen&ccedil;a pr&oacute;pria</option>
+              <option>Doen&ccedil;a de familiar</option>
+              <option>Diagn&oacute;stico recente de doen&ccedil;a</option>
+              <option>Dor cr&ocirc;nica</option>
+              <option>Problemas financeiros/endividamento</option>
+              <option>Perda de bens</option>
+              <option>Processo judicial</option>
+              <option>Processo administrativo</option>
+              <option>Investiga&ccedil;&atilde;o disciplinar</option>
+              <option>Problemas no trabalho</option>
+              <option>Sobrecarga de trabalho</option>
+              <option>Mudan&ccedil;a de fun&ccedil;&atilde;o</option>
+              <option>Transfer&ecirc;ncia de unidade</option>
+              <option>Afastamento do trabalho</option>
+              <option>Aposentadoria ou proximidade da aposentadoria</option>
+              <option>Exposi&ccedil;&atilde;o a ocorr&ecirc;ncia cr&iacute;tica/traum&aacute;tica</option>
+              <option>Acidente de servi&ccedil;o</option>
+              <option>Viol&ecirc;ncia sofrida</option>
+              <option>Uso ou abuso de &aacute;lcool</option>
+              <option>Uso de outras subst&acirc;ncias psicoativas</option>
+              <option>T&eacute;rmino de relacionamento afetivo</option>
+              <option>Isolamento social</option>
+              <option>Conflito interpessoal</option>
+              <option>Ass&eacute;dio moral</option>
+              <option>Problemas acad&ecirc;micos/profissionais</option>
+              <option>Diagn&oacute;stico de transtorno mental</option>
+              <option>Interrup&ccedil;&atilde;o de tratamento medicamentoso</option>
+              <option>Sem fator precipitante identificado</option>
+              <option>Ocorr&ecirc;ncia com morte</option>
+              <option>Uso da for&ccedil;a com resultado grave</option>
+              <option>Amea&ccedil;as decorrentes da atividade policial</option>
+              <option>Escala de servi&ccedil;o excessiva</option>
+              <option>Mudan&ccedil;a de comando</option>
+              <option>Conflito na equipe</option>
+              <option>Puni&ccedil;&atilde;o disciplinar</option>
+              <option>Reprova&ccedil;&atilde;o em curso ou concurso interno</option>
+              <option>Restri&ccedil;&atilde;o ou recolhimento do armamento</option>
+              <option>Retorno ap&oacute;s afastamento m&eacute;dico</option>
+            </select>
           </div>
 
           <div class="check-field compacto sem-titulo field-span-3">
@@ -826,88 +1062,248 @@
             <label for="opmAtual">OPM Atual/&Uacute;ltima</label>
             <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)" required>
             <datalist id="listaOPM">
-              <option value="CAPS"></option>
-              <option value="PMRG"></option>
-              <option value="APMBB"></option>
-              <option value="COPOM"></option>
-              <option value="CCB"></option>
-              <option value="CRPM"></option>
-              <option value="C MED"></option>
-              <option value="1.BPM/M"></option>
-              <option value="2.BPM/M"></option>
-              <option value="3.BPM/M"></option>
-              <option value="4.BPM/M"></option>
-              <option value="5.BPM/M"></option>
-              <option value="6.BPM/M"></option>
-              <option value="7.BPM/M"></option>
-              <option value="8.BPM/M"></option>
-              <option value="9.BPM/M"></option>
-              <option value="10.BPM/M"></option>
-              <option value="11.BPM/M"></option>
-              <option value="12.BPM/M"></option>
-              <option value="13.BPM/M"></option>
-              <option value="14BPM/M"></option>
-              <option value="15.BPM/M"></option>
-              <option value="16.BPM/M"></option>
-              <option value="17.BPM/M"></option>
-              <option value="18.BPM/M"></option>
-              <option value="19.BPM/M"></option>
-              <option value="20.BPM/M"></option>
-              <option value="21.BPM/M"></option>
-              <option value="22.BPM/M"></option>
-              <option value="23.BPM/M"></option>
-              <option value="24.BPM/M"></option>
-              <option value="25.BPM/M"></option>
-              <option value="26.BPM/M"></option>
-              <option value="27.BPM/M"></option>
-              <option value="28.BPM/M"></option>
-              <option value="29.BPM/M"></option>
-              <option value="30.BPM/M"></option>
-              <option value="31.BPM/M"></option>
-              <option value="32.BPM/M"></option>
-              <option value="33.BPM/M"></option>
-              <option value="35.BPM/M"></option>
-              <option value="36.BPM/M"></option>
-              <option value="37.BPM/M"></option>
-              <option value="38.BPM/M"></option>
-              <option value="39.BPM/M"></option>
-              <option value="40.BPM/M"></option>
-              <option value="43.BPM/M"></option>
-              <option value="44.BPM/M"></option>
-              <option value="46.BPM/M"></option>
-              <option value="48.BPM/M"></option>
-              <option value="49.BPM/M"></option>
-              <option value="50.BPM/M"></option>
-              <option value="CPA/M-1"></option>
-              <option value="CPA/M-2"></option>
-              <option value="CPA/M-3"></option>
-              <option value="CPA/M-4"></option>
-              <option value="CPA/M-5"></option>
-              <option value="CPA/M-6"></option>
-              <option value="CPA/M-7"></option>
-              <option value="CPA/M-8"></option>
-              <option value="CPA/M-9"></option>
-              <option value="CPA/M-10"></option>
-              <option value="CPA/M-11"></option>
-              <option value="CPA/M-12"></option>
-              <option value="CPI-1"></option>
-              <option value="CPI-2"></option>
-              <option value="CPI-3"></option>
-              <option value="CPI-4"></option>
-              <option value="CPI-5"></option>
-              <option value="CPI-6"></option>
-              <option value="CPI-7"></option>
-              <option value="CPI-8"></option>
-              <option value="CPI-9"></option>
-              <option value="CPI-10"></option>
-              <option value="CPAMB"></option>
-              <option value="CPCHQ"></option>
-              <option value="CPRV"></option>
-              <option value="CPTRAN"></option>
-              <option value="ESSD"></option>
-              <option value="ESSGT"></option>
-              <option value="GBMAR"></option>
-            </datalist>
+  <option value="1.BAEP">1.BAEP</option>
+<option value="1.BPAMB">1.BPAMB</option>
+<option value="1.BPCHQ">1.BPCHQ</option>
+<option value="1.BPM/I">1.BPM/I</option>
+<option value="1.BPM/M">1.BPM/M</option>
+<option value="1.BPRV">1.BPRV</option>
+<option value="1.BPTRAN">1.BPTRAN</option>
+<option value="1.EM/PM">1.EM/PM</option>
+<option value="1.GB">1.GB</option>
+<option value="10.BAEP">10.BAEP</option>
+<option value="10.BPM/I">10.BPM/I</option>
+<option value="10.BPM/M">10.BPM/M</option>
+<option value="10.GB">10.GB</option>
+<option value="11.BAEP">11.BAEP</option>
+<option value="11.BPM/I">11.BPM/I</option>
+<option value="11.BPM/M">11.BPM/M</option>
+<option value="11.GB">11.GB</option>
+<option value="12.BAEP">12.BAEP</option>
+<option value="12.BPM/I">12.BPM/I</option>
+<option value="12.BPM/M">12.BPM/M</option>
+<option value="12.GB">12.GB</option>
+<option value="13.BAEP">13.BAEP</option>
+<option value="13.BPM/I">13.BPM/I</option>
+<option value="13.BPM/M">13.BPM/M</option>
+<option value="13.GB">13.GB</option>
+<option value="14.BAEP">14.BAEP</option>
+<option value="14.BPM/I">14.BPM/I</option>
+<option value="14BPM/M">14BPM/M</option>
+<option value="14.GB">14.GB</option>
+<option value="15.BAEP">15.BAEP</option>
+<option value="15.BPM/I">15.BPM/I</option>
+<option value="15.BPM/M">15.BPM/M</option>
+<option value="15.GB">15.GB</option>
+<option value="16.BPM/I">16.BPM/I</option>
+<option value="16.BPM/M">16.BPM/M</option>
+<option value="16.GB">16.GB</option>
+<option value="17.BPM/I">17.BPM/I</option>
+<option value="17.BPM/M">17.BPM/M</option>
+<option value="17.GB">17.GB</option>
+<option value="18.BPM/I">18.BPM/I</option>
+<option value="18.BPM/M">18.BPM/M</option>
+<option value="18.GB">18.GB</option>
+<option value="19.BPM/I">19.BPM/I</option>
+<option value="19.BPM/M">19.BPM/M</option>
+<option value="19.GB">19.GB</option>
+<option value="2.BAEP">2.BAEP</option>
+<option value="2.BPAMB">2.BPAMB</option>
+<option value="2.BPCHQ">2.BPCHQ</option>
+<option value="2.BPM/I">2.BPM/I</option>
+<option value="2.BPM/M">2.BPM/M</option>
+<option value="2.BPRV">2.BPRV</option>
+<option value="2.BPTRAN">2.BPTRAN</option>
+<option value="2.EM/PM">2.EM/PM</option>
+<option value="2.GB">2.GB</option>
+<option value="20.BPM/I">20.BPM/I</option>
+<option value="20.BPM/M">20.BPM/M</option>
+<option value="20.GB">20.GB</option>
+<option value="21.BPM/I">21.BPM/I</option>
+<option value="21.BPM/M">21.BPM/M</option>
+<option value="22.BPM/I">22.BPM/I</option>
+<option value="22.BPM/M">22.BPM/M</option>
+<option value="23.BPM/I">23.BPM/I</option>
+<option value="23.BPM/M">23.BPM/M</option>
+<option value="24.BPM/I">24.BPM/I</option>
+<option value="24.BPM/M">24.BPM/M</option>
+<option value="25.BPM/I">25.BPM/I</option>
+<option value="25.BPM/M">25.BPM/M</option>
+<option value="26.BPM/I">26.BPM/I</option>
+<option value="26.BPM/M">26.BPM/M</option>
+<option value="27.BPM/I">27.BPM/I</option>
+<option value="27.BPM/M">27.BPM/M</option>
+<option value="28.BPM/I">28.BPM/I</option>
+<option value="28.BPM/M">28.BPM/M</option>
+<option value="29.BPM/I">29.BPM/I</option>
+<option value="29.BPM/M">29.BPM/M</option>
+<option value="3.BAEP">3.BAEP</option>
+<option value="3.BPAMB">3.BPAMB</option>
+<option value="3.BPCHQ">3.BPCHQ</option>
+<option value="3.BPM/I">3.BPM/I</option>
+<option value="3.BPM/M">3.BPM/M</option>
+<option value="3.GB">3.GB</option>
+<option value="30.BPM/I">30.BPM/I</option>
+<option value="30.BPM/M">30.BPM/M</option>
+<option value="31.BPM/I">31.BPM/I</option>
+<option value="31.BPM/M">31.BPM/M</option>
+<option value="32.BPM/I">32.BPM/I</option>
+<option value="32.BPM/M">32.BPM/M</option>
+<option value="33.BPM/I">33.BPM/I</option>
+<option value="33.BPM/M">33.BPM/M</option>
+<option value="34.BPM/I">34.BPM/I</option>
+<option value="35.BPM/I">35.BPM/I</option>
+<option value="35.BPM/M">35.BPM/M</option>
+<option value="36.BPM/I">36.BPM/I</option>
+<option value="36.BPM/M">36.BPM/M</option>
+<option value="37.BPM/I">37.BPM/I</option>
+<option value="37.BPM/M">37.BPM/M</option>
+<option value="38.BPM/I">38.BPM/I</option>
+<option value="38.BPM/M">38.BPM/M</option>
+<option value="39.BPM/I">39.BPM/I</option>
+<option value="39.BPM/M">39.BPM/M</option>
+<option value="4.BAEP">4.BAEP</option>
+<option value="4.BPAMB">4.BPAMB</option>
+<option value="4.BPCHQ">4.BPCHQ</option>
+<option value="4.GB">4.GB</option>
+<option value="40.BPM/I">40.BPM/I</option>
+<option value="40.BPM/M">40.BPM/M</option>
+<option value="41.BPM/I">41.BPM/I</option>
+<option value="42.BPM/I">42.BPM/I</option>
+<option value="43.BPM/I">43.BPM/I</option>
+<option value="43.BPM/M">43.BPM/M</option>
+<option value="44.BPM/I">44.BPM/I</option>
+<option value="44.BPM/M">44.BPM/M</option>
+<option value="45.BPM/I">45.BPM/I</option>
+<option value="46.BPM/M">46.BPM/M</option>
+<option value="47.BPM/I">47.BPM/I</option>
+<option value="48.BPM/I">48.BPM/I</option>
+<option value="48.BPM/M">48.BPM/M</option>
+<option value="49.BPM/I">49.BPM/I</option>
+<option value="49.BPM/M">49.BPM/M</option>
+<option value="5.BAEP">5.BAEP</option>
+<option value="5.BPAMB">5.BPAMB</option>
+<option value="5.BPCHQ">5.BPCHQ</option>
+<option value="5.BPM/I">5.BPM/I</option>
+<option value="5.BPM/M">5.BPM/M</option>
+<option value="5.BPRV">5.BPRV</option>
+<option value="5.GB">5.GB</option>
+<option value="50.BPM/M">50.BPM/M</option>
+<option value="51.BPM/I">51.BPM/I</option>
+<option value="52.BPM/I">52.BPM/I</option>
+<option value="53.BPM/I">53.BPM/I</option>
+<option value="54.BPM/I">54.BPM/I</option>
+<option value="55.BPM/I">55.BPM/I</option>
+<option value="6.BAEP">6.BAEP</option>
+<option value="6.BPM/I">6.BPM/I</option>
+<option value="6.BPM/M">6.BPM/M</option>
+<option value="6.BPRV">6.BPRV</option>
+<option value="6.EM/PM">6.EM/PM</option>
+<option value="6.GB">6.GB</option>
+<option value="7.BAEP">7.BAEP</option>
+<option value="7.BPM/I">7.BPM/I</option>
+<option value="7.BPM/M">7.BPM/M</option>
+<option value="7.GB">7.GB</option>
+<option value="8.BAEP">8.BAEP</option>
+<option value="8.BPM/I">8.BPM/I</option>
+<option value="8.BPM/M">8.BPM/M</option>
+<option value="8.GB">8.GB</option>
+<option value="9.BAEP">9.BAEP</option>
+<option value="9.BPM/I">9.BPM/I</option>
+<option value="9.BPM/M">9.BPM/M</option>
+<option value="9.GB">9.GB</option>
+<option value="APMAL">APMAL</option>
+<option value="APMBB">APMBB</option>
+<option value="APMCG">APMCG</option>
+<option value="APMCGE">APMCGE</option>
+<option value="APMCMSP">APMCMSP</option>
+<option value="APMPGE">APMPGE</option>
+<option value="APMPGJ">APMPGJ</option>
+<option value="APMPMSP">APMPMSP</option>
+<option value="APMSAP">APMSAP</option>
+<option value="APMSEFAZ">APMSEFAZ</option>
+<option value="APMSJC">APMSJC</option>
+<option value="APMSSP">APMSSP</option>
+<option value="APMTCE">APMTCE</option>
+<option value="APMTJ">APMTJ</option>
+<option value="APMTJM">APMTJM</option>
+<option value="C COM SOC">C COM SOC</option>
+<option value="C MED">C MED</option>
+<option value="C MIL">C MIL</option>
+<option value="C MUS">C MUS</option>
+<option value="C ODONT">C ODONT</option>
+<option value="CAES">CAES</option>
+<option value="CAJ">CAJ</option>
+<option value="CAPS">CAPS</option>
+<option value="CAVPM">CAVPM</option>
+<option value="CBI-1">CBI-1</option>
+<option value="CBI-2">CBI-2</option>
+<option value="CBI-3">CBI-3</option>
+<option value="CBM">CBM</option>
+<option value="CCB">CCB</option>
+<option value="CAIF">CAIF</option>
+<option value="CIAP">CIAP</option>
+<option value="CIPM">CIPM</option>
+<option value="CMB">CMB</option>
+<option value="CMI">CMI</option>
+<option value="CMM">CMM</option>
+<option value="CMT GERAL">CMT GERAL</option>
+<option value="COORD OP PM">COORD OP PM</option>
+<option value="COPOM">COPOM</option>
+<option value="CORREG PM">CORREG PM</option>
+<option value="CPA/M-1">CPA/M-1</option>
+<option value="CPA/M-10">CPA/M-10</option>
+<option value="CPA/M-11">CPA/M-11</option>
+<option value="CPA/M-12">CPA/M-12</option>
+<option value="CPA/M-2">CPA/M-2</option>
+<option value="CPA/M-3">CPA/M-3</option>
+<option value="CPA/M-4">CPA/M-4</option>
+<option value="CPA/M-5">CPA/M-5</option>
+<option value="CPA/M-6">CPA/M-6</option>
+<option value="CPA/M-7">CPA/M-7</option>
+<option value="CPA/M-8">CPA/M-8</option>
+<option value="CPA/M-9">CPA/M-9</option>
+<option value="CPAMB">CPAMB</option>
+<option value="CPC">CPC</option>
+<option value="CPCHQ">CPCHQ</option>
+<option value="CPD">CPD</option>
+<option value="CPI-1">CPI-1</option>
+<option value="CPI-10">CPI-10</option>
+<option value="CPI-2">CPI-2</option>
+<option value="CPI-3">CPI-3</option>
+<option value="CPI-4">CPI-4</option>
+<option value="CPI-5">CPI-5</option>
+<option value="CPI-6">CPI-6</option>
+<option value="CPI-7">CPI-7</option>
+<option value="CPI-8">CPI-8</option>
+<option value="CPI-9">CPI-9</option>
+<option value="CPM">CPM</option>
+<option value="CPRV">CPRV</option>
+<option value="CPTRAN">CPTRAN</option>
+<option value="CRPM">CRPM</option>
+<option value="CSM/MOPB">CSM/MOPB</option>
+<option value="DEC">DEC</option>
+<option value="DF">DF</option>
+<option value="DL">DL</option>
+<option value="DP">DP</option>
+<option value="DPCDH">DPCDH</option>
+<option value="DS">DS</option>
+<option value="DAS/CG">DAS/CG</option>
+<option value="DTIC">DTIC</option>
+<option value="EEF">EEF</option>
+<option value="EM/E">EM/E</option>
+<option value="EM/PM">EM/PM</option>
+<option value="ESB">ESB</option>
+<option value="ESSD">ESSD</option>
+<option value="ESSGT">ESSGT</option>
+<option value="GAB CMT G">GAB CMT G</option>
+<option value="GBMAR">GBMAR</option>
+<option value="GOV">GOV</option>
+<option value="PMRG">PMRG</option>
+<option value="RPMON">RPMON</option>
+<option value="SSP">SSP</option>
+<option value="SUBCMT PM">SUBCMT PM</option>
+</datalist>
           </div>
 
           <div>
@@ -1068,6 +1464,7 @@
     let ultimosPPMSCarregados = false;
     let ultimosPPMSCarregando = false;
     let navegacaoAlteracoesPendentes = false;
+    let acaoConfirmadaNavegacao = null;
 
     window.addEventListener("load", function() {
       if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
@@ -1128,7 +1525,12 @@
         return;
       }
 
-      if (!confirmarNavegacaoComAlteracoesPendentes()) return;
+      if (navegacaoAlteracoesPendentes) {
+        abrirConfirmacaoNavegacao(function() {
+          navegarModuloPrincipal(pagina);
+        });
+        return;
+      }
 
       mostrarCarregamentoNavegacao(obterMensagemCarregamentoModulo(pagina));
 
@@ -1160,7 +1562,7 @@
 
     function obterMensagemCarregamentoModulo(pagina) {
       const mensagens = {
-        index: "Carregando Atendimento...",
+        atendimento: "Carregando Atendimento...",
         eventos_coletivos: "Carregando Grupos e Palestras...",
         incidente_critico: "Carregando Incidente Cr\u00edtico..."
       };
@@ -1168,10 +1570,29 @@
       return mensagens[pagina] || "Carregando...";
     }
 
-    function confirmarNavegacaoComAlteracoesPendentes() {
-      if (!navegacaoAlteracoesPendentes) return true;
+    function abrirConfirmacaoNavegacao(acaoConfirmada) {
+      acaoConfirmadaNavegacao = typeof acaoConfirmada === "function" ? acaoConfirmada : null;
 
-      return window.confirm("Há dados preenchidos que ainda não foram salvos. Deseja sair mesmo assim?");
+      const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+      if (overlay) overlay.classList.add("ativo");
+    }
+
+    function fecharConfirmacaoNavegacao() {
+      acaoConfirmadaNavegacao = null;
+
+      const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+      if (overlay) overlay.classList.remove("ativo");
+    }
+
+    function confirmarSaidaSemSalvar() {
+      const acao = acaoConfirmadaNavegacao;
+      acaoConfirmadaNavegacao = null;
+      navegacaoAlteracoesPendentes = false;
+
+      const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+      if (overlay) overlay.classList.remove("ativo");
+
+      if (typeof acao === "function") acao();
     }
 
     function marcarAlteracaoPendenteNavegacao() {
@@ -1299,7 +1720,7 @@
       }
 
       if (!valido) {
-        mostrarStatus(opmInvalida ? "Selecione uma OPM válida da lista." : "Preencha os campos obrigatorios destacados.", "error");
+        mostrarStatus(opmInvalida ? "Selecione uma OPM vÃ¡lida da lista." : "Preencha os campos obrigatorios destacados.", "error");
       }
 
       return valido;
@@ -1624,6 +2045,51 @@
       if (overlay) overlay.style.display = "flex";
     }
 
+    function encerrarSessaoSAIC() {
+      const overlay = document.getElementById("sessaoOverlay");
+      const texto = document.getElementById("sessaoTexto");
+
+      if (texto) {
+        texto.innerText = "Ao encerrar, o SAIC voltar\u00e1 para a tela de login neste navegador.";
+
+        if (typeof navegacaoAlteracoesPendentes !== "undefined" && navegacaoAlteracoesPendentes) {
+          texto.innerText = "Existem dados n\u00e3o salvos. Ao encerrar a sess\u00e3o, eles ser\u00e3o perdidos.";
+        }
+      }
+
+      if (overlay) {
+        overlay.classList.add("ativo");
+        return;
+      }
+
+      confirmarEncerrarSessaoSAIC();
+    }
+
+    function fecharModalEncerrarSessao() {
+      const overlay = document.getElementById("sessaoOverlay");
+
+      if (overlay) overlay.classList.remove("ativo");
+    }
+
+    function confirmarEncerrarSessaoSAIC() {
+      tokenGoogle = "";
+      usuarioLogado = null;
+      fecharModalEncerrarSessao();
+      mostrarCarregamentoNavegacao("Encerrando sess\u00e3o...");
+
+      setTimeout(function() {
+        if (webAppUrl) {
+          try {
+            window.top.location.href = webAppUrl;
+          } catch (erro) {
+            window.location.href = webAppUrl;
+          }
+        } else {
+          window.location.reload();
+        }
+      }, 120);
+    }
+
     function definirStatusSalvar(salvando, texto, tipo) {
       const el = document.getElementById("statusSalvarPPMS");
       const botao = document.getElementById("btnSalvarPPMS");
@@ -1863,3 +2329,4 @@
   </script>
 </body>
 </html>
+
