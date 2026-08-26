@@ -914,7 +914,8 @@ function doPost(e) {
     }
 
     return renderizarPagina(pagina, idToken, usuario, "", {
-      tipoEvento: tipoEventoInicial
+      tipoEvento: tipoEventoInicial,
+      estadoInicial: destino
     });
   } catch (erro) {
     return renderizarPagina(pagina, "", null, erro.message);
@@ -941,6 +942,7 @@ function renderizarPagina(nomeArquivo, tokenGoogle, usuario, mensagemLogin, para
   template.usuarioInicialJson = JSON.stringify(usuario || null);
   template.mensagemLoginInicial = mensagemLogin || "";
   template.tipoEventoInicial = parametros.tipoEvento || "";
+  template.estadoPaginaInicial = parametros.estadoInicial || "";
 
   return template
     .evaluate()
