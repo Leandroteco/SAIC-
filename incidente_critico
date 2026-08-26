@@ -101,6 +101,8 @@
       border-right: 3px solid #df0209;
       box-shadow: 12px 0 28px rgba(41, 48, 51, 0.10);
       color: #ffffff;
+      display: flex;
+      flex-direction: column;
       height: 100vh;
       overflow-y: auto;
       padding: 24px 18px;
@@ -119,14 +121,17 @@
 
     .brand strong {
       display: block;
-      font-size: 20px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0;
       line-height: 1.1;
     }
 
     .brand span {
-      color: rgba(255, 255, 255, 0.76);
+      color: rgba(255, 255, 255, 0.72);
       display: block;
       font-size: 12px;
+      font-weight: 700;
       margin-top: 4px;
     }
 
@@ -137,18 +142,33 @@
     }
 
     .side-nav button {
+      align-items: center;
       background: transparent;
+      border: 0;
       border-radius: var(--radius);
       color: rgba(255, 255, 255, 0.84);
+      display: flex;
+      font-size: 14px;
+      font-weight: 800;
+      gap: 10px;
+      justify-content: flex-start;
       min-height: 42px;
       padding: 10px 12px;
       text-align: left;
+      width: 100%;
     }
 
     .side-nav button.active,
     .side-nav button:hover {
       background: rgba(255, 255, 255, 0.14);
       color: #ffffff;
+    }
+
+    .nav-dot {
+      background: #ffffff;
+      border-radius: 999px;
+      height: 7px;
+      width: 7px;
     }
 
     .side-nav-separator {
@@ -161,6 +181,31 @@
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.18);
       color: #ffffff;
+    }
+
+    .session-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+      margin-top: auto;
+      padding-top: 14px;
+    }
+
+    .btn-encerrar-sessao {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius);
+      color: #ffffff;
+      cursor: pointer;
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      min-height: 36px;
+      padding: 8px 10px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .btn-encerrar-sessao:hover {
+      background: rgba(255, 255, 255, 0.16);
     }
 
     .content {
@@ -566,6 +611,66 @@
       padding: 18px 22px;
     }
 
+    .confirmacao-navegacao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.44);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 180;
+    }
+
+    .confirmacao-navegacao-overlay.ativo {
+      display: flex;
+    }
+
+    .confirmacao-navegacao-modal {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+      padding: 24px;
+      width: min(460px, 94vw);
+    }
+
+    .confirmacao-navegacao-modal span {
+      color: var(--red);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .confirmacao-navegacao-modal h2 {
+      color: var(--ink);
+      font-size: 24px;
+      margin: 0 0 10px;
+    }
+
+    .confirmacao-navegacao-modal p {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .confirmacao-navegacao-acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .confirmacao-navegacao-acoes button {
+      margin-top: 0;
+      width: auto;
+    }
+
     .navegacao-spinner {
       border-color: rgba(49, 95, 114, 0.18);
       border-top-color: var(--blue);
@@ -577,6 +682,64 @@
     .navegacao-card strong {
       font-size: 15px;
       font-weight: 900;
+    }
+
+    .sessao-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.44);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 20px;
+      position: fixed;
+      z-index: 190;
+    }
+
+    .sessao-overlay.ativo {
+      display: flex;
+    }
+
+    .sessao-modal {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+      max-width: 420px;
+      padding: 22px;
+      width: min(420px, 100%);
+    }
+
+    .sessao-modal span {
+      color: var(--red);
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .sessao-modal h2 {
+      color: var(--ink);
+      font-size: 20px;
+      margin: 8px 0 8px;
+    }
+
+    .sessao-modal p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .sessao-acoes {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+
+    .sessao-acoes button {
+      margin-top: 0;
+      width: auto;
     }
 
     .required-note {
@@ -640,6 +803,30 @@
     </div>
   </div>
 
+  <div id="confirmacaoNavegacaoOverlay" class="confirmacao-navegacao-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmacaoNavegacaoTitulo">
+    <div class="confirmacao-navegacao-modal">
+      <span>Dados n&atilde;o salvos</span>
+      <h2 id="confirmacaoNavegacaoTitulo">Sair sem salvar?</h2>
+      <p>Existem dados preenchidos que ainda n&atilde;o foram salvos. Deseja sair desta tela mesmo assim?</p>
+      <div class="confirmacao-navegacao-acoes">
+        <button type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">Continuar preenchendo</button>
+        <button type="button" class="btn-primary" onclick="confirmarSaidaSemSalvar()">Sair sem salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sessaoOverlay" class="sessao-overlay" role="dialog" aria-modal="true" aria-labelledby="sessaoTitulo">
+    <div class="sessao-modal">
+      <span>Sess&atilde;o</span>
+      <h2 id="sessaoTitulo">Encerrar sess&atilde;o?</h2>
+      <p id="sessaoTexto">Ao encerrar, o SAIC voltar&aacute; para a tela de login neste navegador.</p>
+      <div class="sessao-acoes">
+        <button type="button" class="btn-secondary" onclick="fecharModalEncerrarSessao()">Continuar no SAIC</button>
+        <button type="button" class="btn-primary" onclick="confirmarEncerrarSessaoSAIC()">Encerrar sess&atilde;o</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-shell">
     <aside class="sidebar" aria-label="Incidente Critico">
       <div class="brand">
@@ -648,11 +835,15 @@
       </div>
 
       <nav class="side-nav">
-        <button type="button" onclick="navegarModuloPrincipal('index')">Atendimento</button>
-        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')">Grupos e Palestras</button>
-        <button type="button" class="active" onclick="navegarModuloPrincipal('incidente_critico')">Incidente Cr&iacute;tico</button>
-        <button id="btnNavPPMS" type="button" onclick="navegarModuloPrincipal('ppms')" style="display:none;">PPMS</button>
+        <button type="button" onclick="navegarModuloPrincipal('atendimento')"><span class="nav-dot"></span>Atendimento</button>
+        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')"><span class="nav-dot"></span>Grupos e Palestras</button>
+        <button type="button" class="active" onclick="navegarModuloPrincipal('incidente_critico')"><span class="nav-dot"></span>Incidente Cr&iacute;tico</button>
+        <button id="btnNavPPMS" type="button" onclick="navegarModuloPrincipal('ppms')" style="display:none;"><span class="nav-dot"></span>PPMS</button>
       </nav>
+
+      <div class="session-footer">
+        <button type="button" class="btn-encerrar-sessao" onclick="encerrarSessaoSAIC()">Encerrar sess&atilde;o</button>
+      </div>
     </aside>
 
     <main class="content">
@@ -1037,7 +1228,6 @@
               <option value="suicidio">Suic&iacute;dio</option>
               <option value="tentativa de suicidio">Tentativa de Suic&iacute;dio</option>
               <option value="acidente de transito">Acidente de Tr&acirc;nsito</option>
-              <option value="morte em servico">Morte em Servi&ccedil;o</option>
             </select>
           </div>
         </div>
@@ -1099,6 +1289,7 @@
     let ultimosIncidentesCarregados = false;
     let ultimosIncidentesCarregando = false;
     let navegacaoAlteracoesPendentes = false;
+    let acaoConfirmadaNavegacao = null;
 
     window.addEventListener("load", function() {
       if (!tokenGoogle || !usuarioLogado || !usuarioLogado.autorizado) {
@@ -1157,7 +1348,12 @@
         return;
       }
 
-      if (!confirmarNavegacaoComAlteracoesPendentes()) return;
+      if (navegacaoAlteracoesPendentes) {
+        abrirConfirmacaoNavegacao(function() {
+          navegarModuloPrincipal(pagina);
+        });
+        return;
+      }
 
       mostrarCarregamentoNavegacao(obterMensagemCarregamentoModulo(pagina));
 
@@ -1189,7 +1385,7 @@
 
     function obterMensagemCarregamentoModulo(pagina) {
       const mensagens = {
-        index: "Carregando Atendimento...",
+        atendimento: "Carregando Atendimento...",
         eventos_coletivos: "Carregando Grupos e Palestras...",
         ppms: "Carregando PPMS..."
       };
@@ -1197,10 +1393,29 @@
       return mensagens[pagina] || "Carregando...";
     }
 
-    function confirmarNavegacaoComAlteracoesPendentes() {
-      if (!navegacaoAlteracoesPendentes) return true;
+    function abrirConfirmacaoNavegacao(acaoConfirmada) {
+      acaoConfirmadaNavegacao = typeof acaoConfirmada === "function" ? acaoConfirmada : null;
 
-      return window.confirm("Há dados preenchidos que ainda não foram salvos. Deseja sair mesmo assim?");
+      const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+      if (overlay) overlay.classList.add("ativo");
+    }
+
+    function fecharConfirmacaoNavegacao() {
+      acaoConfirmadaNavegacao = null;
+
+      const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+      if (overlay) overlay.classList.remove("ativo");
+    }
+
+    function confirmarSaidaSemSalvar() {
+      const acao = acaoConfirmadaNavegacao;
+      acaoConfirmadaNavegacao = null;
+      navegacaoAlteracoesPendentes = false;
+
+      const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+      if (overlay) overlay.classList.remove("ativo");
+
+      if (typeof acao === "function") acao();
     }
 
     function marcarAlteracaoPendenteNavegacao() {
@@ -1789,6 +2004,51 @@
 
       if (mensagem) mensagem.innerText = texto || "Carregando...";
       if (overlay) overlay.style.display = "flex";
+    }
+
+    function encerrarSessaoSAIC() {
+      const overlay = document.getElementById("sessaoOverlay");
+      const texto = document.getElementById("sessaoTexto");
+
+      if (texto) {
+        texto.innerText = "Ao encerrar, o SAIC voltar\u00e1 para a tela de login neste navegador.";
+
+        if (typeof navegacaoAlteracoesPendentes !== "undefined" && navegacaoAlteracoesPendentes) {
+          texto.innerText = "Existem dados n\u00e3o salvos. Ao encerrar a sess\u00e3o, eles ser\u00e3o perdidos.";
+        }
+      }
+
+      if (overlay) {
+        overlay.classList.add("ativo");
+        return;
+      }
+
+      confirmarEncerrarSessaoSAIC();
+    }
+
+    function fecharModalEncerrarSessao() {
+      const overlay = document.getElementById("sessaoOverlay");
+
+      if (overlay) overlay.classList.remove("ativo");
+    }
+
+    function confirmarEncerrarSessaoSAIC() {
+      tokenGoogle = "";
+      usuarioLogado = null;
+      fecharModalEncerrarSessao();
+      mostrarCarregamentoNavegacao("Encerrando sess\u00e3o...");
+
+      setTimeout(function() {
+        if (webAppUrl) {
+          try {
+            window.top.location.href = webAppUrl;
+          } catch (erro) {
+            window.location.href = webAppUrl;
+          }
+        } else {
+          window.location.reload();
+        }
+      }, 120);
     }
 
     function definirStatusSalvar(salvando, texto, tipo) {
