@@ -106,15 +106,18 @@
 
     .brand-title strong {
       display: block;
-      font-size: 20px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0;
       line-height: 1.1;
     }
 
     .brand-title span {
+      color: rgba(255, 255, 255, 0.72);
       display: block;
-      margin-top: 4px;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.76);
+      font-weight: 700;
+      margin-top: 4px;
     }
 
     .side-nav {
@@ -124,14 +127,16 @@
     }
 
     .side-nav a {
-      display: flex;
       align-items: center;
-      min-height: 40px;
-      padding: 10px 12px;
       border-radius: var(--radius);
       color: rgba(255, 255, 255, 0.84);
-      font-weight: 700;
+      display: flex;
       font-size: 14px;
+      font-weight: 800;
+      gap: 10px;
+      min-height: 42px;
+      padding: 10px 12px;
+      text-decoration: none;
     }
 
     .side-nav a:hover,
