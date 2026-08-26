@@ -1818,9 +1818,9 @@ body.mapa-tema-escuro .btn-map-theme:hover {
               </div>
             </div>
             <div class="decision-card">
-              <span>Residencia mais distante</span>
+              <span>Resid&ecirc;ncia mais distante de um NAPS</span>
               <strong id="metricDistancia">0 km</strong>
-              <small>Do NAPS mais proximo</small>
+              <small>considerando o NAPS mais pr&oacute;ximo</small>
             </div>
           </section>
 
