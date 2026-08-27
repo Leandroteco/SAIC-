@@ -62,7 +62,9 @@ const CABECALHOS_DADOS = [
   "responsavel",
   "dataCadastro",
   "postoGraduacao",
-  "napsAtendimento"
+  "napsAtendimento",
+  "formaApresentacao",
+  "modalidadeAtendimento"
 ];
 
 const CABECALHOS_VINCULOS = [
@@ -287,6 +289,8 @@ const ALIASES_CABECALHOS_PADRAO = {
   responsavel: ["responsável", "responsavel pelo atendimento", "responsável pelo atendimento", "responsavel_pelo_atendimento", "responsável_pelo_atendimento", "nome responsavel", "nome responsável", "nome do responsavel", "nome do responsável", "profissional"],
   datacadastro: ["data cadastro", "data de cadastro", "data do cadastro", "data_cadastro", "data atendimento", "data de atendimento"],
   postograduacao: ["posto graduacao", "posto graduação", "posto/graduação", "posto/ graduacao", "posto/ graduação", "posto"],
+  formaapresentacao: ["forma apresentacao", "forma apresentação", "forma de apresentacao", "forma de apresentação", "forma_apresentacao", "forma_de_apresentacao", "apresentacao", "apresentação"],
+  modalidadeatendimento: ["modalidade atendimento", "modalidade de atendimento", "modalidade_atendimento", "modalidade_do_atendimento", "online presencial", "online/presencial"],
   idvinculo: ["id vinculo", "id vínculo", "id do vinculo", "id do vínculo"],
   tipovinculo: ["tipo vinculo", "tipo vínculo", "tipo de vinculo", "tipo de vínculo"],
   parentesco: ["parentesco vinculo", "parentesco vínculo"],
@@ -308,6 +312,8 @@ function configurarEstruturaPlanilha() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const sheetDados = obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS);
+  garantirCabecalhoFinal(sheetDados, "formaApresentacao");
+  garantirCabecalhoFinal(sheetDados, "modalidadeAtendimento");
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
   const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
@@ -344,9 +350,12 @@ function configurarEstruturaPlanilha() {
 
 function configurarEstruturaSalvamentoAtendimento() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetDados = obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS);
+  garantirCabecalhoFinal(sheetDados, "formaApresentacao");
+  garantirCabecalhoFinal(sheetDados, "modalidadeAtendimento");
 
   return {
-    sheetDados: obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS),
+    sheetDados: sheetDados,
     sheetVinculos: obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS),
     sheetIndice: obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE)
   };
@@ -1416,6 +1425,8 @@ function salvarAtendimento(dados, idToken) {
     const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
     const tipoAtendimento = normalizarTipoAtendimento(dados.tipoAtendimento);
     const motivoAtendimento = normalizar(dados.motivo);
+    const formaApresentacao = normalizar(dados.formaApresentacao);
+    const modalidadeAtendimento = normalizar(dados.modalidadeAtendimento);
     const responsavelAtendimento = normalizar(usuario.nome || dados.responsavel);
     const napsAtendimento = normalizarSiglaCodigo(usuario.naps || dados.napsAtendimento || dados.naps);
 
@@ -1426,6 +1437,27 @@ function salvarAtendimento(dados, idToken) {
     if (!motivoAtendimento) {
       throw new Error("Motivo e obrigatorio.");
     }
+
+    if (!formaApresentacao) {
+      throw new Error("Forma de apresentacao e obrigatoria.");
+    }
+
+    if (!modalidadeAtendimento) {
+      throw new Error("Modalidade do atendimento e obrigatoria.");
+    }
+
+    [
+      ["CEP", formatarCEP(dados.cep)],
+      ["Rua/Avenida", normalizar(dados.rua)],
+      ["Numero", String(dados.numero || "").trim()],
+      ["Bairro", normalizar(dados.bairro)],
+      ["Cidade", normalizar(dados.cidade)],
+      ["UF", normalizarSiglaCodigo(dados.estado)]
+    ].forEach(function(item) {
+      if (!item[1]) {
+        throw new Error(item[0] + " e obrigatorio.");
+      }
+    });
 
     if (!responsavelAtendimento) {
       throw new Error("Nome do responsavel nao encontrado na aba usuarios_sistema.");
@@ -1462,7 +1494,9 @@ function salvarAtendimento(dados, idToken) {
       responsavelAtendimento,
       dataCadastro,
       dados.postoGraduacao || "",
-      napsAtendimento
+      napsAtendimento,
+      formaApresentacao,
+      modalidadeAtendimento
     ]], CABECALHOS_DADOS);
 
     const linhaDados = sheet.getLastRow();
@@ -3791,7 +3825,9 @@ function montarRegistro(linha) {
     responsavel: linha[25],
     dataCadastro: linha[26],
     postoGraduacao: linha[27] || "",
-    napsAtendimento: napsAtendimento
+    napsAtendimento: napsAtendimento,
+    formaApresentacao: linha[29] || "",
+    modalidadeAtendimento: linha[30] || ""
   };
 }
 
@@ -3884,7 +3920,9 @@ function montarResumoAtendimentoImpressao(linha) {
     tipoAtendimento: linha[2] || "",
     dataCadastro: formatarDataBrasil(linha[26]),
     horaCadastro: formatarHoraBrasil(linha[26]),
-    dataHoraCadastro: formatarDataHoraBrasil(linha[26])
+    dataHoraCadastro: formatarDataHoraBrasil(linha[26]),
+    formaApresentacao: linha[29] || "",
+    modalidadeAtendimento: linha[30] || ""
   };
 }
 
@@ -3922,6 +3960,8 @@ function montarFichaAtendimentoImpressao(linha, vinculos) {
     responsavel: linha[25] || "",
     postoGraduacao: linha[27] || "",
     napsAtendimento: linha[28] || "",
+    formaApresentacao: linha[29] || "",
+    modalidadeAtendimento: linha[30] || "",
     endereco: montarEnderecoRelatorio(linha),
     vinculos: vinculos || []
   };
@@ -4115,6 +4155,8 @@ function montarRegistroBusca(l) {
     complemento: l[23] || "",
     observacoes: l[24] || "",
     responsavel: l[25] || "",
+    formaApresentacao: l[29] || "",
+    modalidadeAtendimento: l[30] || "",
     vinculos: [],
     dataCadastro: formatarDataBrasil(l[26])
   };
@@ -5625,6 +5667,8 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     observacoes: linha[24] || "",
     responsavel: responsavelFormatado,
     responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavelFormatado, napsRegistro),
+    formaApresentacao: linha[29] || "",
+    modalidadeAtendimento: linha[30] || "",
     dataCadastro: formatarDataBrasil(linha[26]),
     dataCadastroIso: formatarDataParaInput(linha[26]),
     dataCadastroData: dataCadastroData,
