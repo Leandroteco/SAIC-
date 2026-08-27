@@ -418,6 +418,64 @@
       font-weight: 800;
     }
 
+    .grid-atendimento-complementar {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+      margin-top: 16px;
+    }
+
+    .modalidade-segmentada {
+      background: #f4f8fb;
+      border: 1px solid #d8e2ea;
+      border-radius: 8px;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr 1fr;
+      min-height: 48px;
+      padding: 6px;
+    }
+
+    .modalidade-botao {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #d8e2ea;
+      border-radius: 8px;
+      color: #46535b;
+      cursor: pointer;
+      display: flex;
+      font: inherit;
+      font-weight: 900;
+      gap: 8px;
+      justify-content: center;
+      margin: 0;
+      min-height: 42px;
+      padding: 8px 12px;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+      width: 100%;
+    }
+
+    .modalidade-botao::before {
+      border: 2px solid #8ba2ad;
+      border-radius: 999px;
+      content: "";
+      height: 12px;
+      width: 12px;
+    }
+
+    .modalidade-botao.ativo {
+      background: #315f72;
+      border-color: #315f72;
+      box-shadow: 0 10px 22px rgba(49, 95, 114, 0.18);
+      color: #ffffff;
+    }
+
+    .modalidade-botao.ativo::before {
+      background: #ffffff;
+      border-color: #ffffff;
+      box-shadow: inset 0 0 0 3px #315f72;
+    }
+
     .grid,
     .grid-2,
     .grid-posto-nome,
@@ -1152,6 +1210,7 @@
 
       .grid,
       .grid-2,
+      .grid-atendimento-complementar,
       .grid-posto-nome,
       .grid-endereco-1,
       .grid-endereco-2 {
@@ -1662,6 +1721,7 @@ body {
 
   .grid,
   .grid-2,
+  .grid-atendimento-complementar,
   .grid-posto-nome,
   .grid-endereco-1,
   .grid-endereco-2,
@@ -2586,7 +2646,7 @@ body {
 
       <section class="ajuda-item">
         <h3>Pessoa vinculada</h3>
-        <p>Use pessoa vinculada quando precisar relacionar outra pessoa ao atendimento principal, como acompanhante, familiar ou pessoa envolvida. Em alguns tipos de atendimento, o próprio sistema identifica a necessidade de pessoa vinculada e libera essa área para preenchimento.</p>
+        <p>Use pessoa vinculada quando precisar relacionar outra pessoa ao atendimento principal, como acompanhante, familiar ou pessoa envolvida. Após selecionar o tipo de atendimento, essa área ficará disponível para preenchimento quando necessário.</p>
       </section>
 
       <section class="ajuda-item">
@@ -3162,8 +3222,52 @@ body {
     </div>
   </div>
 
+  <!-- Endereco residencial: dados usados em consultas individuais e mapa de calor. -->
+  <h2>Endereço Residencial</h2>
 
-   <div class="grid-2">
+<div class="grid-endereco-1">
+  <div>
+    <label>CEP</label>
+    <input id="cep" placeholder="00000-000" oninput="mascaraCEP(this); limparErroCampo(this)" onblur="buscarCep()" required>
+  </div>
+
+  <div>
+    <label>Rua/Avenida</label>
+    <input id="rua" oninput="converterMaiusculas(this); limparErroCampo(this)" required>
+  </div>
+
+  <div>
+    <label>Número</label>
+    <input id="numero" inputmode="numeric" oninput="this.value = this.value.replace(/\D/g, ''); limparErroCampo(this)" required>
+  </div>
+</div>
+
+<div class="grid-endereco-2">
+  <div>
+    <label>Bairro</label>
+    <input id="bairro" oninput="converterMaiusculas(this); limparErroCampo(this)" required>
+  </div>
+
+  <div>
+    <label>Cidade</label>
+    <input id="cidade" oninput="converterMaiusculas(this); limparErroCampo(this)" required>
+  </div>
+
+  <div>
+    <label>UF</label>
+    <input id="estado" maxlength="2" placeholder="SP" oninput="converterMaiusculas(this); limparErroCampo(this)" required>
+  </div>
+
+  <div>
+    <label>Complemento</label>
+    <input id="complemento" oninput="converterMaiusculas(this)">
+  </div>
+</div>
+  
+  <!-- Atendimento: tipo, hipotese, forma de apresentacao, modalidade e observacoes. -->
+  <h2>Atendimento</h2>
+
+  <div class="grid-2">
     <div>
       <label>Tipo de Atendimento</label>
       <select id="tipoAtendimento" onchange="limparErroCampo(this); verificarTipoAtendimento(); atualizarCamposOutros()" required>
@@ -3232,50 +3336,37 @@ body {
     </div>
   </div>
 
-  <!-- Endereco residencial: dados usados em consultas individuais e mapa de calor. -->
-  <h2>Endereço Residencial</h2>
+  <div class="grid-atendimento-complementar">
+    <div>
+      <label>Forma de apresentação</label>
+      <select id="formaApresentacao" onchange="limparErroCampo(this)" required>
+        <option value="">Selecione</option>
+        <option>Voluntário</option>
+        <option>Comandante</option>
+        <option>Determinação judicial</option>
+        <option>Encaminhamento médico</option>
+      </select>
+    </div>
 
-<div class="grid-endereco-1">
-  <div>
-    <label>CEP</label>
-    <input id="cep" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCep()">
+    <div>
+      <label>Modalidade</label>
+      <input id="modalidadeAtendimento" type="hidden" required>
+      <div id="grupoModalidadeAtendimento" class="modalidade-segmentada" role="group" aria-label="Modalidade do atendimento">
+        <button type="button" class="modalidade-botao" data-modalidade="online" onclick="selecionarModalidadeAtendimento('online')">
+          Online
+        </button>
+        <button type="button" class="modalidade-botao" data-modalidade="presencial" onclick="selecionarModalidadeAtendimento('presencial')">
+          Presencial
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div>
-    <label>Rua/Avenida</label>
-    <input id="rua" oninput="converterMaiusculas(this)">
-  </div>
+  <label>Observações</label>
+  <textarea id="observacoes" placeholder="(Dados não sigilosos)" oninput="converterMaiusculas(this); limparErroCampo(this)"></textarea>
 
-  <div>
-    <label>Número</label>
-    <input id="numero" inputmode="numeric" oninput="this.value = this.value.replace(/\D/g, '')">
-  </div>
-</div>
-
-<div class="grid-endereco-2">
-  <div>
-    <label>Bairro</label>
-    <input id="bairro" oninput="converterMaiusculas(this)">
-  </div>
-
-  <div>
-    <label>Cidade</label>
-    <input id="cidade" oninput="converterMaiusculas(this)">
-  </div>
-
-  <div>
-    <label>UF</label>
-    <input id="estado" maxlength="2" placeholder="SP" oninput="converterMaiusculas(this)">
-  </div>
-
-  <div>
-    <label>Complemento</label>
-    <input id="complemento" oninput="converterMaiusculas(this)">
-  </div>
-</div>
-  
   <div id="areaVinculados">
-    <!-- Pessoas vinculadas: exibido para atendimentos de casal ou trisal. -->
+    <!-- Pessoas vinculadas: disponivel apos selecionar o tipo de atendimento. -->
     <h2>Pessoas Vinculadas ao Atendimento</h2>
 
     <div id="listaVinculados"></div>
@@ -3284,10 +3375,6 @@ body {
       + Adicionar Pessoa Vinculada
     </button>
   </div>
-
-  <!-- Observacoes livres do atendimento. Complementos de "Outros" ficam nos campos especificos acima. -->
-  <h2>Observações</h2>
-  <textarea id="observacoes" oninput="converterMaiusculas(this); limparErroCampo(this)"></textarea>
 
   <div class="titulo-responsavel-linha">
     <!-- Responsavel e ficha: responsavel logado, ultimos atendimentos e impressao apos salvar. -->
@@ -4038,14 +4125,14 @@ function escaparAttr(valor) {
     }
   }
 
-  // Mostra pessoas vinculadas somente nos atendimentos de casal.
+  // Mostra pessoas vinculadas apos selecionar qualquer tipo de atendimento.
   function verificarTipoAtendimento() {
-    const tipo = document.getElementById("tipoAtendimento").value;
+    const tipo = document.getElementById("tipoAtendimento").value.trim();
     const area = document.getElementById("areaVinculados");
 
     aplicarEstiloTipoAtendimento();
 
-    if (tipo === "Psicoterapia - Casal") {
+    if (tipo) {
       area.style.display = "block";
     } else {
       area.style.display = "none";
@@ -4408,6 +4495,29 @@ function atualizarCidHipotese() {
   badge.classList.toggle("vazio", !cid);
 }
 
+function definirModalidadeAtendimento(valor, registrarAlteracao) {
+  const campo = document.getElementById("modalidadeAtendimento");
+  const grupo = document.getElementById("grupoModalidadeAtendimento");
+  const modalidade = String(valor || "").toLowerCase().trim();
+
+  if (campo) campo.value = modalidade;
+
+  document.querySelectorAll(".modalidade-botao").forEach(function(botao) {
+    botao.classList.toggle("ativo", botao.dataset.modalidade === modalidade);
+  });
+
+  if (grupo) limparErroVisualCampo(grupo);
+
+  if (registrarAlteracao) {
+    marcarAlteracaoPendenteAtendimento();
+    definirAtendimentoImpressao("");
+  }
+}
+
+function selecionarModalidadeAtendimento(valor) {
+  definirModalidadeAtendimento(valor, true);
+}
+
 // Impede datas com ano invalido ou acima de 4 digitos.
 function validarAnoDataCampo(campo) {
   if (dataCampoValida(campo)) {
@@ -4523,13 +4633,22 @@ function salvar() {
     "estadoCivil",
     "situacaoStatus",
     "opmAtual",
-    "dataIngresso"
+    "dataIngresso",
+    "cep",
+    "rua",
+    "numero",
+    "bairro",
+    "cidade",
+    "estado"
   ].map(function(id) {
     return document.getElementById(id);
   });
   const campoTipoAtendimento = document.getElementById("tipoAtendimento");
   const campoMotivo = document.getElementById("motivo");
   const campoMotivoOutros = document.getElementById("motivoOutros");
+  const campoFormaApresentacao = document.getElementById("formaApresentacao");
+  const campoModalidadeAtendimento = document.getElementById("modalidadeAtendimento");
+  const grupoModalidadeAtendimento = document.getElementById("grupoModalidadeAtendimento");
   const campoEmail = document.getElementById("email");
   const campoObservacoes = document.getElementById("observacoes");
   const campoResponsavel = document.getElementById("responsavel");
@@ -4543,6 +4662,8 @@ function salvar() {
   limparErroCampo(campoTipoAtendimento);
   limparErroCampo(campoMotivo);
   limparErroCampo(campoMotivoOutros);
+  limparErroCampo(campoFormaApresentacao);
+  limparErroVisualCampo(grupoModalidadeAtendimento);
   limparErroCampo(campoEmail);
   limparErroCampo(campoObservacoes);
   limparErroCampo(campoResponsavel);
@@ -4580,6 +4701,19 @@ function salvar() {
   if (campoMotivo.value.trim() === "") {
     marcarCampoObrigatorio(campoMotivo);
     camposComErro.push(campoMotivo);
+  }
+
+  if (campoFormaApresentacao.value.trim() === "") {
+    marcarCampoObrigatorio(campoFormaApresentacao);
+    camposComErro.push(campoFormaApresentacao);
+  }
+
+  if (campoModalidadeAtendimento.value.trim() === "") {
+    marcarCampoObrigatorio(grupoModalidadeAtendimento);
+    const primeiroBotaoModalidade = grupoModalidadeAtendimento
+      ? grupoModalidadeAtendimento.querySelector("button")
+      : null;
+    camposComErro.push(primeiroBotaoModalidade || campoModalidadeAtendimento);
   }
 
   const campoOPM = document.getElementById("opmAtual");
@@ -4636,6 +4770,8 @@ function salvar() {
     naps: "teste_naps",
     tipoAtendimento: document.getElementById("tipoAtendimento").value,
     motivo: document.getElementById("motivo").value,
+    formaApresentacao: document.getElementById("formaApresentacao").value,
+    modalidadeAtendimento: document.getElementById("modalidadeAtendimento").value,
     re: document.getElementById("re").value,
     postoGraduacao: document.getElementById("postoGraduacao").value,
     nome: document.getElementById("nome").value,
@@ -4703,6 +4839,7 @@ function limparFormulario(opcoes) {
 
   document.getElementById("listaVinculados").innerHTML = "";
   document.getElementById("areaVinculados").style.display = "none";
+  definirModalidadeAtendimento("", false);
   atualizarCampoDataInatividade();
   atualizarObrigatoriedadeEmail();
   aplicarEstiloTipoAtendimento();
@@ -5036,6 +5173,8 @@ function preencherFormulario(r) {
   document.getElementById("situacaoStatus").value = "";
   document.getElementById("dataIngresso").value = "";
   document.getElementById("dataInatividade").value = "";
+  document.getElementById("formaApresentacao").value = "";
+  definirModalidadeAtendimento("", false);
   document.getElementById("cep").value = "";
   document.getElementById("rua").value = capitalizarTexto(r.rua);
   document.getElementById("numero").value = "";
