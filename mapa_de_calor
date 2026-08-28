@@ -1405,6 +1405,28 @@ body.mapa-tema-escuro .btn-map-theme:hover {
   border-top: 0;
 }
 
+.bairro-item.residencia-distante {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 14px;
+  padding: 14px;
+}
+
+.residencia-distante-label {
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.residencia-distante .bairro-total {
+  color: var(--primary-dark);
+}
+
 .bairro-posicao {
   align-items: center;
   background: #eef4f7;
@@ -2106,7 +2128,7 @@ body.mapa-tema-escuro .btn-map-theme:hover {
 
       mapaCalorAtual = mapa;
       atualizarMetricasMapa(resumo, mapa);
-      atualizarLeituraGerencial(mapa.bairros || mapa.calor || []);
+      atualizarLeituraGerencial(mapa.bairros || mapa.calor || [], mapa.residencias || []);
       renderizarCamadasMapa(mapa);
 
       const status = document.getElementById("statusMapa");
@@ -2127,19 +2149,52 @@ body.mapa-tema-escuro .btn-map-theme:hover {
       );
     }
 
-    function atualizarLeituraGerencial(bairros) {
+    function atualizarLeituraGerencial(bairros, residencias) {
       const alvo = document.getElementById("leituraGerencial");
+      const listaBairros = Array.isArray(bairros) ? bairros : [];
+      const residenciaMaisDistante = obterResidenciaMaisDistanteMapa(residencias);
 
-      if (!bairros || bairros.length === 0) {
+      if (listaBairros.length === 0 && !residenciaMaisDistante) {
         alvo.innerHTML = '<div class="ranking-meta">Nenhum bairro localizado no periodo.</div>';
         return;
       }
 
-      const cincoMaisAtendidos = bairros.slice().sort(function(a, b) {
+      const blocos = [];
+
+      if (residenciaMaisDistante) {
+        const cep = residenciaMaisDistante.cep || "não informado";
+        const bairro = residenciaMaisDistante.bairro || "não informado";
+        const cidadeEstado = [residenciaMaisDistante.cidade, residenciaMaisDistante.estado]
+          .filter(function(item) { return String(item || "").trim(); })
+          .join(" / ");
+        const detalhes = [];
+
+        if (cidadeEstado) detalhes.push("Cidade/UF: " + cidadeEstado);
+        detalhes.push("NAPS mais próximo: " + (residenciaMaisDistante.napsMaisProximo || "não informado"));
+
+        blocos.push(
+          '<div class="bairro-item residencia-distante">' +
+            '<div>' +
+              '<div class="residencia-distante-label">Residência mais distante dos NAPS</div>' +
+              '<div class="bairro-nome">CEP ' + escaparHtmlMapa(cep) + ' · Bairro: ' + escaparHtmlMapa(bairro) + '</div>' +
+              '<div class="bairro-detalhe">' + escaparHtmlMapa(detalhes.join(" · ")) + '</div>' +
+            '</div>' +
+            '<div class="bairro-total">' + formatarKmMapa(residenciaMaisDistante.distanciaNapsMaisProximoKm) +
+              '<small>até o NAPS mais próximo</small>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      const cincoMaisAtendidos = listaBairros.slice().sort(function(a, b) {
         return Number(b.atendimentos || 0) - Number(a.atendimentos || 0);
       }).slice(0, 5);
 
-      alvo.innerHTML = cincoMaisAtendidos.map(function(item, indice) {
+      if (cincoMaisAtendidos.length > 0) {
+        blocos.push('<div class="ranking-meta">Cinco bairros com mais atendimentos</div>');
+      }
+
+      blocos.push(cincoMaisAtendidos.map(function(item, indice) {
         const nomeBairro = item.bairro || item.regiao || "Bairro nao informado";
         const distancia = item.distanciaNapsMaisProximoKm !== undefined
           ? item.distanciaNapsMaisProximoKm
@@ -2157,7 +2212,26 @@ body.mapa-tema-escuro .btn-map-theme:hover {
             '<br>' + formatarInteiroMapa(item.pessoasDistintas) + '<small> pessoa(s)</small>' +
           '</div>' +
         '</div>';
-      }).join("");
+      }).join(""));
+
+      alvo.innerHTML = blocos.join("");
+    }
+
+    function obterResidenciaMaisDistanteMapa(residencias) {
+      const lista = Array.isArray(residencias) ? residencias : [];
+
+      return lista.filter(function(item) {
+        const distancia = Number(item && item.distanciaNapsMaisProximoKm);
+
+        return item &&
+          String(item.napsMaisProximo || "").trim() &&
+          !isNaN(distancia);
+      }).sort(function(a, b) {
+        const diferenca = Number(b.distanciaNapsMaisProximoKm || 0) - Number(a.distanciaNapsMaisProximoKm || 0);
+
+        if (diferenca !== 0) return diferenca;
+        return String(a.cep || "").localeCompare(String(b.cep || ""), "pt-BR");
+      })[0] || null;
     }
 
     function renderizarCamadasMapa(mapa) {
