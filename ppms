@@ -130,7 +130,49 @@
       padding-bottom: 22px;
     }
 
-    .brand strong {
+    .brand-home-link {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+      display: flex;
+      gap: 12px;
+      margin: 0;
+      min-height: 0;
+      padding: 0;
+      text-align: left;
+      width: 100%;
+    }
+
+    .brand-mark.preview-brand-logo {
+      align-items: center;
+      background: #ffffff;
+      border: 3px solid #df0209;
+      border-radius: 999px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      display: flex;
+      flex: 0 0 auto;
+      height: 66px;
+      justify-content: center;
+      overflow: hidden;
+      width: 66px;
+    }
+
+    .brand-mark.preview-brand-logo img {
+      display: block;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      width: 100%;
+    }
+
+    .brand-home-copy {
+      min-width: 0;
+    }
+
+    .brand-title {
+      color: #ffffff;
       display: block;
       font-size: 18px;
       font-weight: 900;
@@ -138,12 +180,22 @@
       line-height: 1.1;
     }
 
-    .brand span {
+    .brand-subtitle {
       color: rgba(255, 255, 255, 0.72);
       display: block;
       font-size: 12px;
       font-weight: 700;
       margin-top: 4px;
+    }
+
+    .brand-home-link:hover .brand-title {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .brand-home-link:focus-visible {
+      outline: 2px solid #ffffff;
+      outline-offset: 5px;
     }
 
     .side-nav {
@@ -381,12 +433,16 @@
     .grid-endereco-ppms {
       display: grid;
       gap: 16px;
-      grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(70px, 0.45fr) minmax(190px, 1.3fr) minmax(110px, 0.8fr);
+      grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(210px, 1.45fr) minmax(80px, 0.5fr) minmax(105px, 0.65fr);
     }
 
     .campo-rua-ppms,
-    .campo-complemento-ppms {
+    .campo-bairro-ppms {
       grid-column: span 2;
+    }
+
+    .campo-complemento-ppms {
+      grid-column: span 1;
     }
 
     .field-span-2 {
@@ -448,6 +504,25 @@
       gap: 12px;
     }
 
+    .campo-escala-ppms .check-field {
+      align-items: center;
+      display: flex;
+      min-height: 42px;
+      width: 100%;
+    }
+
+    .checkbox-pairs-ppms {
+      display: grid;
+      gap: 8px 24px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .checkbox-pair-ppms {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .check-field.sem-titulo > label {
       display: none;
     }
@@ -491,6 +566,21 @@
       color: var(--ink);
       min-height: 44px;
       padding: 11px 16px;
+    }
+
+    .btn-imprimir-ppms {
+      align-items: center;
+      background: var(--green);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(47, 125, 85, 0.16);
+      color: #ffffff;
+      display: none;
+      min-height: 44px;
+      padding: 11px 16px;
+    }
+
+    .btn-imprimir-ppms.ativo {
+      display: inline-flex;
     }
 
     .ultimos-ppms-wrapper {
@@ -814,6 +904,7 @@
       .grid-endereco-ppms,
       .field-span-2,
       .campo-rua-ppms,
+      .campo-bairro-ppms,
       .campo-complemento-ppms,
       .field-full {
         grid-column: 1 / -1;
@@ -836,6 +927,10 @@
         line-height: 1.5;
       }
 
+      .checkbox-pairs-ppms {
+        grid-template-columns: 1fr;
+      }
+
       input,
       select,
       textarea,
@@ -843,6 +938,128 @@
         font-size: 16px;
         min-height: 52px;
         padding: 13px 14px;
+      }
+
+      .brand-home-link {
+        min-height: 0;
+        padding: 0;
+      }
+    }
+
+    /* Padronizacao visual com Atendimento, Grupos e Palestras e Incidente Critico. */
+    body {
+      background: linear-gradient(180deg, #f4f8fb 0%, #eaf2f6 100%);
+    }
+
+    .content {
+      align-self: start;
+      background: #ffffff;
+      border: 1px solid #d8e2ea;
+      border-radius: 8px;
+      box-shadow: 0 20px 46px rgba(41, 48, 51, 0.10);
+      margin: 28px auto 40px;
+      max-width: 1140px;
+      padding: 24px;
+      width: calc(100% - 68px);
+    }
+
+    .page-banner {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0) 50%),
+        linear-gradient(180deg, #ffffff 0%, #f3f4f2 100%);
+      border-color: #d9dddc;
+      border-radius: 8px 8px 0 0;
+      box-shadow: none;
+      margin: -24px -24px 0;
+      min-height: 122px;
+      padding: 24px 28px;
+      width: calc(100% + 48px);
+    }
+
+    .page-banner::before,
+    .page-banner::after {
+      height: 10px;
+    }
+
+    .page-banner::before {
+      background: linear-gradient(90deg, #df0209 0%, #df0209 62%, rgba(223, 2, 9, 0.72) 82%, rgba(223, 2, 9, 0) 100%);
+      clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+    }
+
+    .page-banner::after {
+      background: linear-gradient(90deg, rgba(63, 65, 65, 0) 0%, rgba(63, 65, 65, 0.72) 20%, #3f4141 42%, #3f4141 100%);
+      clip-path: polygon(0 78%, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .banner-content > div:first-child {
+      border-left: 6px solid #df0209;
+      padding-left: 18px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .page-banner h1 {
+      font-size: 32px;
+    }
+
+    .page-banner span {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .status-line {
+      margin: 10px 0 0;
+      min-height: 8px;
+    }
+
+    .section {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      margin-top: 0;
+      padding: 0;
+    }
+
+    .section + .section {
+      margin-top: 0;
+    }
+
+    .section-title {
+      border-bottom: 1px solid #edf3f7;
+      color: #143f4c;
+      font-size: 18px;
+      margin: 0 0 18px;
+      padding: 22px 0 10px;
+    }
+
+    .section-title::before {
+      background: #df0209;
+      border-radius: 999px;
+      content: "";
+      display: block;
+      flex: 0 0 4px;
+      height: 24px;
+      width: 4px;
+    }
+
+    .section + .section > .section-title {
+      padding-top: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .content {
+        margin: 18px 14px 28px;
+        padding: 20px;
+        width: auto;
+      }
+
+      .page-banner {
+        margin: -20px -20px 0;
+        width: calc(100% + 40px);
       }
     }
   </style>
@@ -883,8 +1100,15 @@
   <div class="app-shell">
     <aside class="sidebar" aria-label="PPMS">
       <div class="brand">
-        <strong>PPMS</strong>
-        <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
+        <button type="button" class="brand-home-link" onclick="navegarModuloPrincipal('index')" aria-label="Voltar à página inicial" title="Voltar à página inicial">
+          <span class="brand-mark preview-brand-logo">
+            <img src="data:image/jpeg;base64,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" alt="SiSMen">
+          </span>
+          <span class="brand-home-copy">
+            <span class="brand-title">SiSMen</span>
+            <span class="brand-subtitle">Atendimento</span>
+          </span>
+        </button>
       </div>
 
       <nav class="side-nav">
@@ -932,8 +1156,8 @@
         </div>
       </section>
 
-      <section class="section" aria-label="Dados PPMS">
-        <h2 class="section-title">Dados PPMS</h2>
+      <section class="section" aria-label="Episodio motivador da abertura">
+        <h2 class="section-title">Epis&oacute;dio Motivador da Abertura</h2>
         <div class="grid-3">
           <div>
             <label for="meioUtilizado">Meio Utilizado</label>
@@ -965,78 +1189,70 @@
             <label for="fatorPrecipitante">Fator Precipitante</label>
             <select id="fatorPrecipitante" required>
               <option value="">Selecione</option>
-              <option>Conflito conjugal/relacionamento</option>
-              <option>Separa&ccedil;&atilde;o ou div&oacute;rcio</option>
-              <option>Luto (falecimento de familiar, amigo ou colega)</option>
-              <option>Problemas familiares</option>
-              <option>Conflito com filhos</option>
-              <option>Doen&ccedil;a pr&oacute;pria</option>
-              <option>Doen&ccedil;a de familiar</option>
-              <option>Diagn&oacute;stico recente de doen&ccedil;a</option>
-              <option>Dor cr&ocirc;nica</option>
-              <option>Problemas financeiros/endividamento</option>
-              <option>Perda de bens</option>
-              <option>Processo judicial</option>
-              <option>Processo administrativo</option>
-              <option>Investiga&ccedil;&atilde;o disciplinar</option>
-              <option>Problemas no trabalho</option>
-              <option>Sobrecarga de trabalho</option>
-              <option>Mudan&ccedil;a de fun&ccedil;&atilde;o</option>
-              <option>Transfer&ecirc;ncia de unidade</option>
-              <option>Afastamento do trabalho</option>
-              <option>Aposentadoria ou proximidade da aposentadoria</option>
-              <option>Exposi&ccedil;&atilde;o a ocorr&ecirc;ncia cr&iacute;tica/traum&aacute;tica</option>
-              <option>Acidente de servi&ccedil;o</option>
-              <option>Viol&ecirc;ncia sofrida</option>
-              <option>Uso ou abuso de &aacute;lcool</option>
-              <option>Uso de outras subst&acirc;ncias psicoativas</option>
-              <option>T&eacute;rmino de relacionamento afetivo</option>
-              <option>Isolamento social</option>
-              <option>Conflito interpessoal</option>
+              <option>Conjugal</option>
+              <option>Endividamento</option>
+              <option>Depress&atilde;o</option>
+              <option>Sa&uacute;de (transtornos mentais)</option>
+              <option>Sa&uacute;de (doen&ccedil;as pr&eacute;-existentes)</option>
+              <option>Luto</option>
+              <option>Compuls&atilde;o por &aacute;lcool/outras drogas</option>
+              <option>Profissional</option>
               <option>Ass&eacute;dio moral</option>
-              <option>Problemas acad&ecirc;micos/profissionais</option>
-              <option>Diagn&oacute;stico de transtorno mental</option>
-              <option>Interrup&ccedil;&atilde;o de tratamento medicamentoso</option>
-              <option>Sem fator precipitante identificado</option>
-              <option>Ocorr&ecirc;ncia com morte</option>
-              <option>Uso da for&ccedil;a com resultado grave</option>
-              <option>Amea&ccedil;as decorrentes da atividade policial</option>
-              <option>Escala de servi&ccedil;o excessiva</option>
-              <option>Mudan&ccedil;a de comando</option>
-              <option>Conflito na equipe</option>
-              <option>Puni&ccedil;&atilde;o disciplinar</option>
-              <option>Reprova&ccedil;&atilde;o em curso ou concurso interno</option>
-              <option>Restri&ccedil;&atilde;o ou recolhimento do armamento</option>
-              <option>Retorno ap&oacute;s afastamento m&eacute;dico</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="natureza">Natureza</label>
+            <select id="natureza" required>
+              <option value="">Selecione</option>
+              <option>Tentativa de suic&iacute;dio</option>
+              <option>Idea&ccedil;&atilde;o com planejamento</option>
+              <option>Idea&ccedil;&atilde;o sem planejamento</option>
+              <option>Comunica&ccedil;&atilde;o de inten&ccedil;&atilde;o</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="respostaInicial">Resposta inicial</label>
+            <select id="respostaInicial" required>
+              <option value="">Selecione</option>
+              <option>Aceitou atendimento psicol&oacute;gico</option>
+              <option>Recusou atendimento</option>
+              <option>Aceitou parcialmente</option>
             </select>
           </div>
 
           <div class="check-field compacto sem-titulo field-span-3">
             <label>Acompanhamentos e passagens</label>
-            <div class="checkbox-row">
-              <label class="checkbox-option" for="acompanhamentoCaps">
-                <input id="acompanhamentoCaps" type="checkbox">
-                Acompanhamento em psicoterapia pelo CAPS/NAPS
-              </label>
-              <label class="checkbox-option" for="passagemCaps">
-                <input id="passagemCaps" type="checkbox">
-                Passagem pelo CAPS/NAPS
-              </label>
-              <label class="checkbox-option" for="acompanhamentoPsiquiatria">
-                <input id="acompanhamentoPsiquiatria" type="checkbox">
-                Acompanhamento em psiquiatria
-              </label>
-              <label class="checkbox-option" for="passagemPsiquiatria">
-                <input id="passagemPsiquiatria" type="checkbox">
-                Passagem pela psiquiatria
-              </label>
+            <div class="checkbox-pairs-ppms">
+              <div class="checkbox-pair-ppms">
+                <label class="checkbox-option" for="acompanhamentoCaps">
+                  <input id="acompanhamentoCaps" type="checkbox">
+                  Acompanhamento em psicoterapia pelo CAPS/NAPS
+                </label>
+                <label class="checkbox-option" for="acompanhamentoPsiquiatria">
+                  <input id="acompanhamentoPsiquiatria" type="checkbox">
+                  Acompanhamento em psiquiatria
+                </label>
+              </div>
+
+              <div class="checkbox-pair-ppms">
+                <label class="checkbox-option" for="passagemCaps">
+                  <input id="passagemCaps" type="checkbox">
+                  Passagem pelo CAPS/NAPS
+                </label>
+                <label class="checkbox-option" for="passagemPsiquiatria">
+                  <input id="passagemPsiquiatria" type="checkbox">
+                  Passagem pela psiquiatria
+                </label>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="section" aria-label="Dados pessoais e funcionais">
-        <h2 class="section-title">Dados Pessoais e Funcionais</h2>
+      <section class="section" aria-label="Identificacao do paciente">
+        <h2 class="section-title">Identifica&ccedil;&atilde;o do Paciente</h2>
         <div class="grid-5">
           <div>
             <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
@@ -1056,6 +1272,16 @@
               <option>Ten Cel PM</option>
               <option>Cel PM</option>
             </select>
+          </div>
+
+          <div>
+            <label for="re">R.E.</label>
+            <input id="re" type="text" placeholder="000000-0" oninput="mascaraRE(this)" required>
+          </div>
+
+          <div class="field-span-2">
+            <label for="nome">Nome</label>
+            <input id="nome" type="text" oninput="converterMaiusculasSemAcento(this)" required>
           </div>
 
           <div>
@@ -1364,28 +1590,30 @@
             <input id="numeroFilhos" type="number" min="0" max="10" value="0" oninput="ajustarNumeroFilhos(this)">
           </div>
 
-          <div class="check-field compacto campo-escala-ppms">
+          <div class="campo-escala-ppms field-span-3">
             <label>Escala</label>
-            <div class="checkbox-row">
-              <label class="checkbox-option" for="servico">
-                <input id="servico" type="checkbox" value="servico" onchange="alternarServicoFolga(this)">
-                Servi&ccedil;o
-              </label>
-              <label class="checkbox-option" for="folga">
-                <input id="folga" type="checkbox" value="folga" onchange="alternarServicoFolga(this)">
-                Folga
-              </label>
-              <label class="checkbox-option" for="inTinere">
-                <input id="inTinere" type="checkbox" value="in tinere" onchange="alternarServicoFolga(this)">
-                In tinere
-              </label>
+            <div class="check-field compacto">
+              <div class="checkbox-row">
+                <label class="checkbox-option" for="servico">
+                  <input id="servico" type="checkbox" value="servico" onchange="alternarServicoFolga(this)">
+                  Servi&ccedil;o
+                </label>
+                <label class="checkbox-option" for="folga">
+                  <input id="folga" type="checkbox" value="folga" onchange="alternarServicoFolga(this)">
+                  Folga
+                </label>
+                <label class="checkbox-option" for="inTinere">
+                  <input id="inTinere" type="checkbox" value="in tinere" onchange="alternarServicoFolga(this)">
+                  In tinere
+                </label>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="section" aria-label="Endereco residencial, funcional e/ou relacionado a ocorrencia">
-        <h2 class="section-title">Endere&ccedil;o residencial, funcional e/ou relacionado &agrave; ocorr&ecirc;ncia</h2>
+      <section class="section" aria-label="Endereco">
+        <h2 class="section-title">Endere&ccedil;o</h2>
         <div class="grid-endereco-ppms">
           <div>
             <label for="cep">CEP</label>
@@ -1412,7 +1640,7 @@
             <input id="numero" type="text" required>
           </div>
 
-          <div>
+          <div class="campo-bairro-ppms">
             <label for="bairro">Bairro</label>
             <input id="bairro" type="text" required>
           </div>
@@ -1428,7 +1656,7 @@
           </div>
 
           <div class="campo-complemento-ppms">
-            <label for="complemento">Complemento / detalhes do local</label>
+            <label for="complemento">Complemento</label>
             <input id="complemento" type="text" placeholder="Digite complemento, referencia ou detalhe do local">
           </div>
         </div>
@@ -1444,6 +1672,7 @@
         <div class="actions">
           <button id="btnSalvarPPMS" type="button" class="btn-primary" onclick="salvarRegistroPPMS()">Salvar PPMS</button>
           <button type="button" class="btn-secondary" onclick="limparFormularioPPMS()">Limpar</button>
+          <button id="btnImprimirFichaPPMS" type="button" class="btn-imprimir-ppms" onclick="imprimirFichaPPMSSalva()">Imprimir ficha</button>
           <span id="statusSalvarPPMS" class="saving-inline"></span>
           <div class="ultimos-ppms-wrapper">
             <button id="btnUltimosPPMS" type="button" class="btn-ultimos-ppms" title="&Uacute;ltimos registros PPMS" aria-label="&Uacute;ltimos registros PPMS" onclick="alternarUltimosPPMS(event)">
@@ -1461,6 +1690,7 @@
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
     let usuarioLogado = <?!= usuarioInicialJson ?>;
     let mensagemLoginInicial = <?!= JSON.stringify(mensagemLoginInicial || "") ?>;
+    let ultimoPPMSSalvoId = "";
     let ultimosPPMSCarregados = false;
     let ultimosPPMSCarregando = false;
     let navegacaoAlteracoesPendentes = false;
@@ -1562,6 +1792,7 @@
 
     function obterMensagemCarregamentoModulo(pagina) {
       const mensagens = {
+        index: "Carregando p\u00e1gina inicial...",
         atendimento: "Carregando Atendimento...",
         eventos_coletivos: "Carregando Grupos e Palestras...",
         incidente_critico: "Carregando Incidente Cr\u00edtico..."
@@ -1610,10 +1841,12 @@
 
       google.script.run
         .withSuccessHandler(function(retorno) {
+          const idPpmsSalvo = retorno && retorno.idPpms ? retorno.idPpms : "";
           definirStatusSalvar(false, "Salvo.", "success");
           limparFormularioPPMS();
           limparAlteracaoPendenteNavegacao();
           ultimosPPMSCarregados = false;
+          mostrarBotaoFichaPPMS(idPpmsSalvo);
           mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Registro PPMS salvo com sucesso.", "success");
         })
         .withFailureHandler(function(erro) {
@@ -1623,11 +1856,36 @@
         .salvarPPMS(montarDadosPPMS(), tokenGoogle);
     }
 
+    function mostrarBotaoFichaPPMS(idPpms) {
+      const botao = document.getElementById("btnImprimirFichaPPMS");
+
+      ultimoPPMSSalvoId = String(idPpms || "").trim();
+      if (botao) botao.classList.toggle("ativo", !!ultimoPPMSSalvoId);
+    }
+
+    function ocultarBotaoFichaPPMS() {
+      const botao = document.getElementById("btnImprimirFichaPPMS");
+
+      ultimoPPMSSalvoId = "";
+      if (botao) botao.classList.remove("ativo");
+    }
+
+    function imprimirFichaPPMSSalva() {
+      if (!ultimoPPMSSalvoId) {
+        mostrarStatus("Salve o PPMS antes de imprimir a ficha.", "error");
+        return;
+      }
+
+      imprimirFichaPPMSPorId(ultimoPPMSSalvoId, true);
+    }
+
     function montarDadosPPMS() {
       return {
         dataFato: valorDataCampo("dataFato"),
         horaFato: valorCampo("horaFato"),
         postoGraduacao: valorCampo("postoGraduacao"),
+        re: valorCampo("re"),
+        nome: valorCampo("nome"),
         opmAtual: valorCampo("opmAtual"),
         situacaoStatus: valorCampo("situacaoStatus"),
         servico: obterServicoPPMS(),
@@ -1636,6 +1894,8 @@
         meioUtilizado: valorCampo("meioUtilizado"),
         meioUtilizadoOutros: valorCampo("meioUtilizadoOutros"),
         fatorPrecipitante: valorCampo("fatorPrecipitante"),
+        natureza: valorCampo("natureza"),
+        respostaInicial: valorCampo("respostaInicial"),
         tentativaAnterior: valorCampo("tentativaAnterior"),
         acompanhamentoCaps: document.getElementById("acompanhamentoCaps").checked,
         acompanhamentoPsiquiatria: document.getElementById("acompanhamentoPsiquiatria").checked,
@@ -1661,11 +1921,15 @@
         "dataFato",
         "horaFato",
         "postoGraduacao",
+        "re",
+        "nome",
         "opmAtual",
         "situacaoStatus",
         "dataIngresso",
         "meioUtilizado",
         "fatorPrecipitante",
+        "natureza",
+        "respostaInicial",
         "tentativaAnterior",
         "dataNascimento",
         "estadoCivil",
@@ -1783,21 +2047,260 @@
       }
 
       painel.innerHTML = '<div class="ultimos-titulo">&Uacute;ltimos PPMS</div>' + lista.map(function(item) {
-        const titulo = item.dataFato ? "Fato em " + item.dataFato : "Registro PPMS";
+        const idPpms = escaparHtml(item.idPpms || "");
+        const titulo = item.nome
+          ? formatarTextoFichaPPMS(item.nome, "nome")
+          : (item.dataFato ? "Fato em " + item.dataFato : "Registro PPMS");
         const detalhe = [
+          item.re ? "R.E. " + item.re : "",
+          item.dataFato ? "Fato em " + item.dataFato : "",
           item.opmAtual ? "OPM " + item.opmAtual : "",
-          item.meioUtilizado ? "Meio " + item.meioUtilizado : "",
           item.dataHoraCadastro ? "Salvo em " + item.dataHoraCadastro : ""
         ].filter(Boolean).join(" - ");
 
-        return '<div class="ultimo-ppms-item">' +
+        return '<button type="button" class="ultimo-ppms-item" data-id-ppms="' + idPpms + '">' +
           '<strong>' + escaparHtml(titulo) + '</strong>' +
           '<span>' + escaparHtml(detalhe) + '</span>' +
-        '</div>';
+        '</button>';
       }).join("");
+
+      painel.querySelectorAll(".ultimo-ppms-item").forEach(function(botao) {
+        botao.addEventListener("click", function() {
+          imprimirFichaPPMSPorId(this.getAttribute("data-id-ppms"), false);
+          fecharUltimosPPMS();
+        });
+      });
+    }
+
+    function imprimirFichaPPMSPorId(idPpms, ocultarBotaoDepois) {
+      const id = String(idPpms || "").trim();
+      const janela = window.open("", "_blank");
+
+      if (!id) {
+        mostrarStatus("Registro PPMS n\u00e3o informado para impress\u00e3o.", "error");
+        return;
+      }
+
+      if (!janela) {
+        mostrarStatus("O navegador bloqueou a janela de impress\u00e3o. Libere pop-ups para o sistema.", "error");
+        return;
+      }
+
+      janela.document.write("<p style='font-family:Arial;padding:24px;'>Carregando ficha PPMS...</p>");
+
+      google.script.run
+        .withSuccessHandler(function(retornoFicha) {
+          try {
+            const ficha = interpretarRetornoFichaPPMS(retornoFicha);
+
+            janela.document.open();
+            janela.document.write(montarHtmlFichaPPMS(ficha));
+            janela.document.close();
+
+            setTimeout(function() {
+              janela.focus();
+            }, 250);
+
+            if (ocultarBotaoDepois) ocultarBotaoFichaPPMS();
+          } catch (erro) {
+            const mensagem = "Os dados da ficha PPMS não puderam ser interpretados: " + obterMensagemErro(erro);
+
+            janela.document.open();
+            janela.document.write("<p style='font-family:Arial;padding:24px;color:#b42318;'>" + escaparHtml(mensagem) + "</p>");
+            janela.document.close();
+            mostrarStatus(mensagem, "error");
+          }
+        })
+        .withFailureHandler(function(erro) {
+          janela.document.open();
+          janela.document.write("<p style='font-family:Arial;padding:24px;color:#b42318;'>Erro ao carregar ficha: " + escaparHtml(obterMensagemErro(erro)) + "</p>");
+          janela.document.close();
+        })
+        .obterFichaPPMS(id, tokenGoogle);
+    }
+
+    function interpretarRetornoFichaPPMS(retornoFicha) {
+      let ficha = retornoFicha;
+
+      if (typeof retornoFicha === "string") {
+        ficha = JSON.parse(retornoFicha);
+      }
+
+      if (!ficha || typeof ficha !== "object" || Array.isArray(ficha)) {
+        throw new Error("retorno vazio ou inválido.");
+      }
+
+      if (!String(ficha.idPpms || "").trim()) {
+        throw new Error("identificador do registro ausente.");
+      }
+
+      const possuiDadosPrincipais = [
+        ficha.nome,
+        ficha.re,
+        ficha.dataNascimento,
+        ficha.opmAtual,
+        ficha.dataFato,
+        ficha.natureza,
+        ficha.respostaInicial,
+        ficha.responsavel
+      ].some(function(valor) {
+        return String(valor === null || valor === undefined ? "" : valor).trim() !== "";
+      });
+
+      if (!possuiDadosPrincipais) {
+        throw new Error("o registro foi localizado, mas seus campos principais vieram vazios.");
+      }
+
+      return ficha;
+    }
+
+    function montarHtmlFichaPPMS(ficha) {
+      const natureza = normalizarTextoFichaPPMS(ficha.natureza);
+      const respostaInicial = normalizarTextoFichaPPMS(ficha.respostaInicial);
+      const resumoEpisodio = montarResumoEpisodioFichaPPMS(ficha);
+
+      return "<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'><title>Ficha de Acompanhamento PPMS</title>" +
+        "<style>" +
+          "@page{size:A4;margin:10mm;}*{box-sizing:border-box;}body{background:#eef4f7;color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:10.5px;line-height:1.25;margin:0;}.barra-impressao{align-items:center;background:#26373d;color:#fff;display:flex;gap:12px;justify-content:center;padding:10px;position:sticky;top:0;z-index:5;}.barra-impressao button{background:#2f7d55;border:0;border-radius:6px;color:#fff;cursor:pointer;font-weight:800;padding:9px 14px;}.barra-impressao span{font-size:12px;font-weight:700;}.pagina-ppms{background:#fff;box-shadow:0 18px 38px rgba(31,48,56,.14);display:flex;flex-direction:column;margin:18px auto;max-width:190mm;min-height:277mm;padding:8mm;}.cabecalho-ppms{border:1px solid #111827;display:grid;grid-template-columns:25mm 1fr 34mm;margin-bottom:8px;min-height:23mm;}.cabecalho-ppms>div{align-items:center;display:flex;justify-content:center;padding:5px;text-align:center;}.cabecalho-ppms>div+div{border-left:1px solid #111827;}.marca-ppms{font-size:11px;font-weight:900;line-height:1.35;}.titulo-ppms strong{display:block;font-size:13px;}.titulo-ppms span{display:block;font-size:10px;font-weight:800;margin-top:4px;}.prontuario-ppms{display:block;width:100%;}.prontuario-ppms strong{display:block;font-size:9px;text-transform:uppercase;}.numero-prontuario{border-bottom:1px solid #111827;display:block;font-size:11px;font-weight:800;margin-top:7px;min-height:16px;outline:none;padding:1px 2px;}.secao-ficha{background:#e5e7eb;border:1px solid #111827;font-size:11px;font-weight:900;margin-top:8px;padding:4px;text-align:center;text-transform:uppercase;}table{border-collapse:collapse;table-layout:fixed;width:100%;}th,td{border:1px solid #111827;padding:4px 5px;text-align:left;vertical-align:middle;}th{background:#f3f4f6;font-size:9px;font-weight:900;width:17%;}td{font-size:10.5px;min-height:24px;}.tabela-identificacao col.rotulo{width:17%;}.tabela-identificacao col.valor{width:33%;}.tabela-episodio col.rotulo{width:17%;}.tabela-episodio col.valor{width:33%;}.valor-ficha{font-weight:700;min-height:14px;white-space:pre-wrap;word-break:break-word;}.editavel-ficha{min-height:18px;outline:none;white-space:pre-wrap;word-break:break-word;}.editavel-ficha.bloco{min-height:52px;padding:4px;}.editavel-ficha[data-placeholder]:empty::before,.numero-prontuario[data-placeholder]:empty::before{color:#6b7280;content:attr(data-placeholder);font-style:italic;font-weight:400;}.opcoes-ficha{align-items:flex-start;display:flex;flex-wrap:wrap;gap:6px 14px;padding:2px 0;}.opcao-ficha{align-items:flex-start;display:inline-flex;font-size:9.5px;font-weight:700;gap:4px;line-height:1.2;margin:0;}.opcao-ficha input{accent-color:#111827;height:13px;margin:0;min-height:0;padding:0;width:13px;}.resumo-ficha{border:1px solid #111827;border-top:0;padding:5px;}.resumo-ficha strong{display:block;font-size:9px;margin-bottom:4px;text-transform:uppercase;}.fase-ficha th:first-child{width:18%;}.rodape-ficha{border-top:1px solid #111827;font-size:8px;font-weight:800;margin-top:auto;padding-top:5px;text-align:center;}.instrucao-edicao{color:#4b5563;font-size:9px;margin:5px 0 0;text-align:right;}@media print{body{background:#fff;}.barra-impressao,.instrucao-edicao{display:none;}.pagina-ppms{box-shadow:none;margin:0;max-width:none;min-height:277mm;padding:0;}.editavel-ficha[data-placeholder]:empty::before,.numero-prontuario[data-placeholder]:empty::before{content:'';}}" +
+          "*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}.barra-impressao{background:#1B3A6B;}.barra-impressao button{background:#2E6B4F;}.cabecalho-ppms{border-color:#CCCCCC;}.cabecalho-ppms>div:nth-child(1),.cabecalho-ppms>div:nth-child(2){background:#1B3A6B;color:#FFFFFF;}.cabecalho-ppms>div:nth-child(3){background:#2E6B4F;color:#FFFFFF;}.cabecalho-ppms>div+div{border-left-color:#CCCCCC;}.marca-ppms span,.titulo-ppms span{color:#AACCEE;}.titulo-ppms strong,.prontuario-ppms strong{color:#FFFFFF;}.numero-prontuario{border-bottom-color:#FFFFFF;color:#FFFFFF;}.secao-ficha{background:#1B3A6B;border-color:#1B3A6B;color:#FFFFFF;}th,td{border-color:#CCCCCC;}th{background:#FFFFFF;color:#555555;}.tabela-identificacao th,.tabela-identificacao td{background:#F5F5F5;}.valor-ficha,.editavel-ficha{color:#111827;}.editavel-ficha[data-placeholder]:empty::before{color:#888888;}.opcao-ficha input{accent-color:#2E6B4F;}.resumo-ficha{background:#FAFAFA;border-color:#CCCCCC;padding:0;}.resumo-ficha strong{background:#F0F0F0;color:#555555;margin:0;padding:5px;}.resumo-ficha .editavel-ficha{background:#FAFAFA;padding:5px;}.rodape-ficha{border-top:1px dotted #AAAAAA;color:#888888;}" +
+        "</style></head><body>" +
+          "<div class='barra-impressao'><button type='button' onclick='sincronizarNumeroProntuario();window.print()'>Imprimir / salvar PDF</button><span>Complete os campos em branco antes de imprimir.</span></div>" +
+          "<main class='pagina-ppms'>" +
+            "<div class='cabecalho-ppms'>" +
+              "<div class='marca-ppms'>PMESP<br><span>CAPS</span></div>" +
+              "<div class='titulo-ppms'><div><strong>PPMS &mdash; Programa de Manifesta&ccedil;&otilde;es Suicidas</strong><span>FICHA DE ACOMPANHAMENTO &mdash; Abertura de Caso</span></div></div>" +
+              "<div><div class='prontuario-ppms'><strong>N&ordm; Pront.</strong><span id='numeroProntuario' class='numero-prontuario' contenteditable='true' data-placeholder='___________'></span></div></div>" +
+            "</div>" +
+            "<div class='secao-ficha'>Identifica&ccedil;&atilde;o do Paciente</div>" +
+            "<table class='tabela-identificacao'><colgroup><col class='rotulo'><col class='valor'><col class='rotulo'><col class='valor'></colgroup><tbody>" +
+              "<tr><th>Nome completo:</th><td>" + valorFichaPPMS(formatarTextoFichaPPMS(ficha.nome, "nome")) + "</td><th>Data nasc.:</th><td>" + valorFichaPPMS(ficha.dataNascimento) + "</td></tr>" +
+              "<tr><th>RE / Matr&iacute;cula:</th><td>" + valorFichaPPMS(formatarTextoFichaPPMS(ficha.re, "upper")) + "</td><th>Unidade:</th><td>" + valorFichaPPMS(formatarTextoFichaPPMS(ficha.opmAtual, "upper")) + "</td></tr>" +
+              "<tr><th>Telefone 1:</th><td>" + campoEditavelFichaPPMS("Informe o telefone principal") + "</td><th>Telefone 2:</th><td>" + campoEditavelFichaPPMS("Informe outro telefone") + "</td></tr>" +
+              "<tr><th>Contato de ref.:</th><td>" + campoEditavelFichaPPMS("Informe o contato de refer\u00eancia") + "</td><th>V&iacute;nculo:</th><td>" + campoEditavelFichaPPMS("Informe o v\u00ednculo") + "</td></tr>" +
+            "</tbody></table>" +
+            "<div class='secao-ficha'>Epis&oacute;dio Motivador da Abertura</div>" +
+            "<table class='tabela-episodio'><colgroup><col class='rotulo'><col class='valor'><col class='rotulo'><col class='valor'></colgroup><tbody>" +
+              "<tr><th>Data do epis&oacute;dio:</th><td>" + valorFichaPPMS([ficha.dataFato, ficha.horaFato].filter(Boolean).join(" - ")) + "</td><th>Como chegou ao PPMS:</th><td>" + campoEditavelFichaPPMS("Informe como chegou ao PPMS") + "</td></tr>" +
+              "<tr><th>Natureza:</th><td colspan='3'><div class='opcoes-ficha'>" +
+                opcaoFichaPPMS("Tentativa de suic\u00eddio", natureza === "tentativa de suicidio", "natureza") +
+                opcaoFichaPPMS("Idea\u00e7\u00e3o com planejamento", natureza === "ideacao com planejamento", "natureza") +
+                opcaoFichaPPMS("Idea\u00e7\u00e3o sem planejamento", natureza === "ideacao sem planejamento", "natureza") +
+                opcaoFichaPPMS("Comunica\u00e7\u00e3o de inten\u00e7\u00e3o", natureza === "comunicacao de intencao", "natureza") +
+              "</div></td></tr>" +
+              "<tr><th>Resposta inicial:</th><td colspan='3'><div class='opcoes-ficha'>" +
+                opcaoFichaPPMS("Aceitou atendimento psicol\u00f3gico", respostaInicial === "aceitou atendimento psicologico", "respostaInicial") +
+                opcaoFichaPPMS("Recusou atendimento", respostaInicial === "recusou atendimento", "respostaInicial") +
+                opcaoFichaPPMS("Aceitou parcialmente", respostaInicial === "aceitou parcialmente", "respostaInicial") +
+              "</div></td></tr>" +
+            "</tbody></table>" +
+            "<div class='resumo-ficha'><strong>Resumo do epis&oacute;dio / observa&ccedil;&otilde;es iniciais:</strong>" + campoEditavelFichaPPMS("Registre o resumo do epis\u00f3dio e as observa\u00e7\u00f5es iniciais", resumoEpisodio, "bloco") + "</div>" +
+            "<div class='secao-ficha'>Fase do Acompanhamento e Profissional Respons&aacute;vel</div>" +
+            "<table class='fase-ficha'><tbody>" +
+              "<tr><th>Profissional respons&aacute;vel:</th><td>" + valorFichaPPMS(formatarTextoFichaPPMS(ficha.responsavel, "nome")) + "</td><th>Data abertura:</th><td>" + valorFichaPPMS(ficha.dataAbertura) + "</td></tr>" +
+              "<tr><th>Fase inicial:</th><td colspan='3'><div class='opcoes-ficha'>" +
+                opcaoFichaPPMS("Fase 1 &mdash; Cr\u00edtica (0&ndash;30 dias)", false, "faseInicial") +
+                opcaoFichaPPMS("Fase 2 &mdash; Aten\u00e7\u00e3o (1&ndash;6 meses)", false, "faseInicial") +
+                opcaoFichaPPMS("Fase 3 &mdash; Manuten\u00e7\u00e3o (7&ndash;18 meses)", false, "faseInicial") +
+                opcaoFichaPPMS("Fase 4 &mdash; Encerramento", false, "faseInicial") +
+              "</div></td></tr>" +
+            "</tbody></table>" +
+            "<p class='instrucao-edicao'>Os campos em branco e as caixas de sele&ccedil;&atilde;o podem ser preenchidos nesta tela.</p>" +
+            "<div class='rodape-ficha'>P&aacute;gina 1 de 1 | PPMS/CAPS/PMESP | Prontu&aacute;rio N&ordm; <span id='numeroProntuarioRodape'>___________</span></div>" +
+          "</main>" +
+          "<scr" + "ipt>" +
+            "function selecionarOpcaoUnicaFichaPPMS(campo){if(!campo||!campo.checked)return;document.querySelectorAll('input[name=\"'+campo.name+'\"]').forEach(function(item){if(item!==campo)item.checked=false;});}" +
+            "function sincronizarNumeroProntuario(){var origem=document.getElementById('numeroProntuario');var destino=document.getElementById('numeroProntuarioRodape');if(destino)destino.textContent=origem&&origem.textContent.trim()?origem.textContent.trim():'___________';}" +
+            "document.addEventListener('input',function(evento){if(evento.target&&evento.target.id==='numeroProntuario')sincronizarNumeroProntuario();});" +
+            "window.addEventListener('beforeprint',sincronizarNumeroProntuario);" +
+          "</scr" + "ipt>" +
+        "</body></html>";
+    }
+
+    function montarResumoEpisodioFichaPPMS(ficha) {
+      const itens = [];
+      const acompanhamentos = [];
+      const passagens = [];
+
+      if (ficha.meioUtilizado) itens.push("Meio utilizado: " + formatarTextoFichaPPMS(ficha.meioUtilizado, "titulo"));
+      if (ficha.fatorPrecipitante) itens.push("Fator precipitante: " + formatarTextoFichaPPMS(ficha.fatorPrecipitante, "titulo"));
+      if (ficha.tentativaAnterior) itens.push("Tentativa anterior: " + formatarTextoFichaPPMS(ficha.tentativaAnterior, "titulo"));
+      if (ficha.servico) itens.push("Escala: " + formatarTextoFichaPPMS(ficha.servico, "titulo"));
+
+      if (valorSimFichaPPMS(ficha.acompanhamentoCaps)) acompanhamentos.push("CAPS/NAPS");
+      if (valorSimFichaPPMS(ficha.acompanhamentoPsiquiatria)) acompanhamentos.push("psiquiatria");
+      if (acompanhamentos.length) itens.push("Acompanhamento em: " + acompanhamentos.join(" e "));
+
+      if (valorSimFichaPPMS(ficha.passagemCaps)) passagens.push("CAPS/NAPS");
+      if (valorSimFichaPPMS(ficha.passagemPsiquiatria)) passagens.push("psiquiatria");
+      if (passagens.length) itens.push("Passagem anterior por: " + passagens.join(" e "));
+
+      return itens.join("\n");
+    }
+
+    function campoEditavelFichaPPMS(placeholder, valor, classe) {
+      const texto = String(valor || "").trim();
+      return "<div class='editavel-ficha " + escaparHtml(classe || "") + "' contenteditable='true' data-placeholder='" +
+        escaparHtml(placeholder || "") + "'>" + (texto ? escaparHtml(texto) : "") + "</div>";
+    }
+
+    function opcaoFichaPPMS(rotulo, marcado, grupo) {
+      return "<label class='opcao-ficha'><input type='checkbox' name='" + escaparHtml(grupo || "opcao") + "'" +
+        (marcado ? " checked" : "") + " onclick='selecionarOpcaoUnicaFichaPPMS(this)'><span>" + rotulo + "</span></label>";
+    }
+
+    function valorFichaPPMS(valor) {
+      const texto = String(valor === null || valor === undefined ? "" : valor).trim();
+      return "<div class='valor-ficha'>" + (texto ? escaparHtml(texto) : "&nbsp;") + "</div>";
+    }
+
+    function valorSimFichaPPMS(valor) {
+      const texto = normalizarTextoFichaPPMS(valor);
+      return valor === true || texto === "sim" || texto === "s" || texto === "true" || texto === "1";
+    }
+
+    function formatarTextoFichaPPMS(valor, modo) {
+      const texto = String(valor === null || valor === undefined ? "" : valor).trim();
+
+      if (!texto) return "";
+      if (modo === "upper") return texto.toUpperCase();
+      if (modo === "titulo") {
+        const chave = normalizarTextoFichaPPMS(texto);
+        const textosPadronizados = {
+          "nao": "N\u00e3o",
+          "sim": "Sim",
+          "servico": "Servi\u00e7o",
+          "auto-lesao": "Auto-les\u00e3o",
+          "precipitacao": "Precipita\u00e7\u00e3o",
+          "depressao": "Depress\u00e3o",
+          "saude (transtornos mentais)": "Sa\u00fade (transtornos mentais)",
+          "saude (doencas pre-existentes)": "Sa\u00fade (doen\u00e7as pr\u00e9-existentes)",
+          "compulsao por alcool/outras drogas": "Compuls\u00e3o por \u00e1lcool/outras drogas",
+          "assedio moral": "Ass\u00e9dio moral"
+        };
+
+        if (textosPadronizados[chave]) return textosPadronizados[chave];
+        if (chave.indexOf("outros:") === 0) {
+          return "Outros: " + texto.substring(texto.indexOf(":") + 1).trim();
+        }
+
+        return formatarResponsavelSistema(texto);
+      }
+      if (modo === "nome") return formatarResponsavelSistema(texto);
+
+      return texto;
+    }
+
+    function normalizarTextoFichaPPMS(valor) {
+      return String(valor || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
     }
 
     function limparFormularioPPMS() {
+      ocultarBotaoFichaPPMS();
+
       document.querySelectorAll("input, select, textarea").forEach(function(campo) {
         if (campo.id === "responsavel") return;
         if (campo.type === "checkbox") {
@@ -2159,6 +2662,28 @@
       return false;
     }
 
+    function mascaraRE(campo) {
+      let valor = campo.value.toUpperCase().replace(/[^0-9A]/g, "");
+      let numerosAntesHifen = "";
+      let digitoFinal = "";
+
+      for (let i = 0; i < valor.length; i++) {
+        const caractere = valor.charAt(i);
+
+        if (numerosAntesHifen.length < 6) {
+          if (/[0-9]/.test(caractere)) numerosAntesHifen += caractere;
+          continue;
+        }
+
+        if (!digitoFinal && /[0-9A]/.test(caractere)) {
+          digitoFinal = caractere;
+          break;
+        }
+      }
+
+      campo.value = digitoFinal ? numerosAntesHifen + "-" + digitoFinal : numerosAntesHifen;
+    }
+
     function mascaraCEP(campo) {
       let valor = campo.value.replace(/\D/g, "").substring(0, 8);
       valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
@@ -2329,4 +2854,3 @@
   </script>
 </body>
 </html>
-
