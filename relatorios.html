@@ -1938,8 +1938,7 @@ h3,
         <button class="tab-button" data-tab="perfil" onclick="trocarAba('perfil')">Perfil</button>
         <button class="tab-button" data-tab="localidade" onclick="trocarAba('localidade')">OPM / Localidade</button>
         <button class="tab-button" data-tab="vinculos" onclick="trocarAba('vinculos')">Vínculos</button>
-        <button class="tab-button" data-tab="detalhado" onclick="trocarAba('detalhado')">Relatório Individual</button>
-        <button class="tab-button" data-tab="outrosDados" onclick="trocarAba('outrosDados')">Outros Dados</button>
+        <button class="tab-button" data-tab="individual" onclick="trocarAba('individual')">Relatório Individual</button>
       </nav>
 
       <div id="conteudoAba"></div>
@@ -2042,8 +2041,7 @@ function formatarDataInput(data) {
         faixaEtaria: valorCampo("faixaEtaria"),
         tempoServico: valorCampo("tempoServico"),
         vinculos: valorCampo("vinculos"),
-        parentesco: valorCampo("parentesco"),
-        limiteDetalhes: 800
+        parentesco: valorCampo("parentesco")
       };
     }
 
@@ -2161,7 +2159,7 @@ function formatarDataInput(data) {
     function atualizarStatusFiltros() {
       const filtros = coletarFiltros();
       const ativos = Object.keys(filtros).filter(function(chave) {
-        return chave !== "limiteDetalhes" && filtros[chave];
+        return filtros[chave];
       }).length;
 
       document.getElementById("statusFiltros").innerText =
@@ -2186,13 +2184,7 @@ function formatarDataInput(data) {
       aplicarTitulosTabelasRelatorio();
 
       const total = relatorioAtual.totalRegistros || 0;
-      const exibidos = (relatorioAtual.registros || []).length;
-      const limite = relatorioAtual.limiteDetalhes || exibidos;
-
-      document.getElementById("rodapeResultado").innerText =
-        total > limite
-          ? `Exibindo ${exibidos} de ${total} registros filtrados.`
-          : `${total} registro(s) filtrado(s).`;
+      document.getElementById("rodapeResultado").innerText = `${total} registro(s) filtrado(s).`;
     }
 
     function aplicarTitulosTabelasRelatorio() {
@@ -2367,8 +2359,8 @@ function formatarDataInput(data) {
     function montarConteudoAba() {
       const d = relatorioAtual.distribuicoes || {};
 
-      if (abaAtual === "outrosDados") {
-        return montarOutrosDadosIndividuais();
+      if (abaAtual === "individual") {
+        return montarConsultaIndividual();
       }
 
       if ((relatorioAtual.totalRegistros || 0) === 0) {
@@ -2421,22 +2413,28 @@ function formatarDataInput(data) {
      if (abaAtual === "vinculos") {
   return `
     <div class="tab-grid">
-      ${montarGraficoBarras("Parentesco/vínculo", d.porParentesco, { limite: 12 })}
-      ${montarTabelaVinculos()}
+      <section class="chart-box wide">
+        <h3>Resumo quantitativo de vínculos</h3>
+        <div class="individual-grid">
+          ${montarCardIndividual("Total de vínculos", (relatorioAtual.resumo || {}).totalVinculos)}
+          ${montarCardIndividual("Atendimentos com vínculos", (relatorioAtual.resumo || {}).atendimentosComVinculos)}
+        </div>
+      </section>
+      ${montarGraficoBarras("Quantidade por parentesco/vínculo", d.porParentesco, { limite: 50, classe: "wide" })}
     </div>
   `;
 }
 
-      return montarTabelaDetalhada();
+      return `<div class="empty-state">Selecione uma aba do relatório.</div>`;
     }
 
-    function montarOutrosDadosIndividuais() {
+    function montarConsultaIndividual() {
       const dados = relatorioAtual.dadosIndividuais || {};
 
       if (dados.status === "sem_busca" || !dados.status) {
         return `
           <section class="table-box wide">
-            <h3>Outros Dados</h3>
+            <h3>Relatório Individual</h3>
             <div class="empty-state">Use a Busca Individual para visualizar nome, R.E., CPF, unidade, NAPS, atendimentos, faltas, altas e distância aproximada do NAPS que foi atendido.</div>
           </section>
         `;
@@ -2445,7 +2443,7 @@ function formatarDataInput(data) {
       if (dados.status === "sem_resultado") {
         return `
           <section class="table-box wide">
-            <h3>Outros Dados</h3>
+            <h3>Relatório Individual</h3>
             <div class="empty-state">${escaparHtml(dados.mensagem || "Nenhum cadastro localizado.")}</div>
           </section>
         `;
@@ -2461,15 +2459,15 @@ function formatarDataInput(data) {
 
       return `
         <section class="table-box wide">
-          <h3>Outros Dados</h3>
-          ${montarRelatorioIndividualOutrosDados(dados, distancia)}
+          <h3>Relatório Individual</h3>
+          ${montarResumoConsultaIndividual(dados, distancia)}
           ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
           ${montarObservacoesIndividuais(dados)}
         </section>
       `;
     }
 
-    function montarRelatorioIndividualOutrosDados(dados, distancia) {
+    function montarResumoConsultaIndividual(dados, distancia) {
       const nome = destacarRelatorio(formatarTexto(dados.nome));
       const re = destacarRelatorio(dados.re || "-");
       const cpf = destacarRelatorio(dados.cpf || "-");
@@ -2481,10 +2479,9 @@ function formatarDataInput(data) {
       const arquivamentos = destacarQuantidadeRelatorio(dados.totalArquivamentos, "arquivamento", "arquivamentos");
       const distanciaTexto = dados.distanciaDisponivel ? distancia : (distancia || "não disponível");
       const distanciaDestacada = destacarRelatorio(distanciaTexto);
-      const motivoReferencia = destacarRelatorio(formatarTexto(dados.motivoReferencia));
       const responsavelReferencia = destacarRelatorio(formatarTexto(dados.responsavelReferencia));
       const ultimoAtendimento = dados.dataReferencia
-        ? `<p>O último atendimento considerado no filtro foi em ${destacarRelatorio(dados.dataReferencia)}, com hipótese de diagnóstico ${motivoReferencia}, e responsável ${responsavelReferencia}.</p>`
+        ? `<p>O último atendimento considerado no filtro foi em ${destacarRelatorio(dados.dataReferencia)}, e o responsável foi ${responsavelReferencia}.</p>`
         : "";
       const textoDistancia = dados.distanciaDisponivel
         ? `Sua residência fica aproximadamente ${distanciaDestacada} do ${naps}.`
@@ -2581,7 +2578,7 @@ function formatarDataInput(data) {
       if (candidatos.length === 0) {
         return `
           <section class="table-box wide">
-            <h3>Outros Dados</h3>
+            <h3>Relatório Individual</h3>
             <div class="empty-state">${escaparHtml(dados.mensagem || "Refine a Busca Individual.")}</div>
           </section>
         `;
@@ -2604,7 +2601,7 @@ function formatarDataInput(data) {
 
       return `
         <section class="table-box wide">
-          <h3>Outros Dados</h3>
+          <h3>Relatório Individual</h3>
           <div class="empty-state" style="margin-bottom:12px;">${escaparHtml(dados.mensagem || "Mais de uma pessoa localizada.")}</div>
           <div class="table-scroll">
             <table>
@@ -2706,55 +2703,7 @@ function formatarDataInput(data) {
     }
 
     function montarTabelaTipoMotivo() {
-      const registros = (relatorioAtual.registros || []).filter(function(registro) {
-        return !ehFaltaRelatorio(registro);
-      });
-      const grupos = {};
-
-      registros.forEach(function(registro) {
-        const tipoChave = normalizarTexto(registro.tipoAtendimento || "nao informado") || "nao informado";
-        const motivoChave = normalizarTexto(registro.motivo || "nao informado") || "nao informado";
-
-        if (!grupos[tipoChave]) {
-          grupos[tipoChave] = {
-            tipo: registro.tipoAtendimento || "nao informado",
-            total: 0,
-            motivos: {}
-          };
-        }
-
-        grupos[tipoChave].total++;
-
-        if (!grupos[tipoChave].motivos[motivoChave]) {
-          grupos[tipoChave].motivos[motivoChave] = {
-            motivo: registro.motivo || "nao informado",
-            total: 0
-          };
-        }
-
-        grupos[tipoChave].motivos[motivoChave].total++;
-      });
-
-      const itens = Object.keys(grupos).map(function(chave) {
-        const grupo = grupos[chave];
-        const motivoPrincipal = Object.keys(grupo.motivos)
-          .map(function(motivoChave) {
-            return grupo.motivos[motivoChave];
-          })
-          .sort(function(a, b) {
-            return b.total - a.total || normalizarTexto(a.motivo).localeCompare(normalizarTexto(b.motivo));
-          })[0] || { motivo: "nao informado", total: 0 };
-
-        return {
-          tipo: grupo.tipo,
-          motivo: motivoPrincipal.motivo,
-          quantidade: motivoPrincipal.total,
-          totalTipo: grupo.total,
-          percentual: grupo.total > 0 ? (motivoPrincipal.total / grupo.total) * 100 : 0
-        };
-      }).sort(function(a, b) {
-        return b.totalTipo - a.totalTipo || normalizarTexto(a.tipo).localeCompare(normalizarTexto(b.tipo));
-      }).slice(0, 30);
+      const itens = (((relatorioAtual.distribuicoes || {}).porTipoMotivoPrincipal) || []).slice(0, 30);
 
       if (itens.length === 0) {
         return `
@@ -2798,140 +2747,11 @@ function formatarDataInput(data) {
       `;
     }
 
-    function ehFaltaRelatorio(registro) {
-      const tipo = normalizarTexto(registro && registro.tipoAtendimento);
-
-      return tipo === "falta" ||
-        tipo === "registrar falta" ||
-        tipo === "registrar como falta" ||
-        tipo.indexOf("no show") >= 0;
-    }
-
     function formatarPercentualRelatorio(valor) {
       return Number(valor || 0).toLocaleString("pt-BR", {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1
       }) + "%";
-    }
-
-    function montarTabelaVinculos() {
-      const registros = (relatorioAtual.registros || []).filter(function(registro) {
-        return registro.quantidadeVinculos > 0;
-      });
-
-      if (registros.length === 0) {
-        return `
-          <section class="table-box wide">
-            <h3>Registros com vínculos</h3>
-            <div class="empty-state">Sem vínculos nos registros filtrados.</div>
-          </section>
-        `;
-      }
-
-      const linhas = registros.map(function(registro) {
-        const vinculos = (registro.vinculos || []).map(function(vinculo) {
-          return [
-            escaparHtml(formatarTexto(vinculo.nome)),
-            escaparHtml(formatarTexto(vinculo.tipoVinculo)),
-            escaparHtml(formatarTexto(vinculo.parentesco))
-          ].filter(Boolean).join(" - ");
-        }).join("<br>");
-
-        return `
-          <tr>
-            <td>${escaparHtml(registro.dataCadastro || "-")}</td>
-            <td>${escaparHtml(formatarTexto(registro.nome))}</td>
-            <td>${escaparHtml(formatarTexto(registro.tipoAtendimento))}</td>
-            <td>${registro.quantidadeVinculos}</td>
-            <td>${vinculos || "-"}</td>
-          </tr>
-        `;
-      }).join("");
-
-      return `
-        <section class="table-box wide">
-          <h3>Registros com vínculos</h3>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Atendido</th>
-                  <th>Tipo</th>
-                  <th>Total</th>
-                  <th>Vínculos</th>
-                </tr>
-              </thead>
-              <tbody>${linhas}</tbody>
-            </table>
-          </div>
-        </section>
-      `;
-    }
-
-    function montarTabelaDetalhada() {
-      const registros = relatorioAtual.registros || [];
-      const limiteRelatorioIndividual = 100;
-
-      if (registros.length === 0) {
-        return `<div class="empty-state">Nenhum registro para detalhar.</div>`;
-      }
-
-      const registrosExibidos = registros.slice(0, limiteRelatorioIndividual);
-      const avisoLimite = registros.length > limiteRelatorioIndividual
-        ? `<div class="empty-state" style="margin-bottom:12px;">Foram encontrados ${registros.length.toLocaleString("pt-BR")} registros individuais no período. Exibindo os ${limiteRelatorioIndividual.toLocaleString("pt-BR")} primeiros registros carregados. Reduza o período ou use filtros para detalhar melhor.</div>`
-        : "";
-
-      const linhas = registrosExibidos.map(function(registro) {
-        return `
-          <tr>
-            <td>${escaparHtml(registro.dataCadastro || "-")}</td>
-            <td>${escaparHtml(formatarTexto(registro.nome))}</td>
-            <td>${escaparHtml(registro.re || "-")}</td>
-            <td>${escaparHtml(registro.cpf || "-")}</td>
-            <td>${escaparHtml(formatarTexto(registro.tipoAtendimento))}</td>
-            <td>${escaparHtml(formatarTexto(registro.motivo))}</td>
-            <td>${escaparHtml(formatarTexto(registro.naps, "naps"))}</td>
-            <td>${escaparHtml(formatarTexto(registro.opmAtual, "opmAtual"))}</td>
-            <td>${escaparHtml(formatarTexto(registro.situacaoStatus))}</td>
-            <td>${escaparHtml(formatarTexto(registro.responsavel))}</td>
-            <td>${escaparHtml(formatarTexto(registro.cidade))}/${escaparHtml(formatarTexto(registro.estado, "estado"))}</td>
-            <td>${escaparHtml(registro.cep || "-")}</td>
-            <td>${escaparHtml(formatarTexto(registro.endereco))}</td>
-            <td>${registro.quantidadeVinculos > 0 ? `<span class="pill">${registro.quantidadeVinculos}</span>` : "-"}</td>
-          </tr>
-        `;
-      }).join("");
-
-      return `
-        <section class="table-box wide">
-          <h3>Tabela detalhada</h3>
-          ${avisoLimite}
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Nome</th>
-                  <th>R.E.</th>
-                  <th>CPF</th>
-                  <th>Tipo</th>
-                  <th>Hipótese de diagnóstico</th>
-                  <th>NAPS</th>
-                  <th>OPM</th>
-                  <th>Status</th>
-                  <th>Responsável</th>
-                  <th>Cidade/UF</th>
-                  <th>CEP</th>
-                  <th>Endereço</th>
-                  <th>Vínculos</th>
-                </tr>
-              </thead>
-              <tbody>${linhas}</tbody>
-            </table>
-          </div>
-        </section>
-      `;
     }
 
     function ordenarItens(dados, config) {
@@ -3018,69 +2838,6 @@ function formatarDataInput(data) {
     "nao informado"
   ];
 }
-
-    function exportarCSV() {
-      if (!relatorioAtual || !relatorioAtual.registros || relatorioAtual.registros.length === 0) {
-        return;
-      }
-
-      const cabecalho = [
-        "Data",
-        "Nome",
-        "R.E.",
-        "CPF",
-        "Tipo",
-        "Hipótese de diagnóstico",
-        "NAPS",
-        "OPM",
-        "Status",
-        "Responsável",
-        "Cidade",
-        "UF",
-        "CEP",
-        "Endereço",
-        "Vínculos"
-      ];
-
-      const linhas = relatorioAtual.registros.map(function(registro) {
-        return [
-          registro.dataCadastro,
-          formatarTexto(registro.nome),
-          registro.re,
-          registro.cpf,
-          formatarTexto(registro.tipoAtendimento),
-          formatarTexto(registro.motivo),
-          formatarTexto(registro.naps, "naps"),
-          formatarTexto(registro.opmAtual, "opmAtual"),
-          formatarTexto(registro.situacaoStatus),
-          formatarTexto(registro.responsavel),
-          formatarTexto(registro.cidade),
-          formatarTexto(registro.estado, "estado"),
-          registro.cep,
-          formatarTexto(registro.endereco),
-          registro.quantidadeVinculos
-        ];
-      });
-
-      const csv = [cabecalho].concat(linhas).map(function(linha) {
-        return linha.map(formatarCampoCSV).join(";");
-      }).join("\n");
-
-      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.download = "relatorio_saic_" + new Date().toISOString().slice(0, 10) + ".csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
-
-    function formatarCampoCSV(valor) {
-      return `"${String(valor || "").replace(/"/g, '""')}"`;
-    }
 
     function formatarMes(valor) {
       if (!valor || valor === "sem data") return "Sem data";
@@ -3299,5 +3056,3 @@ function formatarDataInput(data) {
 </body>
 </div>
 </html>
-
-
