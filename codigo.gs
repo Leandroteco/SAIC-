@@ -242,7 +242,12 @@ const CABECALHOS_PPMS = [
   "Responsavel_pelo_Atendimento",
   "Data_Cadastro",
   "napsAtendimento",
-  "tipo_local_endereco"
+  "tipo_local_endereco",
+  "re",
+  "nome",
+  "natureza",
+  "respostaInicial",
+  "id_ppms"
 ];
 
 const CABECALHOS_AVALIACOES_SISTEMA = [
@@ -265,6 +270,7 @@ const ALIASES_CABECALHOS_PADRAO = {
   emailcadastro: ["email cadastrado", "email_cadastrado", "emailcadastrado", "email cadastro", "email do cadastro", "email responsavel", "email do responsavel"],
   tipoatendimento: ["tipo atendimento", "tipo de atendimento", "tipo_atendimento", "tipo_de_atendimento", "atendimento"],
   motivo: ["motivo do atendimento"],
+  datafato: ["data fato", "data do fato", "data_do_fato", "data do episodio", "data do episódio", "data episodio", "data episódio"],
   re: ["r.e.", "r e", "registro estatistico", "registro"],
   nome: ["nome completo", "nome do cadastrado", "nome da pessoa"],
   cpf: ["cpf do cadastrado"],
@@ -287,6 +293,7 @@ const ALIASES_CABECALHOS_PADRAO = {
   complemento: ["complemento endereco", "complemento do endereco", "complemento endereço", "complemento do endereço"],
   observacoes: ["observações", "observacao", "observação", "obs"],
   responsavel: ["responsável", "responsavel pelo atendimento", "responsável pelo atendimento", "responsavel_pelo_atendimento", "responsável_pelo_atendimento", "nome responsavel", "nome responsável", "nome do responsavel", "nome do responsável", "profissional"],
+  responsavelpeloatendimento: ["responsavel pelo registro", "responsável pelo registro", "responsavel_pelo_registro", "responsável_pelo_registro", "profissional responsavel", "profissional responsável", "responsavel profissional", "responsável profissional"],
   datacadastro: ["data cadastro", "data de cadastro", "data do cadastro", "data_cadastro", "data atendimento", "data de atendimento"],
   postograduacao: ["posto graduacao", "posto graduação", "posto/graduação", "posto/ graduacao", "posto/ graduação", "posto"],
   formaapresentacao: ["forma apresentacao", "forma apresentação", "forma de apresentacao", "forma de apresentação", "forma_apresentacao", "forma_de_apresentacao", "apresentacao", "apresentação"],
@@ -329,6 +336,11 @@ function configurarEstruturaPlanilha() {
   const sheetEquipeIncidente = obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE);
   const sheetPpms = obterOuCriarAba(ss, ABA_PPMS, CABECALHOS_PPMS);
   garantirCabecalhoFinal(sheetPpms, "tipo_local_endereco");
+  garantirCabecalhoFinal(sheetPpms, "re");
+  garantirCabecalhoFinal(sheetPpms, "nome");
+  garantirCabecalhoFinal(sheetPpms, "natureza");
+  garantirCabecalhoFinal(sheetPpms, "respostaInicial");
+  garantirCabecalhoFinal(sheetPpms, "id_ppms");
   const sheetAvaliacoesSistema = obterOuCriarAba(ss, ABA_AVALIACOES_SISTEMA, CABECALHOS_AVALIACOES_SISTEMA);
 
   return {
@@ -376,6 +388,11 @@ function configurarEstruturaPPMS() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetPpms = obterOuCriarAba(ss, ABA_PPMS, CABECALHOS_PPMS);
   garantirCabecalhoFinal(sheetPpms, "tipo_local_endereco");
+  garantirCabecalhoFinal(sheetPpms, "re");
+  garantirCabecalhoFinal(sheetPpms, "nome");
+  garantirCabecalhoFinal(sheetPpms, "natureza");
+  garantirCabecalhoFinal(sheetPpms, "respostaInicial");
+  garantirCabecalhoFinal(sheetPpms, "id_ppms");
 
   return {
     sheetPpms: sheetPpms
@@ -1990,6 +2007,7 @@ function salvarPPMS(dados, idToken) {
 
     const ppms = prepararDadosPPMS(dados, usuario);
     const dataCadastro = new Date();
+    const idPpms = Utilities.getUuid();
 
     gravarLinhasPadraoAbaixo(sheet, [[
       ppms.dataFato,
@@ -2022,11 +2040,17 @@ function salvarPPMS(dados, idToken) {
       ppms.responsavel,
       dataCadastro,
       ppms.napsAtendimento,
-      ppms.tipoLocalEndereco
+      ppms.tipoLocalEndereco,
+      ppms.re,
+      ppms.nome,
+      ppms.natureza,
+      ppms.respostaInicial,
+      idPpms
     ]], CABECALHOS_PPMS);
 
     return {
       sucesso: true,
+      idPpms: idPpms,
       mensagem: "Registro PPMS salvo com sucesso."
     };
   } finally {
@@ -2050,6 +2074,8 @@ function prepararDadosPPMS(dados, usuario) {
     horaFato: normalizarHoraPPMS(dados.horaFato),
     diaSemana: obterDiaSemanaBrasil(dataFato),
     postoGraduacao: String(dados.postoGraduacao || "").trim(),
+    re: normalizarSiglaCodigo(dados.re),
+    nome: normalizar(dados.nome),
     opmAtual: String(dados.opmAtual || "").trim().toUpperCase(),
     situacaoStatus: situacaoStatus,
     servico: normalizarServicoIncidente(dados.servico),
@@ -2057,6 +2083,8 @@ function prepararDadosPPMS(dados, usuario) {
     dataInatividade: dataInatividade,
     meioUtilizado: meioUtilizado,
     fatorPrecipitante: normalizar(dados.fatorPrecipitante),
+    natureza: normalizar(dados.natureza),
+    respostaInicial: normalizar(dados.respostaInicial),
     tentativaAnterior: normalizarSimNaoPPMS(dados.tentativaAnterior),
     acompanhamentoCaps: valorCheckboxPPMS(dados.acompanhamentoCaps),
     acompanhamentoPsiquiatria: valorCheckboxPPMS(dados.acompanhamentoPsiquiatria),
@@ -2090,11 +2118,15 @@ function prepararDadosPPMS(dados, usuario) {
     ["Data do Fato", ppms.dataFato],
     ["Hora do Fato", ppms.horaFato],
     ["Posto/Graduacao", ppms.postoGraduacao],
+    ["R.E.", ppms.re],
+    ["Nome", ppms.nome],
     ["OPM Atual", ppms.opmAtual],
     ["Situacao/Status", ppms.situacaoStatus],
     ["Data de Ingresso", ppms.dataIngresso],
     ["Meio Utilizado", ppms.meioUtilizado],
     ["Fator Precipitante", ppms.fatorPrecipitante],
+    ["Natureza", ppms.natureza],
+    ["Resposta inicial", ppms.respostaInicial],
     ["Tentativa anterior", ppms.tentativaAnterior],
     ["Data de Nascimento", ppms.dataNascimento],
     ["Estado Civil", ppms.estadoCivil],
@@ -2221,6 +2253,8 @@ function obterUltimosPPMSResponsavel(idToken) {
 
   const dados = lerDadosPadrao(sheet, CABECALHOS_PPMS, 1);
   const responsavelUsuario = normalizar(usuario.nome || usuario.email || "");
+  const indices = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_PPMS);
+  const colunaIdPpms = indices[35] + 1;
   const ultimos = [];
 
   for (let i = dados.length - 1; i >= 1; i--) {
@@ -2229,19 +2263,213 @@ function obterUltimosPPMSResponsavel(idToken) {
 
     if (responsavelLinha !== responsavelUsuario) continue;
 
-    ultimos.push({
-      dataFato: formatarDataBrasil(linha[0]),
-      opmAtual: linha[4] || "",
-      meioUtilizado: linha[9] || "",
-      dataCadastro: formatarDataBrasil(linha[28]),
-      horaCadastro: formatarHoraBrasil(linha[28]),
-      dataHoraCadastro: formatarDataHoraBrasil(linha[28])
-    });
+    if (!String(linha[35] || "").trim()) {
+      linha[35] = Utilities.getUuid();
+      sheet.getRange(i + 1, colunaIdPpms).setValue(linha[35]);
+    }
+
+    ultimos.push(montarResumoPPMSImpressao(linha));
 
     if (ultimos.length >= 2) break;
   }
 
   return ultimos;
+}
+
+function obterFichaPPMS(idPpms, idToken) {
+  const usuario = validarPPMSPorToken(idToken);
+  const estrutura = configurarEstruturaPPMS();
+  const sheet = estrutura.sheetPpms;
+  const id = String(idPpms || "").trim();
+
+  if (!id) throw new Error("Registro PPMS nao informado para impressao.");
+  if (!sheet || sheet.getLastRow() < 2) throw new Error("A aba ppms nao possui registros.");
+
+  const indices = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_PPMS);
+  const colunaIdPpms = indices[35] + 1;
+  const celula = sheet
+    .getRange(2, colunaIdPpms, sheet.getLastRow() - 1, 1)
+    .createTextFinder(id)
+    .matchEntireCell(true)
+    .findNext();
+
+  if (!celula) throw new Error("Registro PPMS nao localizado para impressao.");
+
+  const registro = lerRegistroPPMSFichaPorCabecalhos(sheet, celula.getRow());
+  const responsavelLinha = normalizar(registro.responsavel);
+  const responsavelUsuario = normalizar(usuario.nome || usuario.email || "");
+
+  if (usuario.perfil !== PERFIL_ADMINISTRADOR && responsavelLinha !== responsavelUsuario) {
+    throw new Error("Este registro PPMS pertence a outro usuario.");
+  }
+
+  return JSON.stringify(montarFichaPPMSImpressao(registro));
+}
+
+function lerRegistroPPMSFichaPorCabecalhos(sheet, numeroLinha) {
+  const quantidadeColunas = Math.max(sheet.getLastColumn(), CABECALHOS_PPMS.length);
+  const cabecalhos = sheet.getRange(1, 1, 1, quantidadeColunas).getValues()[0];
+  const valores = sheet.getRange(numeroLinha, 1, 1, quantidadeColunas).getValues()[0];
+
+  function campo(cabecalhoPadrao, aliases, fallback) {
+    return obterValorLinhaPPMSPorCabecalhos(
+      cabecalhos,
+      valores,
+      cabecalhoPadrao,
+      aliases || [],
+      fallback
+    );
+  }
+
+  return {
+    dataFato: campo("data_fato", ["data do fato", "data do episodio", "data do episódio"], 0),
+    horaFato: campo("hora_fato", ["hora do fato", "hora do episodio", "hora do episódio"], 1),
+    diaSemana: campo("dia_semana", ["dia da semana"], 2),
+    postoGraduacao: campo("postograduacao", ["posto/graduacao", "posto/graduação", "posto e graduacao", "posto e graduação"], 3),
+    opmAtual: campo("OPM_Atual", ["opm", "unidade", "unidade atual"], 4),
+    situacaoStatus: campo("Situacao_Status", ["situacao", "situação", "status", "situacao/status", "situação/status"], 5),
+    servico: campo("Servico", ["serviço", "escala"], 6),
+    dataIngresso: campo("Data_Ingresso", ["data de ingresso"], 7),
+    dataInatividade: campo("Data_Inatividade", ["data de inatividade"], 8),
+    meioUtilizado: campo("Meio_utilizado", ["meio utilizado"], 9),
+    fatorPrecipitante: campo("Fator_Precipitante", ["fator precipitante"], 10),
+    tentativaAnterior: campo("Tentativa_anterior", ["tentativa anterior"], 11),
+    acompanhamentoCaps: campo("Acompanhamento_CAPS", ["acompanhamento caps", "acompanhamento naps", "acompanhamento caps/naps"], 12),
+    acompanhamentoPsiquiatria: campo("Acompanhamento_psiquiatria", ["acompanhamento psiquiatria", "acompanhamento em psiquiatria"], 13),
+    passagemCaps: campo("Passagem_CAPS", ["passagem caps", "passagem naps", "passagem caps/naps"], 14),
+    passagemPsiquiatria: campo("Passagem_psiquiatria", ["passagem psiquiatria", "passagem pela psiquiatria"], 15),
+    numeroFilhos: campo("Numero_Filhos", ["numero de filhos", "número de filhos"], 16),
+    dataNascimento: campo("Data_Nascimento", ["data de nascimento", "data nasc", "data nasc."], 17),
+    estadoCivil: campo("Estado_Civil", ["estado civil"], 18),
+    sexo: campo("Sexo", ["genero", "gênero"], 19),
+    cep: campo("CEP", ["cep endereco", "cep endereço"], 20),
+    rua: campo("Rua", ["logradouro", "endereco", "endereço"], 21),
+    bairro: campo("Bairro", [], 22),
+    cidade: campo("Cidade", ["municipio", "município"], 23),
+    estado: campo("Estado", ["uf"], 24),
+    numero: campo("Numero", ["numero endereco", "número endereço", "nº"], 25),
+    complemento: campo("Complemento", [], 26),
+    responsavel: campo("Responsavel_pelo_Atendimento", [
+      "responsavel pelo atendimento",
+      "responsável pelo atendimento",
+      "responsavel pelo registro",
+      "responsável pelo registro",
+      "profissional responsavel",
+      "profissional responsável",
+      "responsavel profissional",
+      "responsável profissional"
+    ], 27),
+    dataCadastro: campo("Data_Cadastro", ["data de cadastro", "data abertura", "data de abertura"], 28),
+    napsAtendimento: campo("napsAtendimento", ["naps atendimento", "naps", "caps/naps"], 29),
+    tipoLocalEndereco: campo("tipo_local_endereco", ["tipo do local", "tipo local"], 30),
+    re: campo("re", ["r.e.", "re/matricula", "re/matrícula", "matricula", "matrícula"], 31),
+    nome: campo("nome", ["nome completo", "nome do paciente", "paciente"], 32),
+    natureza: campo("natureza", ["natureza do episodio", "natureza do episódio"], 33),
+    respostaInicial: campo("respostaInicial", ["resposta inicial"], 34),
+    idPpms: campo("id_ppms", ["id ppms", "id do ppms"], 35)
+  };
+}
+
+function obterValorLinhaPPMSPorCabecalhos(cabecalhos, valores, cabecalhoPadrao, aliases, fallback) {
+  const chavesAceitas = {};
+  const candidatos = [cabecalhoPadrao]
+    .concat(obterAliasesCabecalhoPadrao(cabecalhoPadrao))
+    .concat(aliases || []);
+  let cabecalhoEncontrado = false;
+
+  candidatos.forEach(function(candidato) {
+    const chave = normalizarCabecalho(candidato);
+    if (chave) chavesAceitas[chave] = true;
+  });
+
+  for (let i = 0; i < cabecalhos.length; i++) {
+    const chaveCabecalho = normalizarCabecalho(cabecalhos[i]);
+
+    if (!chavesAceitas[chaveCabecalho]) continue;
+
+    cabecalhoEncontrado = true;
+
+    if (valores[i] !== "" && valores[i] !== null && valores[i] !== undefined) {
+      return valores[i];
+    }
+  }
+
+  if (cabecalhoEncontrado) return "";
+
+  return fallback >= 0 && fallback < valores.length ? valores[fallback] : "";
+}
+
+function montarResumoPPMSImpressao(linha) {
+  return {
+    idPpms: linha[35] || "",
+    dataFato: formatarDataBrasil(linha[0]),
+    nome: linha[32] || "",
+    re: linha[31] || "",
+    opmAtual: linha[4] || "",
+    meioUtilizado: linha[9] || "",
+    dataCadastro: formatarDataBrasil(linha[28]),
+    horaCadastro: formatarHoraBrasil(linha[28]),
+    dataHoraCadastro: formatarDataHoraBrasil(linha[28])
+  };
+}
+
+function montarFichaPPMSImpressao(registro) {
+  return {
+    idPpms: registro.idPpms || "",
+    dataFato: formatarDataBrasil(registro.dataFato),
+    horaFato: formatarHoraPPMSImpressao(registro.horaFato),
+    diaSemana: registro.diaSemana || "",
+    postoGraduacao: registro.postoGraduacao || "",
+    opmAtual: registro.opmAtual || "",
+    situacaoStatus: registro.situacaoStatus || "",
+    servico: registro.servico || "",
+    dataIngresso: formatarDataBrasil(registro.dataIngresso),
+    dataInatividade: formatarDataBrasil(registro.dataInatividade),
+    meioUtilizado: registro.meioUtilizado || "",
+    fatorPrecipitante: registro.fatorPrecipitante || "",
+    tentativaAnterior: registro.tentativaAnterior || "",
+    acompanhamentoCaps: registro.acompanhamentoCaps || "",
+    acompanhamentoPsiquiatria: registro.acompanhamentoPsiquiatria || "",
+    passagemCaps: registro.passagemCaps || "",
+    passagemPsiquiatria: registro.passagemPsiquiatria || "",
+    numeroFilhos: registro.numeroFilhos || 0,
+    dataNascimento: formatarDataBrasil(registro.dataNascimento),
+    estadoCivil: registro.estadoCivil || "",
+    sexo: registro.sexo || "",
+    cep: registro.cep || "",
+    rua: registro.rua || "",
+    bairro: registro.bairro || "",
+    cidade: registro.cidade || "",
+    estado: registro.estado || "",
+    numero: registro.numero || "",
+    complemento: registro.complemento || "",
+    responsavel: registro.responsavel || "",
+    dataAbertura: formatarDataBrasil(registro.dataCadastro),
+    dataHoraCadastro: formatarDataHoraBrasil(registro.dataCadastro),
+    napsAtendimento: registro.napsAtendimento || "",
+    tipoLocalEndereco: registro.tipoLocalEndereco || "",
+    re: registro.re || "",
+    nome: registro.nome || "",
+    natureza: registro.natureza || "",
+    respostaInicial: registro.respostaInicial || ""
+  };
+}
+
+function formatarHoraPPMSImpressao(valor) {
+  if (valor === null || valor === undefined || valor === "") return "";
+
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor.getTime())) {
+    return formatarHoraBrasil(valor);
+  }
+
+  const texto = String(valor).trim();
+  const partes = texto.match(/^(\d{1,2}):(\d{2})/);
+
+  if (partes) {
+    return String(Number(partes[1])).padStart(2, "0") + ":" + partes[2];
+  }
+
+  return texto;
 }
 
 // EVENTOS COLETIVOS: WORKSHOP, PROSEN E PALESTRAS
@@ -4022,7 +4250,12 @@ function buscarCadastro(termo, idToken) {
     sheetIndice,
     buscaTexto,
     buscaNumeros,
-    pesquisouCPFCompleto
+    {
+      pesquisouCPFCompleto: pesquisouCPFCompleto,
+      pesquisouRECompleto: pesquisouRECompleto,
+      pesquisouREBase: pesquisouREBase,
+      reCompleto: pesquisouRECompleto ? normalizarSiglaCodigo(termoOriginal) : ""
+    }
   );
   const resultados = montarResultadosBuscaPorIndice(sheet, candidatos, {
     preservarVariantesRE: pesquisouREBase
@@ -4060,27 +4293,86 @@ function buscarCadastro(termo, idToken) {
   };
 }
 
-function localizarCadastrosNoIndice(sheetIndice, buscaTexto, buscaNumeros, pesquisouCPFCompleto) {
+function localizarCadastrosNoIndice(sheetIndice, buscaTexto, buscaNumeros, opcoes) {
   const lastRow = sheetIndice.getLastRow();
 
   if (lastRow < 2) return [];
 
-  const linhas = lerDadosPadrao(sheetIndice, CABECALHOS_INDICE, 2);
+  const configuracao = opcoes || {};
+  const pesquisouCPFCompleto = configuracao.pesquisouCPFCompleto === true;
+  const pesquisouRECompleto = configuracao.pesquisouRECompleto === true;
+  const pesquisouREBase = configuracao.pesquisouREBase === true;
+  const reCompleto = normalizarSiglaCodigo(configuracao.reCompleto || "");
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheetIndice, CABECALHOS_INDICE);
+  const colunaChave = indicesPadrao[0] + 1;
+  const faixaChaves = sheetIndice.getRange(2, colunaChave, lastRow - 1, 1);
+  const pesquisas = [];
   const encontrados = [];
+  const linhasEncontradas = {};
+  const pessoasEncontradas = {};
 
-  for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i];
-    const chave = String(linha[0] || "");
-    const tipoChave = String(linha[1] || "");
-    const linhaDados = Number(linha[7] || 0);
+  if (pesquisouCPFCompleto) {
+    pesquisas.push({
+      termo: buscaNumeros,
+      tipoChave: "cpf",
+      exata: true
+    });
+  } else if (buscaNumeros.length >= 5) {
+    pesquisas.push({
+      termo: buscaNumeros,
+      tipoChave: "re",
+      exata: pesquisouRECompleto && !/-[A-Z]$/i.test(reCompleto)
+    });
+  } else if (buscaTexto.length >= 5) {
+    pesquisas.push({
+      termo: buscaTexto,
+      tipoChave: "nome",
+      exata: false
+    });
+  }
 
-    if (!linhaDados) continue;
+  pesquisas.forEach(function(pesquisa) {
+    const celulas = faixaChaves
+      .createTextFinder(pesquisa.termo)
+      .matchCase(false)
+      .matchEntireCell(pesquisa.exata)
+      .useRegularExpression(false)
+      .findAll()
+      .sort(function(a, b) {
+        return b.getRow() - a.getRow();
+      });
 
-    const achouCPF = tipoChave === "cpf" && pesquisouCPFCompleto && chave === buscaNumeros;
-    const achouRE = tipoChave === "re" && buscaNumeros.length >= 5 && chave.includes(buscaNumeros);
-    const achouNome = tipoChave === "nome" && buscaTexto.length >= 5 && chave.includes(buscaTexto);
+    for (let i = 0; i < celulas.length; i++) {
+      const numeroLinhaIndice = celulas[i].getRow();
 
-    if (achouCPF || achouRE || achouNome) {
+      if (linhasEncontradas[numeroLinhaIndice]) continue;
+
+      const linha = lerLinhaPadrao(sheetIndice, numeroLinhaIndice, CABECALHOS_INDICE);
+      const chave = String(linha[0] || "");
+      const tipoChave = String(linha[1] || "");
+      const linhaDados = Number(linha[7] || 0);
+
+      if (!linhaDados || tipoChave !== pesquisa.tipoChave) continue;
+
+      const achouCPF = tipoChave === "cpf" && pesquisouCPFCompleto && chave === buscaNumeros;
+      const achouRE = tipoChave === "re" && buscaNumeros.length >= 5 && chave.includes(buscaNumeros);
+      const achouNome = tipoChave === "nome" && buscaTexto.length >= 5 && chave.includes(buscaTexto);
+
+      if (!achouCPF && !achouRE && !achouNome) continue;
+
+      const reCandidato = normalizarSiglaCodigo(linha[4] || "");
+
+      if (pesquisouRECompleto && reCandidato !== reCompleto) continue;
+
+      const chavePessoa = pesquisouREBase
+        ? reCandidato || somenteNumeros(linha[3]) || normalizar(linha[5]) || String(linha[2] || "")
+        : somenteNumeros(linha[3]) || reCandidato || normalizar(linha[5]) || String(linha[2] || "");
+
+      if (pessoasEncontradas[chavePessoa]) continue;
+
+      linhasEncontradas[numeroLinhaIndice] = true;
+      pessoasEncontradas[chavePessoa] = true;
+
       encontrados.push({
         idAtendimento: linha[2],
         cpf: linha[3],
@@ -4089,8 +4381,10 @@ function localizarCadastrosNoIndice(sheetIndice, buscaTexto, buscaNumeros, pesqu
         dataCadastro: linha[6],
         linhaDados: linhaDados
       });
+
+      if (pesquisouCPFCompleto || pesquisouRECompleto || encontrados.length >= 10) break;
     }
-  }
+  });
 
   encontrados.sort(function(a, b) {
     return b.linhaDados - a.linhaDados;
@@ -4119,7 +4413,9 @@ function montarResultadosBuscaPorIndice(sheetDados, candidatos, opcoes) {
     if (chavesEncontradas[chaveUnica]) continue;
     chavesEncontradas[chaveUnica] = true;
 
-    const linha = lerLinhaPadrao(sheetDados, candidato.linhaDados, CABECALHOS_DADOS);
+    const linha = localizarLinhaCadastroPorCandidato(sheetDados, candidato);
+
+    if (!linha) continue;
 
     resultados.push(montarRegistroBusca(linha));
 
@@ -4127,6 +4423,39 @@ function montarResultadosBuscaPorIndice(sheetDados, candidatos, opcoes) {
   }
 
   return resultados;
+}
+
+function localizarLinhaCadastroPorCandidato(sheetDados, candidato) {
+  const idAtendimento = String(candidato && candidato.idAtendimento || "").trim();
+  const linhaInformada = Number(candidato && candidato.linhaDados || 0);
+
+  if (!idAtendimento) return null;
+
+  if (linhaInformada >= 2 && linhaInformada <= sheetDados.getLastRow()) {
+    const linhaAtual = lerLinhaPadrao(sheetDados, linhaInformada, CABECALHOS_DADOS);
+
+    if (String(linhaAtual[0] || "").trim() === idAtendimento) {
+      return linhaAtual;
+    }
+  }
+
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheetDados, CABECALHOS_DADOS);
+  const colunaIdAtendimento = indicesPadrao[0] + 1;
+  const ultimaLinha = sheetDados.getLastRow();
+
+  if (ultimaLinha < 2) return null;
+
+  const celula = sheetDados
+    .getRange(2, colunaIdAtendimento, ultimaLinha - 1, 1)
+    .createTextFinder(idAtendimento)
+    .matchCase(true)
+    .matchEntireCell(true)
+    .useRegularExpression(false)
+    .findNext();
+
+  if (!celula) return null;
+
+  return lerLinhaPadrao(sheetDados, celula.getRow(), CABECALHOS_DADOS);
 }
 
 function montarRegistroBusca(l) {
@@ -4180,28 +4509,39 @@ function anexarVinculosResultadosBusca(resultados) {
 
   if (!sheet || sheet.getLastRow() < 2) return;
 
-  const dados = lerDadosPadrao(sheet, CABECALHOS_VINCULOS, 1);
   const mapa = {};
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_VINCULOS);
+  const colunaIdAtendimento = indicesPadrao[1] + 1;
+  const faixaIds = sheet.getRange(2, colunaIdAtendimento, sheet.getLastRow() - 1, 1);
 
   resultados.forEach(function(registro) {
     mapa[String(registro.idAtendimento || "")] = registro;
   });
 
-  for (let i = 1; i < dados.length; i++) {
-    const linha = dados[i];
-    const idAtendimento = String(linha[1] || "");
+  Object.keys(ids).forEach(function(idAtendimento) {
     const registro = mapa[idAtendimento];
 
-    if (!registro) continue;
+    if (!registro) return;
 
-    registro.vinculos.push({
-      nome: linha[2] || "",
-      cpf: linha[3] || "",
-      tipoVinculo: linha[4] || "",
-      parentesco: linha[5] || "",
-      observacoes: linha[6] || ""
+    const celulas = faixaIds
+      .createTextFinder(idAtendimento)
+      .matchCase(true)
+      .matchEntireCell(true)
+      .useRegularExpression(false)
+      .findAll();
+
+    celulas.forEach(function(celula) {
+      const linha = lerLinhaPadrao(sheet, celula.getRow(), CABECALHOS_VINCULOS);
+
+      registro.vinculos.push({
+        nome: linha[2] || "",
+        cpf: linha[3] || "",
+        tipoVinculo: linha[4] || "",
+        parentesco: linha[5] || "",
+        observacoes: linha[6] || ""
+      });
     });
-  }
+  });
 }
 
 function converterData(valor) {
@@ -4224,16 +4564,12 @@ function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio
     return registroPassaFiltrosRelatorio(registro, filtrosPreparados);
   });
 
-  const limiteDetalhes = Number(filtros.limiteDetalhes) || 800;
-
   return {
     filtrosAplicados: filtros,
     resumo: montarResumoRelatorio(filtrados),
     distribuicoes: montarDistribuicoesRelatorio(filtrados),
     dadosIndividuais: montarDadosIndividuaisRelatorio(filtros, filtrados, registros, ss),
-    registros: montarDetalhesRelatorio(filtrados, limiteDetalhes),
     totalRegistros: filtrados.length,
-    limiteDetalhes: limiteDetalhes,
     opcoes: montarOpcoesRelatorio(registros, vinculosPorAtendimento)
   };
 }
@@ -6153,8 +6489,62 @@ function montarDistribuicoesRelatorio(registros) {
     porEstadoCivil: contarPorCampo(registros, "estadoCivil"),
     porFaixaEtaria: contarPorCampo(registros, "faixaEtaria"),
     porTempoServico: contarPorCampo(registros, "tempoServico"),
-    porParentesco: contarPorVinculo(registros, "parentesco")
+    porParentesco: contarPorVinculo(registros, "parentesco"),
+    porTipoMotivoPrincipal: montarTipoMotivoPrincipalRelatorio(registros)
   };
+}
+
+function montarTipoMotivoPrincipalRelatorio(registros) {
+  const grupos = {};
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+
+    const tipo = registro.tipoAtendimento || "nao informado";
+    const motivo = registro.motivo || "nao informado";
+    const tipoChave = normalizar(tipo) || "nao informado";
+    const motivoChave = normalizar(motivo) || "nao informado";
+
+    if (!grupos[tipoChave]) {
+      grupos[tipoChave] = {
+        tipo: tipo,
+        total: 0,
+        motivos: {}
+      };
+    }
+
+    grupos[tipoChave].total++;
+
+    if (!grupos[tipoChave].motivos[motivoChave]) {
+      grupos[tipoChave].motivos[motivoChave] = {
+        motivo: motivo,
+        total: 0
+      };
+    }
+
+    grupos[tipoChave].motivos[motivoChave].total++;
+  });
+
+  return Object.keys(grupos).map(function(chave) {
+    const grupo = grupos[chave];
+    const motivoPrincipal = Object.keys(grupo.motivos)
+      .map(function(motivoChave) {
+        return grupo.motivos[motivoChave];
+      })
+      .sort(function(a, b) {
+        return b.total - a.total || normalizar(a.motivo).localeCompare(normalizar(b.motivo));
+      })[0] || { motivo: "nao informado", total: 0 };
+
+    return {
+      tipo: grupo.tipo,
+      motivo: motivoPrincipal.motivo,
+      quantidade: motivoPrincipal.total,
+      totalTipo: grupo.total,
+      percentual: grupo.total > 0 ? (motivoPrincipal.total / grupo.total) * 100 : 0
+    };
+  }).sort(function(a, b) {
+    return b.totalTipo - a.totalTipo || normalizar(a.tipo).localeCompare(normalizar(b.tipo));
+  });
 }
 
 function contarPorMesNapsRelatorio(registros) {
@@ -6548,46 +6938,6 @@ function grausParaRadianos(graus) {
 
 function arredondarUmaCasa(valor) {
   return Math.round(Number(valor || 0) * 10) / 10;
-}
-
-function montarDetalhesRelatorio(registros, limite) {
-  return registros
-    .slice()
-    .sort(function(a, b) {
-      return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
-    })
-    .slice(0, limite)
-    .map(function(registro) {
-      return {
-        dataCadastro: registro.dataCadastro,
-        dataCadastroIso: registro.dataCadastroIso,
-        postoGraduacao: registro.postoGraduacao,
-        nome: registro.nome,
-        re: registro.re,
-        cpf: registro.cpf,
-        telefone: registro.telefone,
-        tipoAtendimento: registro.tipoAtendimento,
-        motivo: registro.motivo,
-        naps: registro.naps,
-        emailCadastro: registro.emailCadastro,
-        opmAtual: registro.opmAtual,
-        situacaoStatus: registro.situacaoStatus,
-        sexo: registro.sexo,
-        idade: registro.idade,
-        faixaEtaria: registro.faixaEtaria,
-        estadoCivil: registro.estadoCivil,
-        responsavel: registro.responsavel,
-        cep: registro.cep,
-        endereco: registro.endereco,
-        bairro: registro.bairro,
-        cidade: registro.cidade,
-        estado: registro.estado,
-        quantidadeVinculos: registro.quantidadeVinculos,
-        eventoColetivo: registro.eventoColetivo || false,
-        quantidadePessoasEvento: registro.quantidadePessoasEvento || 0,
-        vinculos: registro.vinculos
-      };
-    });
 }
 
 function montarOpcoesRelatorio(registros, vinculosPorAtendimento) {
