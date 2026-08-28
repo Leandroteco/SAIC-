@@ -2635,7 +2635,7 @@ h3,
     function criarGraficoLinha(chave, canvasId, dadosEvolucao) {
       const ctx = document.getElementById(canvasId);
       const dadosNormalizados = normalizarDadosEvolucaoDashboard(dadosEvolucao);
-      const labels = dadosNormalizados.labels;
+      const labels = dadosNormalizados.labels.map(formatarRotuloMesAnoDashboard);
       const series = dadosNormalizados.series;
 
       destruirGrafico(chave);
@@ -2671,6 +2671,19 @@ h3,
           }
         })
       });
+    }
+
+    function formatarRotuloMesAnoDashboard(valor) {
+      const texto = String(valor || "").trim();
+      const partes = texto.match(/^(\d{1,2})\/(\d{4})$/);
+      const meses = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+
+      if (!partes) return texto;
+
+      const mes = Number(partes[1]);
+      if (mes < 1 || mes > 12) return texto;
+
+      return meses[mes - 1] + "/" + partes[2].slice(-2);
     }
 
     function normalizarDadosEvolucaoDashboard(dadosEvolucao) {
@@ -3116,5 +3129,4 @@ h3,
   </script>
 </body>
 </html>
-
 
