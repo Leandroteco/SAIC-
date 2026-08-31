@@ -16,7 +16,6 @@
 // CONFIGURACOES E CABECALHOS
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
-const ABA_INDICE = "cadastro_indice";
 const ABA_BUSCA_RAPIDA = "cadastro_busca_rapida";
 const ABA_USUARIOS = "usuarios_sistema";
 const ABA_CEPS_CACHE = "ceps_cache";
@@ -81,17 +80,6 @@ const CABECALHOS_VINCULOS = [
   "tipoVinculo",
   "parentesco",
   "observacoes"
-];
-
-const CABECALHOS_INDICE = [
-  "chave",
-  "tipo_chave",
-  "id_atendimento",
-  "cpf",
-  "re",
-  "nome",
-  "dataCadastro",
-  "linha_dados"
 ];
 
 const CABECALHOS_BUSCA_RAPIDA = [
@@ -341,7 +329,6 @@ function configurarEstruturaPlanilha() {
   garantirCabecalhoFinal(sheetDados, "formaApresentacao");
   garantirCabecalhoFinal(sheetDados, "modalidadeAtendimento");
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
-  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
   garantirCabecalhoFinal(sheetUsuarios, "acesso_ppms");
   const sheetCepsCache = obterOuCriarAba(ss, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
@@ -365,7 +352,6 @@ function configurarEstruturaPlanilha() {
   return {
     sheetDados: sheetDados,
     sheetVinculos: sheetVinculos,
-    sheetIndice: sheetIndice,
     sheetUsuarios: sheetUsuarios,
     sheetCepsCache: sheetCepsCache,
     sheetRecados: sheetRecados,
@@ -388,7 +374,6 @@ function configurarEstruturaSalvamentoAtendimento() {
   return {
     sheetDados: sheetDados,
     sheetVinculos: obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS),
-    sheetIndice: obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE),
     sheetBuscaRapida: obterOuCriarAbaBuscaRapidaCadastros_()
   };
 }
@@ -397,14 +382,12 @@ function configurarEstruturaSalvamentoAtendimentoRapida_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetDados = ss.getSheetByName(ABA_DADOS);
   const sheetVinculos = ss.getSheetByName(ABA_VINCULOS);
-  const sheetIndice = ss.getSheetByName(ABA_INDICE);
   const sheetBuscaRapida = ss.getSheetByName(ABA_BUSCA_RAPIDA);
 
-  if (sheetDados && sheetVinculos && sheetIndice && sheetBuscaRapida) {
+  if (sheetDados && sheetVinculos && sheetBuscaRapida) {
     return {
       sheetDados: sheetDados,
       sheetVinculos: sheetVinculos,
-      sheetIndice: sheetIndice,
       sheetBuscaRapida: sheetBuscaRapida
     };
   }
@@ -1488,13 +1471,15 @@ function salvarAtendimento(dados, idToken) {
     const estrutura = configurarEstruturaSalvamentoAtendimentoRapida_();
     const sheet = estrutura.sheetDados;
     const sheetVinculos = estrutura.sheetVinculos;
-    const sheetIndice = estrutura.sheetIndice;
     const sheetBuscaRapida = estrutura.sheetBuscaRapida;
 
     if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
     if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
-    if (!sheetIndice) throw new Error("A aba cadastro_indice nao foi encontrada.");
     if (!sheetBuscaRapida) throw new Error("A aba cadastro_busca_rapida nao foi encontrada.");
+
+    if (sheet.getLastRow() >= 2 && sheetBuscaRapida.getLastRow() < 2) {
+      throw new Error("A busca rapida esta vazia. Execute reconstruirBuscaRapidaCadastros() antes de salvar novos atendimentos.");
+    }
 
     const idAtendimento = gerarIdSeguro("ATD");
     const dataCadastro = new Date();
@@ -1541,7 +1526,7 @@ function salvarAtendimento(dados, idToken) {
       throw new Error("Nome do responsavel nao encontrado na aba usuarios_sistema.");
     }
 
-    validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice, sheetBuscaRapida);
+    validarConflitoIdentificacaoAntesSalvar(dados, sheetBuscaRapida);
 
     const linhaDados = gravarLinhasPadraoAbaixo(sheet, [[
       idAtendimento,
@@ -1576,12 +1561,6 @@ function salvarAtendimento(dados, idToken) {
       formaApresentacao,
       modalidadeAtendimento
     ]], CABECALHOS_DADOS);
-
-    const linhasIndice = montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados);
-
-    if (linhasIndice.length > 0) {
-      gravarLinhasPadraoAbaixo(sheetIndice, linhasIndice, CABECALHOS_INDICE);
-    }
 
     atualizarBuscaRapidaCadastroDepoisSalvar_(sheetBuscaRapida, {
       idAtendimento: idAtendimento,
@@ -3801,18 +3780,18 @@ function verificarConflitoIdentificacao(dados, idToken) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetBuscaRapida = ss ? ss.getSheetByName(ABA_BUSCA_RAPIDA) : null;
 
-  return consultarConflitoIdentificacao(dados, null, sheetBuscaRapida);
+  return consultarConflitoIdentificacao(dados, sheetBuscaRapida);
 }
 
-function validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice, sheetBuscaRapida) {
-  const conflito = consultarConflitoIdentificacao(dados, sheetIndice, sheetBuscaRapida);
+function validarConflitoIdentificacaoAntesSalvar(dados, sheetBuscaRapida) {
+  const conflito = consultarConflitoIdentificacao(dados, sheetBuscaRapida);
 
   if (conflito.conflito) {
     throw new Error(conflito.mensagem);
   }
 }
 
-function consultarConflitoIdentificacao(dados, sheetIndice, sheetBuscaRapida) {
+function consultarConflitoIdentificacao(dados, sheetBuscaRapida) {
   const cpf = formatarCPF(dados && dados.cpf);
   const cpfNumeros = somenteNumeros(cpf);
   const re = normalizar(dados && dados.re);
@@ -3822,85 +3801,22 @@ function consultarConflitoIdentificacao(dados, sheetIndice, sheetBuscaRapida) {
     return montarResultadoConflitoIdentificacao(false);
   }
 
-  if (buscaRapidaCadastrosAtiva_() && sheetBuscaRapida && sheetBuscaRapida.getLastRow() >= 2) {
-    return consultarConflitoIdentificacaoBuscaRapida_(sheetBuscaRapida, cpfNumeros, re, reNumeros, cpf);
+  if (!buscaRapidaCadastrosAtiva_() || !sheetBuscaRapida) {
+    throw new Error("A busca rapida de cadastros nao esta disponivel. Execute reconstruirBuscaRapidaCadastros().");
   }
 
-  if (!sheetIndice) {
-    sheetIndice = obterOuCriarAba(SpreadsheetApp.getActiveSpreadsheet(), ABA_INDICE, CABECALHOS_INDICE);
-  }
+  if (sheetBuscaRapida.getLastRow() < 2) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetDados = ss ? ss.getSheetByName(ABA_DADOS) : null;
 
-  const linhas = localizarLinhasIndicePorChaves(sheetIndice, [cpfNumeros, reNumeros]);
-
-  for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i];
-    const cpfExistente = formatarCPF(linha[3]);
-    const cpfExistenteNumeros = somenteNumeros(cpfExistente);
-    const reExistente = normalizar(linha[4]);
-
-    if (!cpfExistenteNumeros && !reExistente) continue;
-
-    if (cpfExistenteNumeros === cpfNumeros && reExistente && reExistente !== re) {
-      return montarResultadoConflitoIdentificacao(true, {
-        tipo: "cpf",
-        cpf: cpf,
-        re: re,
-        cpfExistente: cpfExistente,
-        reExistente: reExistente,
-        nomeExistente: linha[5]
-      });
+    if (sheetDados && sheetDados.getLastRow() >= 2) {
+      throw new Error("A busca rapida esta vazia. Execute reconstruirBuscaRapidaCadastros().");
     }
 
-    if (reExistente === re && cpfExistenteNumeros && cpfExistenteNumeros !== cpfNumeros) {
-      return montarResultadoConflitoIdentificacao(true, {
-        tipo: "re",
-        cpf: cpf,
-        re: re,
-        cpfExistente: cpfExistente,
-        reExistente: reExistente,
-        nomeExistente: linha[5]
-      });
-    }
+    return montarResultadoConflitoIdentificacao(false);
   }
 
-  return montarResultadoConflitoIdentificacao(false);
-}
-
-function localizarLinhasIndicePorChaves(sheetIndice, chaves) {
-  const ultimaLinha = sheetIndice.getLastRow();
-
-  if (ultimaLinha < 2) return [];
-
-  const linhas = [];
-  const linhasJaIncluidas = {};
-  const quantidadeColunas = Math.max(sheetIndice.getLastColumn(), CABECALHOS_INDICE.length);
-  const indicesPadrao = obterIndicesCabecalhosPadrao(sheetIndice, CABECALHOS_INDICE);
-  const rangeChaves = sheetIndice.getRange(2, 1, ultimaLinha - 1, 1);
-
-  chaves.forEach(function(chave) {
-    if (!chave) return;
-
-    const celulas = rangeChaves
-      .createTextFinder(String(chave))
-      .matchEntireCell(true)
-      .findAll();
-
-    celulas.forEach(function(celula) {
-      const numeroLinha = celula.getRow();
-
-      if (linhasJaIncluidas[numeroLinha]) return;
-
-      linhasJaIncluidas[numeroLinha] = true;
-
-      const linhaAtual = sheetIndice
-        .getRange(numeroLinha, 1, 1, quantidadeColunas)
-        .getValues()[0];
-
-      linhas.push(normalizarLinhaParaCabecalhoPadrao(linhaAtual, indicesPadrao));
-    });
-  });
-
-  return linhas;
+  return consultarConflitoIdentificacaoBuscaRapida_(sheetBuscaRapida, cpfNumeros, re, reNumeros, cpf);
 }
 
 function montarResultadoConflitoIdentificacao(conflito, detalhes) {
@@ -4084,17 +4000,15 @@ function diagnosticarBuscaRapidaCadastros() {
   const ss = obterPlanilhaBuscaRapidaCadastrosPermitida_();
   const sheetDados = ss.getSheetByName(ABA_DADOS);
   const sheetBuscaRapida = ss.getSheetByName(ABA_BUSCA_RAPIDA);
-  const sheetIndice = ss.getSheetByName(ABA_INDICE);
   const totalDados = sheetDados ? Math.max(0, sheetDados.getLastRow() - 1) : 0;
   const totalBuscaRapida = sheetBuscaRapida ? Math.max(0, sheetBuscaRapida.getLastRow() - 1) : 0;
-  const totalIndice = sheetIndice ? Math.max(0, sheetIndice.getLastRow() - 1) : 0;
   const linhas = [
     "Diagnostico da cadastro_busca_rapida:",
     "Planilha: " + ss.getName(),
     "ID: " + ss.getId(),
     "Registros em dados_cadastro: " + totalDados,
-    "Linhas em cadastro_indice: " + totalIndice,
     "Pessoas em cadastro_busca_rapida: " + totalBuscaRapida,
+    "Modo de pesquisa: CPF completo ou R.E. completo",
     "Busca rapida ativa: " + (buscaRapidaCadastrosAtiva_() ? "sim" : "nao")
   ];
 
@@ -4327,29 +4241,6 @@ function validarDataFormulario(valor, nomeCampo) {
   return data;
 }
 
-function montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados) {
-  const cpf = formatarCPF(dados.cpf);
-  const cpfNumeros = somenteNumeros(cpf);
-  const re = normalizarSiglaCodigo(dados.re);
-  const reNumeros = somenteNumeros(re);
-  const nome = normalizar(dados.nome);
-  const linhas = [];
-
-  if (cpfNumeros) {
-    linhas.push([cpfNumeros, "cpf", idAtendimento, cpf, re, nome, dataCadastro, linhaDados]);
-  }
-
-  if (reNumeros) {
-    linhas.push([reNumeros, "re", idAtendimento, cpf, re, nome, dataCadastro, linhaDados]);
-  }
-
-  if (nome) {
-    linhas.push([nome, "nome", idAtendimento, cpf, re, nome, dataCadastro, linhaDados]);
-  }
-
-  return linhas;
-}
-
 function gravarLinhasAbaixo(sheet, linhas, quantidadeColunas) {
   const tamanhoLote = 5000;
 
@@ -4360,47 +4251,6 @@ function gravarLinhasAbaixo(sheet, linhas, quantidadeColunas) {
       .getRange(sheet.getLastRow() + 1, 1, lote.length, quantidadeColunas)
       .setValues(lote);
   }
-}
-
-function reconstruirIndiceCadastros() {
-  const estrutura = configurarEstruturaPlanilha();
-  const sheetDados = estrutura.sheetDados;
-  const sheetIndice = estrutura.sheetIndice;
-
-  if (!sheetDados) throw new Error("A aba dados_cadastro nao foi encontrada.");
-  if (!sheetIndice) throw new Error("A aba cadastro_indice nao foi encontrada.");
-
-  if (sheetIndice.getLastRow() > 1) {
-    sheetIndice
-      .getRange(2, 1, sheetIndice.getLastRow() - 1, Math.max(sheetIndice.getLastColumn(), CABECALHOS_INDICE.length))
-      .clearContent();
-  }
-
-  if (sheetDados.getLastRow() < 2) {
-    return "Indice reconstruido. Nenhum cadastro encontrado.";
-  }
-
-  const dados = lerDadosPadrao(sheetDados, CABECALHOS_DADOS, 2);
-  const linhasIndice = [];
-
-  dados.forEach(function(linha, indice) {
-    const dadosCadastro = {
-      cpf: linha[6],
-      re: linha[4],
-      nome: linha[5]
-    };
-
-    Array.prototype.push.apply(
-      linhasIndice,
-      montarLinhasIndiceCadastro(linha[0], dadosCadastro, linha[26], indice + 2)
-    );
-  });
-
-  if (linhasIndice.length > 0) {
-    gravarLinhasPadraoAbaixo(sheetIndice, linhasIndice, CABECALHOS_INDICE);
-  }
-
-  return "Indice reconstruido com sucesso. Chaves criadas: " + linhasIndice.length + ".";
 }
 
 function normalizar(texto) {
@@ -4661,30 +4511,26 @@ function buscarCadastro(termo, idToken) {
     };
   }
 
-  const buscaTexto = normalizar(termo);
-  const buscaNumeros = somenteNumeros(termo);
   const termoOriginal = String(termo || "").trim();
-
-  if (buscaTexto.length < 5 && buscaNumeros.length < 5) {
-    return {
-      encontrado: false,
-      mensagem: "Digite pelo menos 5 caracteres para R.E./Nome ou informe o CPF completo."
-    };
-  }
-
-  if (buscaNumeros.length >= 8 && buscaNumeros.length < 11 && !/[A-Z]/i.test(termoOriginal)) {
-    return {
-      encontrado: false,
-      mensagem: "Para pesquisar por CPF, informe o CPF completo."
-    };
-  }
-
-  const pesquisouCPFCompleto = buscaNumeros.length === 11;
+  const buscaTexto = normalizar(termoOriginal);
+  const buscaNumeros = somenteNumeros(termoOriginal);
+  const pesquisouCPFCompleto = buscaNumeros.length === 11 &&
+    !/[A-Z]/i.test(termoOriginal);
   const pesquisouRECompleto = /^[0-9]{6}-[0-9A]$/i.test(termoOriginal);
-  const pesquisouREBase = !pesquisouCPFCompleto &&
-    !pesquisouRECompleto &&
-    /^[0-9]{6}$/.test(buscaNumeros) &&
-    buscaTexto === buscaNumeros;
+
+  if (!termoOriginal) {
+    return {
+      encontrado: false,
+      mensagem: "Informe o CPF completo ou o R.E. completo com digito."
+    };
+  }
+
+  if (!pesquisouCPFCompleto && !pesquisouRECompleto) {
+    return {
+      encontrado: false,
+      mensagem: "A pesquisa aceita somente CPF completo ou R.E. completo com digito (ex.: 123456-7)."
+    };
+  }
 
   const resultadoBuscaRapida = buscarCadastroRapidoQuandoPossivel_(
     sheet,
@@ -4701,52 +4547,9 @@ function buscarCadastro(termo, idToken) {
     return resultadoBuscaRapida;
   }
 
-  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
-
-  const candidatos = localizarCadastrosNoIndice(
-    sheetIndice,
-    buscaTexto,
-    buscaNumeros,
-    {
-      pesquisouCPFCompleto: pesquisouCPFCompleto,
-      pesquisouRECompleto: pesquisouRECompleto,
-      pesquisouREBase: pesquisouREBase,
-      reCompleto: pesquisouRECompleto ? normalizarSiglaCodigo(termoOriginal) : ""
-    }
-  );
-  const resultados = montarResultadosBuscaPorIndice(sheet, candidatos, {
-    preservarVariantesRE: pesquisouREBase
-  });
-
-  anexarVinculosResultadosBusca(resultados);
-
-  if (resultados.length === 0) {
-    return {
-      encontrado: false,
-      mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
-    };
-  }
-
-  if (pesquisouCPFCompleto || pesquisouRECompleto) {
-    return {
-      encontrado: true,
-      multiplos: false,
-      registro: resultados[0]
-    };
-  }
-
-  if (resultados.length === 1) {
-    return {
-      encontrado: true,
-      multiplos: false,
-      registro: resultados[0]
-    };
-  }
-
   return {
-    encontrado: true,
-    multiplos: true,
-    resultados: resultados.slice(0, 10)
+    encontrado: false,
+    mensagem: "A busca rapida de cadastros nao esta disponivel. Execute reconstruirBuscaRapidaCadastros()."
   };
 }
 
@@ -4760,7 +4563,14 @@ function buscarCadastroRapidoQuandoPossivel_(sheetDados, buscaTexto, buscaNumero
   const sheetBuscaRapida = ss ? ss.getSheetByName(ABA_BUSCA_RAPIDA) : null;
 
   if (!sheetBuscaRapida || sheetBuscaRapida.getLastRow() < 2) {
-    Logger.log("Busca rapida de cadastros vazia. Usando cadastro_indice como fallback.");
+    if (sheetDados && sheetDados.getLastRow() < 2) {
+      return {
+        encontrado: false,
+        mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
+      };
+    }
+
+    Logger.log("Busca rapida de cadastros indisponivel ou vazia.");
     return null;
   }
 
@@ -4784,8 +4594,12 @@ function buscarCadastroRapidoQuandoPossivel_(sheetDados, buscaTexto, buscaNumero
   const linha = localizarLinhaCadastroPorCandidato(sheetDados, candidato);
 
   if (!linha) {
-    Logger.log("Busca rapida encontrou candidato, mas a linha em dados_cadastro nao foi localizada. Usando cadastro_indice como fallback.");
-    return null;
+    Logger.log("Busca rapida encontrou candidato, mas a linha em dados_cadastro nao foi localizada.");
+
+    return {
+      encontrado: false,
+      mensagem: "O indice de busca esta desatualizado. Execute reconstruirBuscaRapidaCadastros()."
+    };
   }
 
   const resultados = [montarRegistroBusca(linha)];
@@ -4888,138 +4702,6 @@ function montarCandidatoBuscaRapidaCadastro_(linhaBuscaRapida) {
     re: linhaBuscaRapida[7],
     nome: linhaBuscaRapida[8]
   };
-}
-
-function localizarCadastrosNoIndice(sheetIndice, buscaTexto, buscaNumeros, opcoes) {
-  const lastRow = sheetIndice.getLastRow();
-
-  if (lastRow < 2) return [];
-
-  const configuracao = opcoes || {};
-  const pesquisouCPFCompleto = configuracao.pesquisouCPFCompleto === true;
-  const pesquisouRECompleto = configuracao.pesquisouRECompleto === true;
-  const pesquisouREBase = configuracao.pesquisouREBase === true;
-  const reCompleto = normalizarSiglaCodigo(configuracao.reCompleto || "");
-  const indicesPadrao = obterIndicesCabecalhosPadrao(sheetIndice, CABECALHOS_INDICE);
-  const colunaChave = indicesPadrao[0] + 1;
-  const faixaChaves = sheetIndice.getRange(2, colunaChave, lastRow - 1, 1);
-  const pesquisas = [];
-  const encontrados = [];
-  const linhasEncontradas = {};
-  const pessoasEncontradas = {};
-
-  if (pesquisouCPFCompleto) {
-    pesquisas.push({
-      termo: buscaNumeros,
-      tipoChave: "cpf",
-      exata: true
-    });
-  } else if (buscaNumeros.length >= 5) {
-    pesquisas.push({
-      termo: buscaNumeros,
-      tipoChave: "re",
-      exata: pesquisouRECompleto && !/-[A-Z]$/i.test(reCompleto)
-    });
-  } else if (buscaTexto.length >= 5) {
-    pesquisas.push({
-      termo: buscaTexto,
-      tipoChave: "nome",
-      exata: false
-    });
-  }
-
-  pesquisas.forEach(function(pesquisa) {
-    const celulas = faixaChaves
-      .createTextFinder(pesquisa.termo)
-      .matchCase(false)
-      .matchEntireCell(pesquisa.exata)
-      .useRegularExpression(false)
-      .findAll()
-      .sort(function(a, b) {
-        return b.getRow() - a.getRow();
-      });
-
-    for (let i = 0; i < celulas.length; i++) {
-      const numeroLinhaIndice = celulas[i].getRow();
-
-      if (linhasEncontradas[numeroLinhaIndice]) continue;
-
-      const linha = lerLinhaPadrao(sheetIndice, numeroLinhaIndice, CABECALHOS_INDICE);
-      const chave = String(linha[0] || "");
-      const tipoChave = String(linha[1] || "");
-      const linhaDados = Number(linha[7] || 0);
-
-      if (!linhaDados || tipoChave !== pesquisa.tipoChave) continue;
-
-      const achouCPF = tipoChave === "cpf" && pesquisouCPFCompleto && chave === buscaNumeros;
-      const achouRE = tipoChave === "re" && buscaNumeros.length >= 5 && chave.includes(buscaNumeros);
-      const achouNome = tipoChave === "nome" && buscaTexto.length >= 5 && chave.includes(buscaTexto);
-
-      if (!achouCPF && !achouRE && !achouNome) continue;
-
-      const reCandidato = normalizarSiglaCodigo(linha[4] || "");
-
-      if (pesquisouRECompleto && reCandidato !== reCompleto) continue;
-
-      const chavePessoa = pesquisouREBase
-        ? reCandidato || somenteNumeros(linha[3]) || normalizar(linha[5]) || String(linha[2] || "")
-        : somenteNumeros(linha[3]) || reCandidato || normalizar(linha[5]) || String(linha[2] || "");
-
-      if (pessoasEncontradas[chavePessoa]) continue;
-
-      linhasEncontradas[numeroLinhaIndice] = true;
-      pessoasEncontradas[chavePessoa] = true;
-
-      encontrados.push({
-        idAtendimento: linha[2],
-        cpf: linha[3],
-        re: linha[4],
-        nome: linha[5],
-        dataCadastro: linha[6],
-        linhaDados: linhaDados
-      });
-
-      if (pesquisouCPFCompleto || pesquisouRECompleto || encontrados.length >= 10) break;
-    }
-  });
-
-  encontrados.sort(function(a, b) {
-    return b.linhaDados - a.linhaDados;
-  });
-
-  return encontrados;
-}
-
-function montarResultadosBuscaPorIndice(sheetDados, candidatos, opcoes) {
-  const resultados = [];
-  const chavesEncontradas = {};
-  const preservarVariantesRE = opcoes && opcoes.preservarVariantesRE;
-
-  for (let i = 0; i < candidatos.length; i++) {
-    const candidato = candidatos[i];
-    const chaveUnica = preservarVariantesRE
-      ? normalizar(candidato.re) ||
-        somenteNumeros(candidato.cpf) ||
-        normalizar(candidato.nome) ||
-        String(candidato.idAtendimento || "")
-      : somenteNumeros(candidato.cpf) ||
-        normalizar(candidato.re) ||
-        normalizar(candidato.nome) ||
-        String(candidato.idAtendimento || "");
-
-    if (chavesEncontradas[chaveUnica]) continue;
-    chavesEncontradas[chaveUnica] = true;
-
-    const linha = localizarLinhaCadastroPorCandidato(sheetDados, candidato);
-
-    if (!linha) continue;
-
-    resultados.push(montarRegistroBusca(linha));
-
-    if (resultados.length >= 10) break;
-  }
-
-  return resultados;
 }
 
 function localizarLinhaCadastroPorCandidato(sheetDados, candidato) {
@@ -7819,3 +7501,4 @@ function autorizarServicosSAIC() {
 
   SpreadsheetApp.getActiveSpreadsheet().getName();
 }
+
