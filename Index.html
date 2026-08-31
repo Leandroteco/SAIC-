@@ -2420,152 +2420,6 @@ body {
   font-weight: 900;
 }
 
-@media (min-width: 1440px) {
-  .app-shell.tela-inicial-ativa .form-content {
-    padding: 32px 42px;
-  }
-
-  .app-shell.tela-inicial-ativa .tela-inicial-sistema {
-    gap: 24px;
-    max-width: 1480px;
-  }
-
-  .home-band-content {
-    gap: 30px;
-    grid-template-columns: minmax(320px, 1fr) auto minmax(220px, 1fr);
-    min-height: 132px;
-    padding: 28px 34px;
-  }
-
-  .home-brand-copy {
-    gap: 18px;
-    min-width: 320px;
-  }
-
-  .home-sismen-symbol-frame {
-    height: 82px;
-    width: 82px;
-  }
-
-  .home-brand-copy strong {
-    font-size: 30px;
-  }
-
-  .home-brand-copy span {
-    font-size: 15px;
-  }
-
-  .home-institutional-logos {
-    gap: 18px;
-  }
-
-  .home-institutional-logo {
-    height: 92px;
-    padding: 8px;
-    width: 108px;
-  }
-
-  .home-access-badge {
-    font-size: 13px;
-    padding: 11px 16px;
-  }
-
-  .home-stage {
-    gap: 24px;
-  }
-
-  .home-workspace-card {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    min-height: calc(100vh - 260px);
-  }
-
-  .home-workspace-head {
-    padding: 30px 34px;
-  }
-
-  .home-workspace-head h2 {
-    font-size: 32px;
-  }
-
-  .home-workspace-head p,
-  .home-time {
-    font-size: 15px;
-  }
-
-  .home-modules-area {
-    align-items: stretch;
-    gap: 22px;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    padding: 26px;
-  }
-
-  .home-module-card {
-    gap: 18px;
-    min-height: 220px;
-    padding: 26px;
-  }
-
-  .home-module-icon {
-    font-size: 20px;
-    height: 62px;
-    width: 62px;
-  }
-
-  .home-module-title {
-    font-size: 27px;
-  }
-
-  .home-module-text {
-    font-size: 15px;
-    line-height: 1.5;
-  }
-
-  .home-footer {
-    font-size: 12px;
-    padding-bottom: 12px;
-  }
-}
-
-@media (min-width: 1760px) {
-  .app-shell.tela-inicial-ativa .form-content {
-    padding: 40px 54px;
-  }
-
-  .app-shell.tela-inicial-ativa .tela-inicial-sistema {
-    max-width: 1640px;
-  }
-
-  .home-band-content {
-    min-height: 144px;
-    padding: 32px 40px;
-  }
-
-  .home-sismen-symbol-frame {
-    height: 90px;
-    width: 90px;
-  }
-
-  .home-institutional-logo {
-    height: 100px;
-    width: 118px;
-  }
-
-  .home-workspace-card {
-    min-height: calc(100vh - 292px);
-  }
-
-  .home-modules-area {
-    gap: 26px;
-    padding: 30px;
-  }
-
-  .home-module-card {
-    min-height: 244px;
-    padding: 30px;
-  }
-}
-
 @media (max-width: 980px) {
   .app-shell.tela-inicial-ativa .form-content {
     padding: 12px;
@@ -2836,7 +2690,7 @@ body {
 
       <section class="ajuda-item">
         <h3>Busca</h3>
-        <p>Antes de preencher tudo novamente, pesquise por R.E., CPF ou nome. Na busca por R.E., o número pode ser digitado sem o dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações que forem necessárias antes de salvar o novo atendimento.</p>
+        <p>Antes de preencher tudo novamente, pesquise pelo CPF completo ou pelo R.E. completo com dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações necessárias antes de salvar o novo atendimento.</p>
       </section>
 
       <section class="ajuda-item">
@@ -3001,19 +2855,19 @@ body {
 <!-- Formulario de atendimento: concentra busca, dados pessoais, endereco e salvamento. -->
 <div class="container">
 
-  <!-- Busca inicial: localiza cadastro por R.E., CPF ou nome antes de preencher o atendimento. -->
+  <!-- Busca inicial: localiza cadastro por CPF completo ou R.E. completo antes de preencher o atendimento. -->
   <h2 class="titulo-centralizado">Identificação do Atendimento</h2>
 
  <!-- ==================================================== -->
-<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- pesquisa de RE completo ou CPF completo          -->
 <!-- ==================================================== -->
 
 <div class="grid-2">
   <div>
-    <label>Buscar por R.E., CPF ou Nome</label>
+    <label>Buscar por R.E. completo ou CPF completo</label>
     <input
   id="campoBusca"
-  placeholder="R.E./Nome com 5 caracteres ou CPF completo"
+  placeholder="R.E. completo (000000-0) ou CPF completo"
   oninput="limparAvisosBusca(); mascaraBusca(this)"
   onkeydown="buscarComEnter(event)">
   </div>
@@ -3036,7 +2890,7 @@ body {
 
 <div id="areaRelatorios"></div>
  <!-- ==================================================== -->
-<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- pesquisa de RE completo ou CPF completo          -->
 <!-- ==================================================== -->
 
 
@@ -5180,32 +5034,20 @@ function buscarCadastroTela() {
   const resultadoBusca = document.getElementById("resultadoBusca");
   const termo = campoBusca.value.trim();
   const numeros = termo.replace(/\D/g, "");
-  const textoNormalizado = termo
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+  const cpfCompleto = numeros.length === 11 && !/[A-Z]/i.test(termo);
+  const reCompleto = /^[0-9]{6}-[0-9A]$/i.test(termo);
 
   if (!termo) {
     resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Digite um R.E., CPF ou Nome para buscar.</p>`;
+      `<p style="color:#9a3412; font-weight:bold;">Informe o CPF completo ou o R.E. completo com dígito.</p>`;
     campoBusca.focus();
     return;
   }
 
-  const cpfCompleto = numeros.length === 11;
-  const pareceCpfIncompleto = numeros.length >= 8 && numeros.length < 11 && !/[A-Z]/i.test(termo);
-  const reOuNomeMinimo = textoNormalizado.length >= 5 || numeros.length >= 5;
-
-  if (pareceCpfIncompleto) {
+  if (!cpfCompleto && !reCompleto) {
     resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Para pesquisar por CPF, informe o CPF completo.</p>`;
-    return;
-  }
-
-  if (!cpfCompleto && !reOuNomeMinimo) {
-    resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Digite pelo menos 5 caracteres para R.E./Nome ou informe o CPF completo.</p>`;
+      `<p style="color:#9a3412; font-weight:bold;">A pesquisa aceita somente CPF completo ou R.E. completo com dígito (ex.: 123456-7).</p>`;
+    campoBusca.focus();
     return;
   }
 
@@ -5434,26 +5276,12 @@ function preencherFormulario(r) {
 
 // Aplica mascara inteligente no campo de busca sem atrapalhar pesquisa por nome.
 function mascaraBusca(campo) {
-  let valor = campo.value.toUpperCase();
+  let limpo = String(campo.value || "")
+    .toUpperCase()
+    .replace(/[^0-9A]/g, "")
+    .substring(0, 11);
 
-  // Se tiver letras que indicam nome, não aplica máscara
-  if (/[B-Z]/.test(valor)) {
-    campo.value = valor;
-    return;
-  }
-
-  // Se começa com A, é nome, não RE
-  if (valor.startsWith("A")) {
-    campo.value = valor;
-    return;
-  }
-
-  let limpo = valor.replace(/[^0-9A]/g, "");
-
-  // CPF: se passou de 7 números, deixa virar CPF
   if (/^\d{8,11}$/.test(limpo)) {
-    limpo = limpo.substring(0, 11);
-
     campo.value = limpo
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
@@ -5461,19 +5289,17 @@ function mascaraBusca(campo) {
     return;
   }
 
-  // RE com A apenas no final: 6 números + A
   if (/^\d{6}A$/.test(limpo)) {
     campo.value = limpo.substring(0, 6) + "-A";
     return;
   }
 
-  // RE numérico: 6 números + 1 dígito
   if (/^\d{7}$/.test(limpo)) {
     campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
     return;
   }
 
-  campo.value = valor;
+  campo.value = limpo;
 }
 
 
@@ -6004,3 +5830,4 @@ document.addEventListener("input", function(event) {
 </script>
 </body>
 </html>
+
