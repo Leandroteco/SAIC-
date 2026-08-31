@@ -17,6 +17,7 @@
 const ABA_DADOS = "dados_cadastro";
 const ABA_VINCULOS = "pessoas_vinculadas";
 const ABA_INDICE = "cadastro_indice";
+const ABA_BUSCA_RAPIDA = "cadastro_busca_rapida";
 const ABA_USUARIOS = "usuarios_sistema";
 const ABA_CEPS_CACHE = "ceps_cache";
 const ABA_RECADOS = "recados_sistema";
@@ -29,6 +30,11 @@ const ABA_PPMS = "ppms";
 const ABA_AVALIACOES_SISTEMA = "avaliacoes_sistema";
 const GOOGLE_CLIENT_ID = "929026048656-ef6g930iicha4bdfa4boh55ninluevfa.apps.googleusercontent.com";
 const CACHE_USUARIO_TOKEN_SEGUNDOS = 300;
+const BUSCA_RAPIDA_CADASTROS_ATIVA = true;
+const BUSCA_RAPIDA_CADASTROS_ABA_TEMP = "cadastro_busca_rapida_rebuild";
+const BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_DADOS = 2000;
+const BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_GRAVACAO = 5000;
+const CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO = {};
 
 const PERFIL_ADMINISTRADOR = "administrador";
 const PERFIL_ATENDENTE = "atendente";
@@ -86,6 +92,19 @@ const CABECALHOS_INDICE = [
   "nome",
   "dataCadastro",
   "linha_dados"
+];
+
+const CABECALHOS_BUSCA_RAPIDA = [
+  "cpf_key",
+  "re_key",
+  "nome_key",
+  "id_ultimo_atendimento",
+  "linha_ultimo_atendimento",
+  "data_ultimo_atendimento",
+  "cpf",
+  "re",
+  "nome",
+  "atualizado_em"
 ];
 
 const CABECALHOS_USUARIOS = [
@@ -369,8 +388,28 @@ function configurarEstruturaSalvamentoAtendimento() {
   return {
     sheetDados: sheetDados,
     sheetVinculos: obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS),
-    sheetIndice: obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE)
+    sheetIndice: obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE),
+    sheetBuscaRapida: obterOuCriarAbaBuscaRapidaCadastros_()
   };
+}
+
+function configurarEstruturaSalvamentoAtendimentoRapida_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetDados = ss.getSheetByName(ABA_DADOS);
+  const sheetVinculos = ss.getSheetByName(ABA_VINCULOS);
+  const sheetIndice = ss.getSheetByName(ABA_INDICE);
+  const sheetBuscaRapida = ss.getSheetByName(ABA_BUSCA_RAPIDA);
+
+  if (sheetDados && sheetVinculos && sheetIndice && sheetBuscaRapida) {
+    return {
+      sheetDados: sheetDados,
+      sheetVinculos: sheetVinculos,
+      sheetIndice: sheetIndice,
+      sheetBuscaRapida: sheetBuscaRapida
+    };
+  }
+
+  return configurarEstruturaSalvamentoAtendimento();
 }
 
 function configurarEstruturaIncidenteCritico() {
@@ -424,6 +463,7 @@ function garantirCabecalhoFinal(sheet, cabecalho) {
   if (mapa[chave] !== undefined) return;
 
   sheet.getRange(1, sheet.getLastColumn() + 1).setValue(cabecalho);
+  limparCacheIndicesCabecalhosPadrao_();
 }
 
 function obterIndicesUsuariosSistema(sheet) {
@@ -485,16 +525,32 @@ function obterIndiceCabecalho(mapa, aliases, fallback) {
 }
 
 function obterIndicesCabecalhosPadrao(sheet, cabecalhosPadrao) {
+  const cacheKey = sheet.getSheetId() + "|" + cabecalhosPadrao.join("|");
+
+  if (Object.prototype.hasOwnProperty.call(CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO, cacheKey)) {
+    return CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO[cacheKey].slice();
+  }
+
   const mapa = obterMapaCabecalhosMultiplos(sheet, cabecalhosPadrao.length);
   const indicesUsados = {};
 
-  return cabecalhosPadrao.map(function(cabecalho, indicePadrao) {
+  const indices = cabecalhosPadrao.map(function(cabecalho, indicePadrao) {
     return obterIndiceCabecalhoDisponivel(
       mapa,
       obterAliasesCabecalhoPadrao(cabecalho),
       indicePadrao,
       indicesUsados
     );
+  });
+
+  CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO[cacheKey] = indices;
+
+  return indices.slice();
+}
+
+function limparCacheIndicesCabecalhosPadrao_() {
+  Object.keys(CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO).forEach(function(chave) {
+    delete CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO[chave];
   });
 }
 
@@ -575,16 +631,19 @@ function normalizarLinhaParaCabecalhosAtuais(sheet, linhaPadrao, cabecalhosPadra
 }
 
 function gravarLinhasPadraoAbaixo(sheet, linhasPadrao, cabecalhosPadrao) {
-  if (!linhasPadrao || linhasPadrao.length === 0) return;
+  if (!linhasPadrao || linhasPadrao.length === 0) return 0;
 
   const indicesPadrao = obterIndicesCabecalhosPadrao(sheet, cabecalhosPadrao);
   const linhasAtuais = linhasPadrao.map(function(linhaPadrao) {
     return normalizarLinhaParaCabecalhosAtuais(sheet, linhaPadrao, cabecalhosPadrao, indicesPadrao);
   });
+  const primeiraLinha = sheet.getLastRow() + 1;
 
   sheet
-    .getRange(sheet.getLastRow() + 1, 1, linhasAtuais.length, linhasAtuais[0].length)
+    .getRange(primeiraLinha, 1, linhasAtuais.length, linhasAtuais[0].length)
     .setValues(linhasAtuais);
+
+  return primeiraLinha;
 }
 
 // MANUTENCAO E DIAGNOSTICOS
@@ -1426,14 +1485,16 @@ function salvarAtendimento(dados, idToken) {
     lock.waitLock(30000);
     lockObtido = true;
 
-    const estrutura = configurarEstruturaSalvamentoAtendimento();
+    const estrutura = configurarEstruturaSalvamentoAtendimentoRapida_();
     const sheet = estrutura.sheetDados;
     const sheetVinculos = estrutura.sheetVinculos;
     const sheetIndice = estrutura.sheetIndice;
+    const sheetBuscaRapida = estrutura.sheetBuscaRapida;
 
     if (!sheet) throw new Error("A aba dados_cadastro nao foi encontrada.");
     if (!sheetVinculos) throw new Error("A aba pessoas_vinculadas nao foi encontrada.");
     if (!sheetIndice) throw new Error("A aba cadastro_indice nao foi encontrada.");
+    if (!sheetBuscaRapida) throw new Error("A aba cadastro_busca_rapida nao foi encontrada.");
 
     const idAtendimento = gerarIdSeguro("ATD");
     const dataCadastro = new Date();
@@ -1480,9 +1541,9 @@ function salvarAtendimento(dados, idToken) {
       throw new Error("Nome do responsavel nao encontrado na aba usuarios_sistema.");
     }
 
-    validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice);
+    validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice, sheetBuscaRapida);
 
-    gravarLinhasPadraoAbaixo(sheet, [[
+    const linhaDados = gravarLinhasPadraoAbaixo(sheet, [[
       idAtendimento,
       usuario.email,
       tipoAtendimento,
@@ -1516,12 +1577,20 @@ function salvarAtendimento(dados, idToken) {
       modalidadeAtendimento
     ]], CABECALHOS_DADOS);
 
-    const linhaDados = sheet.getLastRow();
     const linhasIndice = montarLinhasIndiceCadastro(idAtendimento, dados, dataCadastro, linhaDados);
 
     if (linhasIndice.length > 0) {
       gravarLinhasPadraoAbaixo(sheetIndice, linhasIndice, CABECALHOS_INDICE);
     }
+
+    atualizarBuscaRapidaCadastroDepoisSalvar_(sheetBuscaRapida, {
+      idAtendimento: idAtendimento,
+      linhaDados: linhaDados,
+      dataCadastro: dataCadastro,
+      cpf: dados.cpf,
+      re: dados.re,
+      nome: dados.nome
+    });
 
     const linhasVinculos = [];
 
@@ -3730,20 +3799,20 @@ function verificarConflitoIdentificacao(dados, idToken) {
   validarUsuarioPorToken(idToken);
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
+  const sheetBuscaRapida = ss ? ss.getSheetByName(ABA_BUSCA_RAPIDA) : null;
 
-  return consultarConflitoIdentificacao(dados, sheetIndice);
+  return consultarConflitoIdentificacao(dados, null, sheetBuscaRapida);
 }
 
-function validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice) {
-  const conflito = consultarConflitoIdentificacao(dados, sheetIndice);
+function validarConflitoIdentificacaoAntesSalvar(dados, sheetIndice, sheetBuscaRapida) {
+  const conflito = consultarConflitoIdentificacao(dados, sheetIndice, sheetBuscaRapida);
 
   if (conflito.conflito) {
     throw new Error(conflito.mensagem);
   }
 }
 
-function consultarConflitoIdentificacao(dados, sheetIndice) {
+function consultarConflitoIdentificacao(dados, sheetIndice, sheetBuscaRapida) {
   const cpf = formatarCPF(dados && dados.cpf);
   const cpfNumeros = somenteNumeros(cpf);
   const re = normalizar(dados && dados.re);
@@ -3751,6 +3820,14 @@ function consultarConflitoIdentificacao(dados, sheetIndice) {
 
   if (!cpfNumeros || !re) {
     return montarResultadoConflitoIdentificacao(false);
+  }
+
+  if (buscaRapidaCadastrosAtiva_() && sheetBuscaRapida && sheetBuscaRapida.getLastRow() >= 2) {
+    return consultarConflitoIdentificacaoBuscaRapida_(sheetBuscaRapida, cpfNumeros, re, reNumeros, cpf);
+  }
+
+  if (!sheetIndice) {
+    sheetIndice = obterOuCriarAba(SpreadsheetApp.getActiveSpreadsheet(), ABA_INDICE, CABECALHOS_INDICE);
   }
 
   const linhas = localizarLinhasIndicePorChaves(sheetIndice, [cpfNumeros, reNumeros]);
@@ -3851,6 +3928,370 @@ function montarResultadoConflitoIdentificacao(conflito, detalhes) {
     reExistente: reExistente,
     nomeExistente: nomeExistente
   };
+}
+
+function consultarConflitoIdentificacaoBuscaRapida_(sheetBuscaRapida, cpfNumeros, re, reNumeros, cpfFormatado) {
+  const porCpf = localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, 0, cpfNumeros);
+
+  if (porCpf) {
+    const linhaCpf = porCpf.linha;
+    const reExistente = normalizar(linhaCpf[7]);
+
+    if (reExistente && reExistente !== re) {
+      return montarResultadoConflitoIdentificacao(true, {
+        tipo: "cpf",
+        cpf: cpfFormatado,
+        re: re,
+        cpfExistente: formatarCPF(linhaCpf[6]),
+        reExistente: linhaCpf[7],
+        nomeExistente: linhaCpf[8]
+      });
+    }
+  }
+
+  const reCompleto = normalizarSiglaCodigo(re);
+  const porRe = localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, 7, reCompleto);
+
+  if (porRe) {
+    const linhaRe = porRe.linha;
+    const reExistente = normalizar(linhaRe[7]);
+
+    if (reExistente === re) {
+      const cpfExistente = formatarCPF(linhaRe[6]);
+      const cpfExistenteNumeros = somenteNumeros(cpfExistente);
+
+      if (cpfExistenteNumeros && cpfExistenteNumeros !== cpfNumeros) {
+        return montarResultadoConflitoIdentificacao(true, {
+          tipo: "re",
+          cpf: cpfFormatado,
+          re: re,
+          cpfExistente: cpfExistente,
+          reExistente: linhaRe[7],
+          nomeExistente: linhaRe[8]
+        });
+      }
+    }
+  }
+
+  return montarResultadoConflitoIdentificacao(false);
+}
+
+function atualizarBuscaRapidaCadastroDepoisSalvar_(sheetBuscaRapida, dados) {
+  if (!buscaRapidaCadastrosAtiva_() || !sheetBuscaRapida) return;
+
+  const linhaBuscaRapida = montarLinhaBuscaRapidaCadastro_(dados);
+
+  if (!linhaBuscaRapida[0] && !linhaBuscaRapida[1]) return;
+
+  let existente = linhaBuscaRapida[0]
+    ? localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, 0, linhaBuscaRapida[0])
+    : null;
+
+  if (!existente && linhaBuscaRapida[1]) {
+    existente = localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, 7, linhaBuscaRapida[7]);
+  }
+
+  if (existente) {
+    gravarLinhaBuscaRapidaCadastro_(sheetBuscaRapida, existente.numeroLinha, linhaBuscaRapida);
+  } else {
+    gravarLinhasBuscaRapidaCadastro_(sheetBuscaRapida, [linhaBuscaRapida]);
+  }
+}
+
+function reconstruirBuscaRapidaCadastros() {
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const ss = obterPlanilhaBuscaRapidaCadastrosPermitida_();
+    const estrutura = configurarEstruturaPlanilha();
+    const sheetDados = estrutura.sheetDados;
+
+    if (!sheetDados) throw new Error("A aba dados_cadastro nao foi encontrada.");
+
+    const inicioExecucao = Date.now();
+    const sheetTemp = criarAbaTemporariaBuscaRapidaCadastros_(ss);
+    const ultimaLinhaDados = sheetDados.getLastRow();
+    const totalRegistros = Math.max(0, ultimaLinhaDados - 1);
+    const indicesDados = obterIndicesCabecalhosPadrao(sheetDados, CABECALHOS_DADOS);
+    const totalColunasDados = Math.max(sheetDados.getLastColumn(), CABECALHOS_DADOS.length);
+    const mapa = {
+      linhasPorPessoa: {},
+      pessoaPorChave: {}
+    };
+
+    Logger.log("Reconstrucao da cadastro_busca_rapida iniciada. Registros em dados_cadastro: " + totalRegistros + ".");
+
+    for (let inicioLinha = 2; inicioLinha <= ultimaLinhaDados; inicioLinha += BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_DADOS) {
+      const inicioLoteMs = Date.now();
+      const quantidadeLote = Math.min(
+        BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_DADOS,
+        ultimaLinhaDados - inicioLinha + 1
+      );
+      const fimLinha = inicioLinha + quantidadeLote - 1;
+      const valores = sheetDados
+        .getRange(inicioLinha, 1, quantidadeLote, totalColunasDados)
+        .getValues();
+
+      valores.forEach(function(linhaAtual, indice) {
+        const linhaPadrao = normalizarLinhaParaCabecalhoPadrao(linhaAtual, indicesDados);
+        const linhaDados = inicioLinha + indice;
+        const linhaBuscaRapida = montarLinhaBuscaRapidaCadastro_({
+          idAtendimento: linhaPadrao[0],
+          cpf: linhaPadrao[6],
+          re: linhaPadrao[4],
+          nome: linhaPadrao[5],
+          dataCadastro: linhaPadrao[26],
+          linhaDados: linhaDados
+        });
+
+        adicionarLinhaBuscaRapidaAoMapa_(mapa, linhaBuscaRapida);
+      });
+
+      Logger.log(
+        "Lote busca rapida dados_cadastro " + inicioLinha + "-" + fimLinha +
+        " | tempo: " + (Date.now() - inicioLoteMs) + " ms"
+      );
+    }
+
+    const linhasBuscaRapida = Object.keys(mapa.linhasPorPessoa)
+      .map(function(chavePessoa) {
+        return mapa.linhasPorPessoa[chavePessoa];
+      })
+      .sort(function(a, b) {
+        return Number(a[4] || 0) - Number(b[4] || 0);
+      });
+
+    gravarLinhasBuscaRapidaCadastro_(sheetTemp, linhasBuscaRapida);
+    finalizarReconstrucaoBuscaRapidaCadastros_(ss, sheetTemp);
+
+    const mensagem = "cadastro_busca_rapida reconstruida com sucesso. Registros em dados_cadastro: " +
+      totalRegistros + ". Pessoas indexadas: " + linhasBuscaRapida.length +
+      ". Tempo total: " + (Date.now() - inicioExecucao) + " ms.";
+
+    Logger.log(mensagem);
+
+    return mensagem;
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+}
+
+function diagnosticarBuscaRapidaCadastros() {
+  const ss = obterPlanilhaBuscaRapidaCadastrosPermitida_();
+  const sheetDados = ss.getSheetByName(ABA_DADOS);
+  const sheetBuscaRapida = ss.getSheetByName(ABA_BUSCA_RAPIDA);
+  const sheetIndice = ss.getSheetByName(ABA_INDICE);
+  const totalDados = sheetDados ? Math.max(0, sheetDados.getLastRow() - 1) : 0;
+  const totalBuscaRapida = sheetBuscaRapida ? Math.max(0, sheetBuscaRapida.getLastRow() - 1) : 0;
+  const totalIndice = sheetIndice ? Math.max(0, sheetIndice.getLastRow() - 1) : 0;
+  const linhas = [
+    "Diagnostico da cadastro_busca_rapida:",
+    "Planilha: " + ss.getName(),
+    "ID: " + ss.getId(),
+    "Registros em dados_cadastro: " + totalDados,
+    "Linhas em cadastro_indice: " + totalIndice,
+    "Pessoas em cadastro_busca_rapida: " + totalBuscaRapida,
+    "Busca rapida ativa: " + (buscaRapidaCadastrosAtiva_() ? "sim" : "nao")
+  ];
+
+  if (sheetBuscaRapida) {
+    linhas.push("Grade cadastro_busca_rapida: " + sheetBuscaRapida.getMaxRows() + "x" + sheetBuscaRapida.getMaxColumns());
+  }
+
+  const texto = linhas.join("\n");
+  Logger.log(texto);
+
+  return texto;
+}
+
+function cancelarReconstrucaoBuscaRapidaCadastros() {
+  const ss = obterPlanilhaBuscaRapidaCadastrosPermitida_();
+  const sheetTemp = ss.getSheetByName(BUSCA_RAPIDA_CADASTROS_ABA_TEMP);
+
+  if (sheetTemp) {
+    ss.deleteSheet(sheetTemp);
+  }
+
+  const mensagem = "Reconstrucao da cadastro_busca_rapida cancelada. Aba temporaria removida quando existia.";
+  Logger.log(mensagem);
+
+  return mensagem;
+}
+
+function montarLinhaBuscaRapidaCadastro_(dados) {
+  const cpf = formatarCPF(dados && dados.cpf);
+  const cpfKey = somenteNumeros(cpf);
+  const re = normalizarSiglaCodigo(dados && dados.re);
+  const reKey = somenteNumeros(re);
+  const nome = normalizar(dados && dados.nome);
+
+  return [
+    cpfKey,
+    reKey,
+    nome,
+    dados && dados.idAtendimento || "",
+    Number(dados && dados.linhaDados || 0),
+    dados && dados.dataCadastro || "",
+    cpf,
+    re,
+    nome,
+    new Date()
+  ];
+}
+
+function adicionarLinhaBuscaRapidaAoMapa_(mapa, linhaBuscaRapida) {
+  if (!linhaBuscaRapida || (!linhaBuscaRapida[0] && !linhaBuscaRapida[1])) return;
+
+  const chaves = [];
+
+  if (linhaBuscaRapida[0]) chaves.push("cpf:" + linhaBuscaRapida[0]);
+  if (linhaBuscaRapida[1]) chaves.push("re:" + linhaBuscaRapida[1]);
+
+  let chavePessoa = "";
+
+  for (let i = 0; i < chaves.length; i++) {
+    if (mapa.pessoaPorChave[chaves[i]]) {
+      chavePessoa = mapa.pessoaPorChave[chaves[i]];
+      break;
+    }
+  }
+
+  if (!chavePessoa) {
+    chavePessoa = linhaBuscaRapida[0]
+      ? "cpf:" + linhaBuscaRapida[0]
+      : "re:" + linhaBuscaRapida[1];
+  }
+
+  chaves.forEach(function(chave) {
+    mapa.pessoaPorChave[chave] = chavePessoa;
+  });
+
+  mapa.linhasPorPessoa[chavePessoa] = linhaBuscaRapida;
+}
+
+function criarAbaTemporariaBuscaRapidaCadastros_(ss) {
+  const existente = ss.getSheetByName(BUSCA_RAPIDA_CADASTROS_ABA_TEMP);
+
+  if (existente) {
+    ss.deleteSheet(existente);
+  }
+
+  const sheet = ss.insertSheet(BUSCA_RAPIDA_CADASTROS_ABA_TEMP);
+  ajustarGradeBuscaRapidaCadastros_(sheet, 2, CABECALHOS_BUSCA_RAPIDA.length);
+  sheet.getRange(1, 1, 1, CABECALHOS_BUSCA_RAPIDA.length).setValues([CABECALHOS_BUSCA_RAPIDA]);
+  sheet.setFrozenRows(1);
+
+  return sheet;
+}
+
+function finalizarReconstrucaoBuscaRapidaCadastros_(ss, sheetTemp) {
+  const sheetAtual = ss.getSheetByName(ABA_BUSCA_RAPIDA);
+
+  if (sheetAtual && sheetAtual.getSheetId() !== sheetTemp.getSheetId()) {
+    ss.deleteSheet(sheetAtual);
+  }
+
+  sheetTemp.setName(ABA_BUSCA_RAPIDA);
+  ajustarGradeBuscaRapidaCadastros_(sheetTemp, Math.max(2, sheetTemp.getLastRow()), CABECALHOS_BUSCA_RAPIDA.length);
+  SpreadsheetApp.flush();
+}
+
+function gravarLinhasBuscaRapidaCadastro_(sheet, linhas) {
+  if (!sheet || !linhas || linhas.length === 0) return;
+
+  ajustarColunasBuscaRapidaCadastros_(sheet, CABECALHOS_BUSCA_RAPIDA.length);
+
+  for (let i = 0; i < linhas.length; i += BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_GRAVACAO) {
+    const lote = linhas.slice(i, i + BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_GRAVACAO);
+    const primeiraLinha = sheet.getLastRow() + 1;
+    const ultimaLinhaNecessaria = primeiraLinha + lote.length - 1;
+
+    garantirLinhasBuscaRapidaCadastros_(sheet, ultimaLinhaNecessaria);
+
+    sheet
+      .getRange(primeiraLinha, 1, lote.length, CABECALHOS_BUSCA_RAPIDA.length)
+      .setValues(lote);
+  }
+}
+
+function gravarLinhaBuscaRapidaCadastro_(sheet, numeroLinha, linhaBuscaRapida) {
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_BUSCA_RAPIDA);
+  const linhaAtual = normalizarLinhaParaCabecalhosAtuais(
+    sheet,
+    linhaBuscaRapida,
+    CABECALHOS_BUSCA_RAPIDA,
+    indicesPadrao
+  );
+
+  sheet
+    .getRange(numeroLinha, 1, 1, linhaAtual.length)
+    .setValues([linhaAtual]);
+}
+
+function obterOuCriarAbaBuscaRapidaCadastros_() {
+  if (!buscaRapidaCadastrosAtiva_()) return null;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return obterOuCriarAba(ss, ABA_BUSCA_RAPIDA, CABECALHOS_BUSCA_RAPIDA);
+}
+
+function buscaRapidaCadastrosAtiva_() {
+  return BUSCA_RAPIDA_CADASTROS_ATIVA === true;
+}
+
+function obterPlanilhaBuscaRapidaCadastrosPermitida_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (!ss) {
+    throw new Error("Nao foi possivel obter a planilha ativa.");
+  }
+
+  if (!buscaRapidaCadastrosAtiva_()) {
+    throw new Error("Busca rapida de cadastros esta desativada.");
+  }
+
+  return ss;
+}
+
+function ajustarGradeBuscaRapidaCadastros_(sheet, linhasAlvo, colunasAlvo) {
+  ajustarColunasBuscaRapidaCadastros_(sheet, colunasAlvo);
+  ajustarLinhasBuscaRapidaCadastros_(sheet, linhasAlvo);
+}
+
+function ajustarColunasBuscaRapidaCadastros_(sheet, colunasAlvo) {
+  const alvo = Math.max(1, colunasAlvo || 1);
+  const atuais = sheet.getMaxColumns();
+
+  if (atuais > alvo) {
+    sheet.deleteColumns(alvo + 1, atuais - alvo);
+  } else if (atuais < alvo) {
+    sheet.insertColumnsAfter(atuais, alvo - atuais);
+  }
+}
+
+function ajustarLinhasBuscaRapidaCadastros_(sheet, linhasAlvo) {
+  const linhasCongeladas = sheet.getFrozenRows ? sheet.getFrozenRows() : 0;
+  const minimoPermitido = Math.max(1, linhasCongeladas + 1);
+  const alvo = Math.max(minimoPermitido, linhasAlvo || 1);
+  const atuais = sheet.getMaxRows();
+
+  if (atuais > alvo) {
+    sheet.deleteRows(alvo + 1, atuais - alvo);
+  } else if (atuais < alvo) {
+    sheet.insertRowsAfter(atuais, alvo - atuais);
+  }
+}
+
+function garantirLinhasBuscaRapidaCadastros_(sheet, ultimaLinhaNecessaria) {
+  const atuais = sheet.getMaxRows();
+
+  if (atuais < ultimaLinhaNecessaria) {
+    sheet.insertRowsAfter(atuais, ultimaLinhaNecessaria - atuais);
+  }
 }
 
 function gerarIdSeguro(prefixo) {
@@ -4212,7 +4653,6 @@ function buscarCadastro(termo, idToken) {
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(ABA_DADOS);
-  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
 
   if (!sheet) {
     return {
@@ -4245,6 +4685,23 @@ function buscarCadastro(termo, idToken) {
     !pesquisouRECompleto &&
     /^[0-9]{6}$/.test(buscaNumeros) &&
     buscaTexto === buscaNumeros;
+
+  const resultadoBuscaRapida = buscarCadastroRapidoQuandoPossivel_(
+    sheet,
+    buscaTexto,
+    buscaNumeros,
+    termoOriginal,
+    {
+      pesquisouCPFCompleto: pesquisouCPFCompleto,
+      pesquisouRECompleto: pesquisouRECompleto
+    }
+  );
+
+  if (resultadoBuscaRapida) {
+    return resultadoBuscaRapida;
+  }
+
+  const sheetIndice = obterOuCriarAba(ss, ABA_INDICE, CABECALHOS_INDICE);
 
   const candidatos = localizarCadastrosNoIndice(
     sheetIndice,
@@ -4290,6 +4747,146 @@ function buscarCadastro(termo, idToken) {
     encontrado: true,
     multiplos: true,
     resultados: resultados.slice(0, 10)
+  };
+}
+
+function buscarCadastroRapidoQuandoPossivel_(sheetDados, buscaTexto, buscaNumeros, termoOriginal, opcoes) {
+  const configuracao = opcoes || {};
+
+  if (!buscaRapidaCadastrosAtiva_()) return null;
+  if (!configuracao.pesquisouCPFCompleto && !configuracao.pesquisouRECompleto) return null;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetBuscaRapida = ss ? ss.getSheetByName(ABA_BUSCA_RAPIDA) : null;
+
+  if (!sheetBuscaRapida || sheetBuscaRapida.getLastRow() < 2) {
+    Logger.log("Busca rapida de cadastros vazia. Usando cadastro_indice como fallback.");
+    return null;
+  }
+
+  const inicio = Date.now();
+  const candidato = localizarPessoaBuscaRapidaPorIdentificacao_(
+    sheetBuscaRapida,
+    buscaNumeros,
+    termoOriginal,
+    configuracao
+  );
+
+  Logger.log("Busca rapida consultada em " + (Date.now() - inicio) + " ms.");
+
+  if (!candidato) {
+    return {
+      encontrado: false,
+      mensagem: "Nenhum cadastro anterior localizado. Preencha novo cadastro."
+    };
+  }
+
+  const linha = localizarLinhaCadastroPorCandidato(sheetDados, candidato);
+
+  if (!linha) {
+    Logger.log("Busca rapida encontrou candidato, mas a linha em dados_cadastro nao foi localizada. Usando cadastro_indice como fallback.");
+    return null;
+  }
+
+  const resultados = [montarRegistroBusca(linha)];
+
+  anexarVinculosResultadosBusca(resultados);
+
+  return {
+    encontrado: true,
+    multiplos: false,
+    registro: resultados[0]
+  };
+}
+
+function localizarPessoaBuscaRapidaPorIdentificacao_(sheetBuscaRapida, buscaNumeros, termoOriginal, opcoes) {
+  const configuracao = opcoes || {};
+
+  if (configuracao.pesquisouCPFCompleto) {
+    const localizadoCpf = localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, 0, buscaNumeros);
+
+    return localizadoCpf ? montarCandidatoBuscaRapidaCadastro_(localizadoCpf.linha) : null;
+  }
+
+  if (configuracao.pesquisouRECompleto) {
+    const reCompleto = normalizarSiglaCodigo(termoOriginal);
+    const localizadoRe = localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, 7, reCompleto);
+
+    if (localizadoRe) {
+      return montarCandidatoBuscaRapidaCadastro_(localizadoRe.linha);
+    }
+  }
+
+  return null;
+}
+
+function localizarLinhaBuscaRapidaPorChave_(sheetBuscaRapida, indiceColunaPadrao, chave) {
+  const encontrados = localizarLinhasBuscaRapidaPorChave_(sheetBuscaRapida, indiceColunaPadrao, chave, 1);
+
+  return encontrados.length > 0 ? encontrados[0] : null;
+}
+
+function localizarLinhasBuscaRapidaPorChave_(sheetBuscaRapida, indiceColunaPadrao, chave, limite) {
+  if (!sheetBuscaRapida || sheetBuscaRapida.getLastRow() < 2 || !chave) return [];
+
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheetBuscaRapida, CABECALHOS_BUSCA_RAPIDA);
+  const coluna = indicesPadrao[indiceColunaPadrao] + 1;
+  const ultimaLinha = sheetBuscaRapida.getLastRow();
+  const quantidadeColunas = Math.max(sheetBuscaRapida.getLastColumn(), CABECALHOS_BUSCA_RAPIDA.length);
+  const maximo = limite || 20;
+  const finder = sheetBuscaRapida
+    .getRange(2, coluna, ultimaLinha - 1, 1)
+    .createTextFinder(String(chave))
+    .matchCase(false)
+    .matchEntireCell(true)
+    .useRegularExpression(false);
+  const resultados = [];
+
+  if (maximo === 1) {
+    const celula = finder.findNext();
+
+    if (!celula) return resultados;
+
+    const numeroLinha = celula.getRow();
+    const linhaAtual = sheetBuscaRapida
+      .getRange(numeroLinha, 1, 1, quantidadeColunas)
+      .getValues()[0];
+
+    resultados.push({
+      numeroLinha: numeroLinha,
+      linha: normalizarLinhaParaCabecalhoPadrao(linhaAtual, indicesPadrao)
+    });
+
+    return resultados;
+  }
+
+  const celulas = finder.findAll();
+
+  for (let i = 0; i < celulas.length; i++) {
+    const numeroLinha = celulas[i].getRow();
+    const linhaAtual = sheetBuscaRapida
+      .getRange(numeroLinha, 1, 1, quantidadeColunas)
+      .getValues()[0];
+
+    resultados.push({
+      numeroLinha: numeroLinha,
+      linha: normalizarLinhaParaCabecalhoPadrao(linhaAtual, indicesPadrao)
+    });
+
+    if (resultados.length >= maximo) break;
+  }
+
+  return resultados;
+}
+
+function montarCandidatoBuscaRapidaCadastro_(linhaBuscaRapida) {
+  return {
+    idAtendimento: linhaBuscaRapida[3],
+    linhaDados: Number(linhaBuscaRapida[4] || 0),
+    dataCadastro: linhaBuscaRapida[5],
+    cpf: linhaBuscaRapida[6],
+    re: linhaBuscaRapida[7],
+    nome: linhaBuscaRapida[8]
   };
 }
 
