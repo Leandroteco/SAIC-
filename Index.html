@@ -2420,6 +2420,106 @@ body {
   font-weight: 900;
 }
 
+/* Monitores grandes: amplia a tela inicial sem alterar notebooks e dispositivos menores. */
+@media (min-width: 1440px) {
+  .app-shell.tela-inicial-ativa .form-content {
+    padding: 24px clamp(28px, 3vw, 58px);
+  }
+
+  .app-shell.tela-inicial-ativa .tela-inicial-sistema {
+    gap: 24px;
+    max-width: 1480px;
+  }
+
+  .home-band-content {
+    gap: 30px;
+    grid-template-columns: minmax(320px, 1fr) auto minmax(230px, 1fr);
+    min-height: 132px;
+    padding: 26px 32px;
+  }
+
+  .home-brand-copy {
+    gap: 18px;
+    min-width: 300px;
+  }
+
+  .home-sismen-symbol-frame {
+    height: 76px;
+    width: 76px;
+  }
+
+  .home-brand-copy strong {
+    font-size: 26px;
+  }
+
+  .home-brand-copy span {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .home-institutional-logos {
+    gap: 20px;
+  }
+
+  .home-institutional-logo {
+    height: 90px;
+    width: 105px;
+  }
+
+  .home-access-badge {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  .home-stage {
+    gap: 22px;
+  }
+
+  .home-workspace-head {
+    padding: 26px 30px;
+  }
+
+  .home-workspace-head h2 {
+    font-size: 29px;
+  }
+
+  .home-workspace-head p,
+  .home-time {
+    font-size: 14px;
+  }
+
+  .home-modules-area {
+    gap: 20px;
+    padding: 22px;
+  }
+
+  .home-module-card {
+    gap: 16px;
+    min-height: 205px;
+    padding: 22px;
+  }
+
+  .home-module-icon {
+    font-size: 18px;
+    height: 58px;
+    width: 58px;
+  }
+
+  .home-module-title {
+    font-size: clamp(23px, 1.35vw, 26px);
+  }
+
+  .home-module-text {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .home-footer {
+    font-size: 11.5px;
+    padding-bottom: 10px;
+  }
+}
+
 @media (max-width: 980px) {
   .app-shell.tela-inicial-ativa .form-content {
     padding: 12px;
@@ -2690,7 +2790,7 @@ body {
 
       <section class="ajuda-item">
         <h3>Busca</h3>
-        <p>Antes de preencher tudo novamente, pesquise pelo CPF completo ou pelo R.E. completo com dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações necessárias antes de salvar o novo atendimento.</p>
+        <p>Antes de preencher tudo novamente, pesquise por R.E., CPF ou nome. Na busca por R.E., o número pode ser digitado sem o dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações que forem necessárias antes de salvar o novo atendimento.</p>
       </section>
 
       <section class="ajuda-item">
@@ -2855,19 +2955,19 @@ body {
 <!-- Formulario de atendimento: concentra busca, dados pessoais, endereco e salvamento. -->
 <div class="container">
 
-  <!-- Busca inicial: localiza cadastro por CPF completo ou R.E. completo antes de preencher o atendimento. -->
+  <!-- Busca inicial: localiza cadastro por R.E., CPF ou nome antes de preencher o atendimento. -->
   <h2 class="titulo-centralizado">Identificação do Atendimento</h2>
 
  <!-- ==================================================== -->
-<!-- pesquisa de RE completo ou CPF completo          -->
+<!-- pesquisa de RE, CPF, NOME                         -->
 <!-- ==================================================== -->
 
 <div class="grid-2">
   <div>
-    <label>Buscar por R.E. completo ou CPF completo</label>
+    <label>Buscar por R.E., CPF ou Nome</label>
     <input
   id="campoBusca"
-  placeholder="R.E. completo (000000-0) ou CPF completo"
+  placeholder="R.E./Nome com 5 caracteres ou CPF completo"
   oninput="limparAvisosBusca(); mascaraBusca(this)"
   onkeydown="buscarComEnter(event)">
   </div>
@@ -2890,7 +2990,7 @@ body {
 
 <div id="areaRelatorios"></div>
  <!-- ==================================================== -->
-<!-- pesquisa de RE completo ou CPF completo          -->
+<!-- pesquisa de RE, CPF, NOME                         -->
 <!-- ==================================================== -->
 
 
@@ -3480,7 +3580,6 @@ let ultimoAtendimentoSalvoId = "";
 let ultimosAtendimentosCarregados = false;
 let ultimosAtendimentosCarregando = false;
 let conflitoIdentificacaoAtual = null;
-let referenciaBuscaRapidaAtual = null;
 let ultimaChaveIdentificacaoVerificada = "";
 let timerValidacaoIdentificacao = null;
 let navegacaoAlteracoesPendentes = false;
@@ -4390,43 +4489,6 @@ function obterIdentificacaoFormulario() {
   };
 }
 
-function definirReferenciaBuscaRapidaAtual(referencia) {
-  const numeroLinha = Number(referencia && referencia.numeroLinha || 0);
-  const cpf = String(referencia && referencia.cpf || "");
-  const re = String(referencia && referencia.re || "").trim().toUpperCase();
-
-  if (numeroLinha < 2 || cpf.replace(/\D/g, "").length !== 11 || !reValido(re)) {
-    referenciaBuscaRapidaAtual = null;
-    return;
-  }
-
-  referenciaBuscaRapidaAtual = {
-    numeroLinha: numeroLinha,
-    cpf: cpf,
-    re: re
-  };
-}
-
-function obterReferenciaBuscaRapidaParaSalvar() {
-  if (!referenciaBuscaRapidaAtual) return null;
-
-  const identificacao = obterIdentificacaoFormulario();
-  const cpfAtual = String(identificacao.cpf || "").replace(/\D/g, "");
-  const reAtual = String(identificacao.re || "").trim().toUpperCase();
-  const cpfReferencia = String(referenciaBuscaRapidaAtual.cpf || "").replace(/\D/g, "");
-  const reReferencia = String(referenciaBuscaRapidaAtual.re || "").trim().toUpperCase();
-
-  if (cpfAtual !== cpfReferencia || reAtual !== reReferencia) {
-    return null;
-  }
-
-  return {
-    numeroLinha: referenciaBuscaRapidaAtual.numeroLinha,
-    cpf: referenciaBuscaRapidaAtual.cpf,
-    re: referenciaBuscaRapidaAtual.re
-  };
-}
-
 function obterChaveIdentificacaoFormulario() {
   const dados = obterIdentificacaoFormulario();
   const cpfNumeros = String(dados.cpf || "").replace(/\D/g, "");
@@ -4889,7 +4951,6 @@ function salvar() {
     postoGraduacao: document.getElementById("postoGraduacao").value,
     nome: document.getElementById("nome").value,
     cpf: document.getElementById("cpf").value,
-    referenciaBuscaRapida: obterReferenciaBuscaRapidaParaSalvar(),
     telefone: document.getElementById("telefone").value,
     email: document.getElementById("email").value,
     dataNascimento: document.getElementById("dataNascimento").value,
@@ -4943,7 +5004,6 @@ function limparFormulario(opcoes) {
   const preservarImpressao = opcoes && opcoes.preservarImpressao;
 
   conflitoIdentificacaoAtual = null;
-  referenciaBuscaRapidaAtual = null;
   ultimaChaveIdentificacaoVerificada = "";
   ocultarAvisoConflitoIdentificacao();
 
@@ -5069,26 +5129,37 @@ function atualizarCampoDataInatividade() {
 
 function buscarCadastroTela() {
   definirAtendimentoImpressao("");
-  definirReferenciaBuscaRapidaAtual(null);
 
   const campoBusca = document.getElementById("campoBusca");
   const resultadoBusca = document.getElementById("resultadoBusca");
   const termo = campoBusca.value.trim();
   const numeros = termo.replace(/\D/g, "");
-  const cpfCompleto = numeros.length === 11 && !/[A-Z]/i.test(termo);
-  const reCompleto = /^[0-9]{6}-[0-9A]$/i.test(termo);
+  const textoNormalizado = termo
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 
   if (!termo) {
     resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Informe o CPF completo ou o R.E. completo com dígito.</p>`;
+      `<p style="color:#9a3412; font-weight:bold;">Digite um R.E., CPF ou Nome para buscar.</p>`;
     campoBusca.focus();
     return;
   }
 
-  if (!cpfCompleto && !reCompleto) {
+  const cpfCompleto = numeros.length === 11;
+  const pareceCpfIncompleto = numeros.length >= 8 && numeros.length < 11 && !/[A-Z]/i.test(termo);
+  const reOuNomeMinimo = textoNormalizado.length >= 5 || numeros.length >= 5;
+
+  if (pareceCpfIncompleto) {
     resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">A pesquisa aceita somente CPF completo ou R.E. completo com dígito (ex.: 123456-7).</p>`;
-    campoBusca.focus();
+      `<p style="color:#9a3412; font-weight:bold;">Para pesquisar por CPF, informe o CPF completo.</p>`;
+    return;
+  }
+
+  if (!cpfCompleto && !reOuNomeMinimo) {
+    resultadoBusca.innerHTML =
+      `<p style="color:#9a3412; font-weight:bold;">Digite pelo menos 5 caracteres para R.E./Nome ou informe o CPF completo.</p>`;
     return;
   }
 
@@ -5111,13 +5182,12 @@ function tratarResultadoBusca(resposta) {
   div.innerHTML = "";
 
   if (!resposta.encontrado) {
-    definirReferenciaBuscaRapidaAtual(null);
     div.innerHTML = `<p style="color:#9a3412; font-weight:bold;">${resposta.mensagem}</p>`;
     return;
   }
 
   if (!resposta.multiplos) {
-  preencherFormulario(resposta.registro, resposta.referenciaBuscaRapida);
+  preencherFormulario(resposta.registro);
 
   div.innerHTML = montarMensagemCadastroLocalizado(resposta.registro) +
     montarDetalhesBuscaAtendimento(resposta.registro);
@@ -5145,7 +5215,7 @@ function tratarResultadoBusca(resposta) {
     `;
 
     item.onclick = function() {
-  preencherFormulario(registro, null);
+  preencherFormulario(registro);
 
   div.innerHTML = montarMensagemCadastroLocalizado(registro) +
     montarDetalhesBuscaAtendimento(registro);
@@ -5258,10 +5328,9 @@ function formatarTextoRetornoBusca(valor) {
 }
 
 // Preenche o formulario com os dados do cadastro selecionado.
-function preencherFormulario(r, referenciaBuscaRapida) {
+function preencherFormulario(r) {
   definirAtendimentoImpressao("");
   conflitoIdentificacaoAtual = null;
-  referenciaBuscaRapidaAtual = null;
   ultimaChaveIdentificacaoVerificada = "";
   ocultarAvisoConflitoIdentificacao();
 
@@ -5314,18 +5383,31 @@ function preencherFormulario(r, referenciaBuscaRapida) {
   atualizarCampoDataInatividade();
   atualizarObrigatoriedadeEmail();
   atualizarCamposOutros();
-  definirReferenciaBuscaRapidaAtual(referenciaBuscaRapida);
 }
 
 
 // Aplica mascara inteligente no campo de busca sem atrapalhar pesquisa por nome.
 function mascaraBusca(campo) {
-  let limpo = String(campo.value || "")
-    .toUpperCase()
-    .replace(/[^0-9A]/g, "")
-    .substring(0, 11);
+  let valor = campo.value.toUpperCase();
 
+  // Se tiver letras que indicam nome, não aplica máscara
+  if (/[B-Z]/.test(valor)) {
+    campo.value = valor;
+    return;
+  }
+
+  // Se começa com A, é nome, não RE
+  if (valor.startsWith("A")) {
+    campo.value = valor;
+    return;
+  }
+
+  let limpo = valor.replace(/[^0-9A]/g, "");
+
+  // CPF: se passou de 7 números, deixa virar CPF
   if (/^\d{8,11}$/.test(limpo)) {
+    limpo = limpo.substring(0, 11);
+
     campo.value = limpo
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
@@ -5333,17 +5415,19 @@ function mascaraBusca(campo) {
     return;
   }
 
+  // RE com A apenas no final: 6 números + A
   if (/^\d{6}A$/.test(limpo)) {
     campo.value = limpo.substring(0, 6) + "-A";
     return;
   }
 
+  // RE numérico: 6 números + 1 dígito
   if (/^\d{7}$/.test(limpo)) {
     campo.value = limpo.substring(0, 6) + "-" + limpo.substring(6);
     return;
   }
 
-  campo.value = limpo;
+  campo.value = valor;
 }
 
 
@@ -5874,5 +5958,3 @@ document.addEventListener("input", function(event) {
 </script>
 </body>
 </html>
-
-
