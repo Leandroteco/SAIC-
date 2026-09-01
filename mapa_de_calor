@@ -1134,6 +1134,8 @@ body {
 .filter-actions {
   align-items: end;
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .btn-primary {
@@ -1147,6 +1149,28 @@ body {
   padding: 10px 18px;
 }
 
+.btn-cache {
+  background: #ffffff;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  color: var(--primary-dark);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  min-height: 42px;
+  padding: 10px 18px;
+}
+
+.btn-cache:hover {
+  background: #eef7fa;
+}
+
+.btn-cache:disabled,
+.btn-primary:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .status-line {
   color: var(--muted);
   font-size: 13px;
@@ -1156,6 +1180,14 @@ body {
 
 .status-line.error {
   color: var(--danger);
+}
+
+.status-line.cache-processing {
+  color: var(--primary-dark);
+}
+
+.status-line.cache-complete {
+  color: #287a55;
 }
 
 .navegacao-overlay {
@@ -1802,10 +1834,12 @@ body.mapa-tema-escuro .btn-map-theme:hover {
               </div>
               <div class="filter-actions">
                 <button id="btnAtualizarMapa" type="button" class="btn-primary" onclick="carregarMapaCalor()">Atualizar</button>
+                <button id="btnSincronizarCeps" type="button" class="btn-cache" onclick="sincronizarCepsMapa()">Sincronizar coordenadas</button>
               </div>
             </div>
 
             <div id="statusMapa" class="status-line">Informe o periodo e atualize o mapa.</div>
+            <div id="statusCoberturaMapa" class="status-line">A cobertura das coordenadas aparecer&aacute; ap&oacute;s a consulta.</div>
           </section>
 
           <section class="decision-grid" aria-label="Indicadores territoriais">
@@ -2122,18 +2156,143 @@ body.mapa-tema-escuro .btn-map-theme:hover {
         .obterDadosMapaCalor(coletarFiltrosMapa(), tokenGoogle);
     }
 
+    function sincronizarCepsMapa() {
+      const botao = document.getElementById("btnSincronizarCeps");
+      const status = document.getElementById("statusCoberturaMapa");
+
+      botao.disabled = true;
+      status.className = "status-line cache-processing";
+      status.innerText = "Processando um lote de coordenadas e preparando a continuidade automática...";
+
+      if (!window.google || !google.script || !google.script.run) {
+        botao.disabled = false;
+        status.className = "status-line error";
+        status.innerText = "Abra esta página pelo Apps Script para sincronizar as coordenadas.";
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          const resultado = resposta || {};
+
+          botao.disabled = false;
+          status.className = resultado.totalPendente > 0
+            ? "status-line cache-processing"
+            : "status-line cache-complete";
+          status.innerText = resultado.mensagem || "Sincronização de coordenadas atualizada.";
+
+          carregarMapaCalor();
+        })
+        .withFailureHandler(function(erro) {
+          botao.disabled = false;
+          status.className = "status-line error";
+          status.innerText = "Erro ao iniciar a sincronização: " +
+            (erro && erro.message ? erro.message : erro);
+        })
+        .iniciarAtualizacaoCacheCepsMapa(tokenGoogle);
+    }
+
     function renderizarMapaCalor(dados) {
       const resumo = dados.resumo || {};
       const mapa = dados.mapa || {};
 
       mapaCalorAtual = mapa;
       atualizarMetricasMapa(resumo, mapa);
+      atualizarCoberturaMapa(resumo, dados.cacheCoordenadas || {});
       atualizarLeituraGerencial(mapa.bairros || mapa.calor || [], mapa.residencias || []);
       renderizarCamadasMapa(mapa);
 
       const status = document.getElementById("statusMapa");
       status.className = "status-line";
       status.innerText = "Mapa atualizado. Periodo: " + ((dados.periodo && dados.periodo.rotulo) || "periodo informado") + ".";
+    }
+
+    function atualizarCoberturaMapa(resumo, cache) {
+      const alvo = document.getElementById("statusCoberturaMapa");
+      const botao = document.getElementById("btnSincronizarCeps");
+      const totalPeriodo = Number(resumo.totalAtendimentos || 0);
+      const total = Number(
+        resumo.totalAtendimentosAmostra !== undefined
+          ? resumo.totalAtendimentosAmostra
+          : totalPeriodo
+      );
+      const mapeados = Number(resumo.atendimentosMapeados || 0);
+      const percentual = Number(resumo.percentualCoberturaMapa || 0);
+      const pendentesPeriodo = Number(resumo.cepsPendentesUnicos || 0);
+      const pendentesFila = Number(
+        resumo.cepsPendentesFila !== undefined
+          ? resumo.cepsPendentesFila
+          : cache.totalProcessaveis || 0
+      );
+      const falhas = Number(resumo.cepsComFalha || cache.totalComFalha || 0);
+      const processando = !!resumo.cacheCepsEmProcessamento || !!cache.gatilhoAtivo;
+      const partes = [];
+
+      if (resumo.amostraGeograficaAplicada) {
+        partes.push(
+          "O período possui " + formatarInteiroMapa(totalPeriodo) +
+          " atendimento(s). A análise geográfica utiliza uma amostra distribuída de " +
+          formatarInteiroMapa(total) + " atendimento(s) e " +
+          formatarInteiroMapa(resumo.totalCepsAmostra || 0) +
+          " CEP(s), entre " +
+          formatarInteiroMapa(resumo.totalCepsPeriodo || 0) +
+          " CEP(s) válidos do período."
+        );
+      }
+
+      partes.push(
+        formatarInteiroMapa(mapeados) + " de " + formatarInteiroMapa(total) +
+        (resumo.amostraGeograficaAplicada
+          ? " atendimento(s) da amostra localizados no mapa ("
+          : " atendimento(s) localizados no mapa (") +
+        percentual.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%)."
+      );
+
+      if (pendentesPeriodo > 0) {
+        partes.push(formatarInteiroMapa(pendentesPeriodo) + " CEP(s) único(s) da amostra aguardam coordenadas.");
+      }
+
+      if (pendentesFila > 0) {
+        partes.push(formatarInteiroMapa(pendentesFila) + " CEP(s) pendente(s) na fila geral.");
+      }
+
+      if (falhas > 0) {
+        partes.push(formatarInteiroMapa(falhas) + " CEP(s) precisam de revisão.");
+      }
+
+      if (processando && pendentesFila > 0) {
+        partes.push("A sincronização continuará automaticamente em segundo plano.");
+      }
+
+      if (resumo.filaCepsOcupada) {
+        partes.push(
+          "A fila de coordenadas já está sendo processada; o mapa utilizou o cache disponível e tentará incluir os CEPs restantes na próxima atualização."
+        );
+      }
+
+      if (resumo.amostraVisualAplicada) {
+        partes.push(
+          "Os cálculos usam todos os " +
+          formatarInteiroMapa(resumo.totalResidenciasMapeadas) +
+          " CEP(s) mapeados; a tela exibe " +
+          formatarInteiroMapa(resumo.marcadoresResidenciasExibidos) +
+          " marcadores representativos para manter a navegação rápida."
+        );
+      }
+
+      alvo.className = pendentesFila > 0
+        ? "status-line cache-processing"
+        : "status-line cache-complete";
+      alvo.innerText = partes.join(" ");
+
+      const haPendencias = pendentesFila > 0 || pendentesPeriodo > 0;
+
+      botao.disabled = !haPendencias;
+      botao.innerText = processando && pendentesFila > 0
+        ? "Processar próximo lote"
+        : haPendencias
+          ? "Sincronizar coordenadas"
+          : "Coordenadas atualizadas";
     }
 
     function atualizarMetricasMapa(resumo, mapa) {
