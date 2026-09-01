@@ -3480,6 +3480,7 @@ let ultimoAtendimentoSalvoId = "";
 let ultimosAtendimentosCarregados = false;
 let ultimosAtendimentosCarregando = false;
 let conflitoIdentificacaoAtual = null;
+let referenciaBuscaRapidaAtual = null;
 let ultimaChaveIdentificacaoVerificada = "";
 let timerValidacaoIdentificacao = null;
 let navegacaoAlteracoesPendentes = false;
@@ -4389,6 +4390,43 @@ function obterIdentificacaoFormulario() {
   };
 }
 
+function definirReferenciaBuscaRapidaAtual(referencia) {
+  const numeroLinha = Number(referencia && referencia.numeroLinha || 0);
+  const cpf = String(referencia && referencia.cpf || "");
+  const re = String(referencia && referencia.re || "").trim().toUpperCase();
+
+  if (numeroLinha < 2 || cpf.replace(/\D/g, "").length !== 11 || !reValido(re)) {
+    referenciaBuscaRapidaAtual = null;
+    return;
+  }
+
+  referenciaBuscaRapidaAtual = {
+    numeroLinha: numeroLinha,
+    cpf: cpf,
+    re: re
+  };
+}
+
+function obterReferenciaBuscaRapidaParaSalvar() {
+  if (!referenciaBuscaRapidaAtual) return null;
+
+  const identificacao = obterIdentificacaoFormulario();
+  const cpfAtual = String(identificacao.cpf || "").replace(/\D/g, "");
+  const reAtual = String(identificacao.re || "").trim().toUpperCase();
+  const cpfReferencia = String(referenciaBuscaRapidaAtual.cpf || "").replace(/\D/g, "");
+  const reReferencia = String(referenciaBuscaRapidaAtual.re || "").trim().toUpperCase();
+
+  if (cpfAtual !== cpfReferencia || reAtual !== reReferencia) {
+    return null;
+  }
+
+  return {
+    numeroLinha: referenciaBuscaRapidaAtual.numeroLinha,
+    cpf: referenciaBuscaRapidaAtual.cpf,
+    re: referenciaBuscaRapidaAtual.re
+  };
+}
+
 function obterChaveIdentificacaoFormulario() {
   const dados = obterIdentificacaoFormulario();
   const cpfNumeros = String(dados.cpf || "").replace(/\D/g, "");
@@ -4851,6 +4889,7 @@ function salvar() {
     postoGraduacao: document.getElementById("postoGraduacao").value,
     nome: document.getElementById("nome").value,
     cpf: document.getElementById("cpf").value,
+    referenciaBuscaRapida: obterReferenciaBuscaRapidaParaSalvar(),
     telefone: document.getElementById("telefone").value,
     email: document.getElementById("email").value,
     dataNascimento: document.getElementById("dataNascimento").value,
@@ -4904,6 +4943,7 @@ function limparFormulario(opcoes) {
   const preservarImpressao = opcoes && opcoes.preservarImpressao;
 
   conflitoIdentificacaoAtual = null;
+  referenciaBuscaRapidaAtual = null;
   ultimaChaveIdentificacaoVerificada = "";
   ocultarAvisoConflitoIdentificacao();
 
@@ -5029,6 +5069,7 @@ function atualizarCampoDataInatividade() {
 
 function buscarCadastroTela() {
   definirAtendimentoImpressao("");
+  definirReferenciaBuscaRapidaAtual(null);
 
   const campoBusca = document.getElementById("campoBusca");
   const resultadoBusca = document.getElementById("resultadoBusca");
@@ -5070,12 +5111,13 @@ function tratarResultadoBusca(resposta) {
   div.innerHTML = "";
 
   if (!resposta.encontrado) {
+    definirReferenciaBuscaRapidaAtual(null);
     div.innerHTML = `<p style="color:#9a3412; font-weight:bold;">${resposta.mensagem}</p>`;
     return;
   }
 
   if (!resposta.multiplos) {
-  preencherFormulario(resposta.registro);
+  preencherFormulario(resposta.registro, resposta.referenciaBuscaRapida);
 
   div.innerHTML = montarMensagemCadastroLocalizado(resposta.registro) +
     montarDetalhesBuscaAtendimento(resposta.registro);
@@ -5103,7 +5145,7 @@ function tratarResultadoBusca(resposta) {
     `;
 
     item.onclick = function() {
-  preencherFormulario(registro);
+  preencherFormulario(registro, null);
 
   div.innerHTML = montarMensagemCadastroLocalizado(registro) +
     montarDetalhesBuscaAtendimento(registro);
@@ -5216,9 +5258,10 @@ function formatarTextoRetornoBusca(valor) {
 }
 
 // Preenche o formulario com os dados do cadastro selecionado.
-function preencherFormulario(r) {
+function preencherFormulario(r, referenciaBuscaRapida) {
   definirAtendimentoImpressao("");
   conflitoIdentificacaoAtual = null;
+  referenciaBuscaRapidaAtual = null;
   ultimaChaveIdentificacaoVerificada = "";
   ocultarAvisoConflitoIdentificacao();
 
@@ -5271,6 +5314,7 @@ function preencherFormulario(r) {
   atualizarCampoDataInatividade();
   atualizarObrigatoriedadeEmail();
   atualizarCamposOutros();
+  definirReferenciaBuscaRapidaAtual(referenciaBuscaRapida);
 }
 
 
@@ -5830,4 +5874,5 @@ document.addEventListener("input", function(event) {
 </script>
 </body>
 </html>
+
 
