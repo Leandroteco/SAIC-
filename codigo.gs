@@ -4856,10 +4856,14 @@ function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
+  const registrosBase = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
+  const registros = montarRegistrosGerenciaisComModulos_(estrutura, registrosBase);
 
   const filtrosPreparados = prepararFiltrosRelatorio(filtros);
   const filtrados = registros.filter(function(registro) {
+    return registroPassaFiltrosRelatorio(registro, filtrosPreparados);
+  });
+  const filtradosBase = registrosBase.filter(function(registro) {
     return registroPassaFiltrosRelatorio(registro, filtrosPreparados);
   });
 
@@ -4867,7 +4871,7 @@ function gerarRelatorioGerencial(filtrosOuDataInicial, dataFinal, tiposRelatorio
     filtrosAplicados: filtros,
     resumo: montarResumoRelatorio(filtrados),
     distribuicoes: montarDistribuicoesRelatorio(filtrados),
-    dadosIndividuais: montarDadosIndividuaisRelatorio(filtros, filtrados, registros, ss),
+    dadosIndividuais: montarDadosIndividuaisRelatorio(filtros, filtradosBase, registrosBase, ss),
     totalRegistros: filtrados.length,
     opcoes: montarOpcoesRelatorio(registros, vinculosPorAtendimento)
   };
@@ -4881,7 +4885,8 @@ function obterDadosDashboard(filtros, idToken) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const vinculosPorAtendimento = carregarVinculosPorAtendimento(ss);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
+  const registrosBase = montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail);
+  const registros = montarRegistrosGerenciaisComModulos_(estrutura, registrosBase);
 
   const filtrosPreparados = prepararFiltrosRelatorio(filtrosDashboard);
   const filtrados = registros.filter(function(registro) {
@@ -5099,17 +5104,21 @@ function obterDadosMapaCalor(filtros, idToken) {
   const sheet = estrutura.sheetDados;
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
   const registrosPeriodo = carregarRegistrosMapaCalorPeriodo_(sheet, filtrosMapa);
+  const registrosTerritoriais = registrosPeriodo.filter(function(registro) {
+    return normalizar(registro.modalidadeAtendimento) !== "online";
+  });
 
   registrarPerformanceMapaCalor_(
     "leitura e filtro antecipado do periodo",
     inicioPerformance,
-    "registros=" + registrosPeriodo.length
+    "registros=" + registrosPeriodo.length +
+      " territoriais=" + registrosTerritoriais.length
   );
 
-  const faltasFiltradas = registrosPeriodo.filter(function(registro) {
+  const faltasFiltradas = registrosTerritoriais.filter(function(registro) {
     return ehRegistroFalta(registro);
   });
-  const atendimentosFiltrados = registrosPeriodo.filter(function(registro) {
+  const atendimentosFiltrados = registrosTerritoriais.filter(function(registro) {
     return !ehRegistroFalta(registro) && !ehRegistroArquivamento(registro);
   });
   const amostraGeografica = selecionarAmostraGeograficaMapa_(
@@ -5420,7 +5429,8 @@ function carregarRegistrosMapaPorColunas_(sheet, quantidadeLinhas, linhasSelecio
     { campo: "bairro", indicePadrao: 19 },
     { campo: "cidade", indicePadrao: 20 },
     { campo: "estado", indicePadrao: 21 },
-    { campo: "naps", indicePadrao: 28 }
+    { campo: "naps", indicePadrao: 28 },
+    { campo: "modalidadeAtendimento", indicePadrao: 30 }
   ].map(function(definicao) {
     return {
       campo: definicao.campo,
@@ -5441,6 +5451,7 @@ function carregarRegistrosMapaPorColunas_(sheet, quantidadeLinhas, linhasSelecio
       cidade: "",
       estado: "",
       naps: "",
+      modalidadeAtendimento: "",
       dataCadastroData: item.data
     };
   });
@@ -5506,6 +5517,7 @@ function montarRegistroMinimoMapa_(linha) {
     cidade: formatarLocalidadeRelatorio(linha[20]),
     estado: formatarCampoMaiusculoRelatorio(linha[21]),
     naps: formatarNapsRelatorio(linha[28] || "nao informado"),
+    modalidadeAtendimento: linha[30] || "",
     dataCadastroData: obterData(linha[26])
   };
 }
@@ -6912,6 +6924,9 @@ function montarResumoDashboard(registros, filtros) {
     pessoasPalestras: resumoRelatorio.pessoasPalestras,
     pessoasEventos: resumoRelatorio.pessoasEventos,
     pessoasTotalGeral: resumoRelatorio.pessoasTotalGeral,
+    totalPpms: resumoRelatorio.totalPpms,
+    totalIncidentesCriticos: resumoRelatorio.totalIncidentesCriticos,
+    totalAtendimentosOnline: resumoRelatorio.totalAtendimentosOnline,
     totalFaltas: resumoRelatorio.totalFaltas,
     totalAltas: resumoRelatorio.totalAltas,
     totalArquivamentos: resumoRelatorio.totalArquivamentos,
@@ -6937,20 +6952,36 @@ function calcularDiasPeriodoDashboard(filtros) {
 }
 
 function montarGraficosDashboard(registros, filtros) {
+  const distribuicaoPpms = montarDistribuicaoPpmsGerencial_(registros);
+  const distribuicaoIncidente = montarDistribuicaoIncidenteCriticoGerencial_(registros);
+  const registrosNaps = (registros || []).filter(function(registro) {
+    return !registro.moduloEspecial;
+  });
+
   return {
     porTipo: topDistribuicaoDashboard(contarPorCampo(registros, "tipoAtendimento"), 8),
     porMotivo: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 10),
     porOPM: topDistribuicaoDashboard(contarPorCampo(registros, "opmAtual"), 10),
-    porNAPS: topDistribuicaoDashboard(contarPorCampo(registros, "naps"), 60),
-    comparativoNAPS: montarComparativoNapsDashboard(registros),
-    porNAPSAtendimentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "atendimentos"), 60),
-    porNAPSFaltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "faltas"), 60),
-    porNAPSAltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "altas"), 60),
-    porNAPSArquivamentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "arquivamentos"), 60),
+    porNAPS: topDistribuicaoDashboard(contarPorCampo(registrosNaps, "naps"), 60),
+    comparativoNAPS: montarComparativoNapsDashboard(registrosNaps),
+    porNAPSAtendimentos: topDistribuicaoDashboard(contarPorNapsDashboard(registrosNaps, "atendimentos"), 60),
+    porNAPSFaltas: topDistribuicaoDashboard(contarPorNapsDashboard(registrosNaps, "faltas"), 60),
+    porNAPSAltas: topDistribuicaoDashboard(contarPorNapsDashboard(registrosNaps, "altas"), 60),
+    porNAPSArquivamentos: topDistribuicaoDashboard(contarPorNapsDashboard(registrosNaps, "arquivamentos"), 60),
     porSituacao: topDistribuicaoDashboard(contarPorCampo(registros, "situacaoStatus"), 8),
     porSexo: topDistribuicaoDashboard(contarPorCampo(registros, "sexo"), 8),
     porFaixaEtaria: ordenarFaixaEtariaDashboard(contarPorCampo(registros, "faixaEtaria")),
-    evolucao: montarEvolucaoDashboard(registros, filtros)
+    evolucao: montarEvolucaoDashboard(registrosNaps, filtros),
+    ppms: {
+      porNatureza: topDistribuicaoDashboard(distribuicaoPpms.porNatureza, 12),
+      porFatorPrecipitante: topDistribuicaoDashboard(distribuicaoPpms.porFatorPrecipitante, 12),
+      porRespostaInicial: topDistribuicaoDashboard(distribuicaoPpms.porRespostaInicial, 12)
+    },
+    incidenteCritico: {
+      porModalidade: topDistribuicaoDashboard(distribuicaoIncidente.porModalidade, 12),
+      porVitima: topDistribuicaoDashboard(distribuicaoIncidente.porVitima, 12),
+      porServico: topDistribuicaoDashboard(distribuicaoIncidente.porServico, 12)
+    }
   };
 }
 
@@ -7248,7 +7279,13 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
       registro.estado,
       registro.responsavel,
       registro.situacaoStatus,
-      registro.cep
+      registro.cep,
+      registro.naturezaPpms,
+      registro.fatorPrecipitantePpms,
+      registro.respostaInicialPpms,
+      registro.modalidadeIncidente,
+      registro.vitimaIncidente,
+      registro.servicoIncidente
     ].join(" "));
 
     if (!textoBusca.includes(filtros.buscaLivre)) return false;
@@ -7410,6 +7447,168 @@ function montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, u
   Array.prototype.push.apply(registros, montarRegistrosEventosColetivosRelatorio(estrutura));
 
   return registros;
+}
+
+function montarRegistrosGerenciaisComModulos_(estrutura, registrosBase) {
+  const registros = Array.isArray(registrosBase) ? registrosBase.slice() : [];
+
+  Array.prototype.push.apply(
+    registros,
+    montarRegistrosPpmsGerenciais_(estrutura && estrutura.sheetPpms)
+  );
+  Array.prototype.push.apply(
+    registros,
+    montarRegistrosIncidenteCriticoGerenciais_(estrutura && estrutura.sheetIncidenteCritico)
+  );
+
+  return registros;
+}
+
+function montarRegistrosPpmsGerenciais_(sheetPpms) {
+  if (!sheetPpms || sheetPpms.getLastRow() < 2) return [];
+
+  const linhas = lerDadosPadrao(sheetPpms, CABECALHOS_PPMS, 2);
+
+  return linhas.map(function(linha, indice) {
+    const dataFato = obterData(linha[0]);
+    const dataNascimento = obterData(linha[17]);
+    const dataIngresso = obterData(linha[7]);
+    const idade = calcularAnosAteHoje(dataNascimento);
+    const tempoServicoAnos = calcularAnosAteHoje(dataIngresso);
+    const naps = formatarNapsRelatorio(linha[29] || "nao informado");
+    const responsavel = formatarResponsavelRelatorio(linha[27]);
+    const id = String(linha[35] || "ppms-" + (indice + 2));
+
+    return {
+      id: id,
+      origem: "ppms",
+      moduloEspecial: true,
+      registroPpms: true,
+      registroIncidenteCritico: false,
+      eventoColetivo: false,
+      emailCadastro: "",
+      naps: naps,
+      napsAtendimento: naps,
+      tipoAtendimento: "PPMS",
+      motivo: "",
+      re: linha[31] || "",
+      nome: linha[32] || "",
+      postoGraduacao: linha[3] || "",
+      cpf: "",
+      telefone: "",
+      email: "",
+      dataIngresso: formatarDataBrasil(linha[7]),
+      dataNascimento: formatarDataBrasil(linha[17]),
+      idade: idade,
+      faixaEtaria: obterFaixaEtaria(idade),
+      sexo: formatarSexoRelatorio(linha[19]),
+      opmAtual: formatarCampoMaiusculoRelatorio(linha[4]),
+      situacaoStatus: formatarSituacaoStatusRelatorio(linha[5]),
+      dataInatividade: formatarDataBrasil(linha[8]),
+      estadoCivil: formatarEstadoCivilRelatorio(linha[18]),
+      numeroFilhos: linha[16] || "",
+      cep: linha[20] || "",
+      rua: linha[21] || "",
+      bairro: formatarLocalidadeRelatorio(linha[22]),
+      cidade: formatarLocalidadeRelatorio(linha[23]),
+      estado: formatarCampoMaiusculoRelatorio(linha[24]),
+      numero: linha[25] || "",
+      complemento: linha[26] || "",
+      observacoes: "",
+      responsavel: responsavel,
+      responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavel, naps),
+      formaApresentacao: "",
+      modalidadeAtendimento: "",
+      dataCadastro: formatarDataBrasil(linha[0]),
+      dataCadastroIso: formatarDataParaInput(linha[0]),
+      dataCadastroData: dataFato,
+      dataCadastroTimestamp: dataFato ? dataFato.getTime() : 0,
+      mesCadastro: obterMesAno(dataFato),
+      tempoServico: obterFaixaTempoServico(tempoServicoAnos),
+      endereco: montarEnderecoModuloGerencial_(linha[21], linha[25], linha[22], linha[23], linha[24], linha[20]),
+      vinculos: [],
+      quantidadeVinculos: 0,
+      naturezaPpms: linha[33] || "",
+      fatorPrecipitantePpms: linha[10] || "",
+      respostaInicialPpms: linha[34] || "",
+      servicoPpms: linha[6] || ""
+    };
+  });
+}
+
+function montarRegistrosIncidenteCriticoGerenciais_(sheetIncidente) {
+  if (!sheetIncidente || sheetIncidente.getLastRow() < 2) return [];
+
+  const linhas = lerDadosPadrao(sheetIncidente, CABECALHOS_INCIDENTE_CRITICO, 2);
+
+  return linhas.map(function(linha, indice) {
+    const dataFato = obterData(linha[1]);
+    const naps = formatarNapsRelatorio(linha[18] || "nao informado");
+    const responsavel = formatarResponsavelRelatorio(linha[16]);
+    const id = String(linha[0] || "incidente-" + (indice + 2));
+
+    return {
+      id: id,
+      origem: "incidente_critico",
+      moduloEspecial: true,
+      registroPpms: false,
+      registroIncidenteCritico: true,
+      eventoColetivo: false,
+      emailCadastro: linha[17] || "",
+      naps: naps,
+      napsAtendimento: naps,
+      tipoAtendimento: "Incidente Crítico",
+      motivo: "",
+      re: linha[4] || "",
+      nome: linha[5] || "",
+      postoGraduacao: linha[3] || "",
+      cpf: "",
+      telefone: "",
+      email: "",
+      dataIngresso: "",
+      dataNascimento: "",
+      idade: null,
+      faixaEtaria: "nao informado",
+      sexo: formatarSexoRelatorio(linha[13]),
+      opmAtual: formatarCampoMaiusculoRelatorio(linha[6]),
+      situacaoStatus: formatarSituacaoStatusRelatorio(linha[7]),
+      dataInatividade: "",
+      estadoCivil: "",
+      numeroFilhos: "",
+      cep: "",
+      rua: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      numero: "",
+      complemento: "",
+      observacoes: "",
+      responsavel: responsavel,
+      responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavel, naps),
+      formaApresentacao: "",
+      modalidadeAtendimento: "",
+      dataCadastro: formatarDataBrasil(linha[1]),
+      dataCadastroIso: formatarDataParaInput(linha[1]),
+      dataCadastroData: dataFato,
+      dataCadastroTimestamp: dataFato ? dataFato.getTime() : 0,
+      mesCadastro: obterMesAno(dataFato),
+      tempoServico: "nao informado",
+      endereco: "",
+      vinculos: [],
+      quantidadeVinculos: 0,
+      modalidadeIncidente: linha[14] || "",
+      vitimaIncidente: linha[12] || "",
+      servicoIncidente: linha[19] || ""
+    };
+  });
+}
+
+function montarEnderecoModuloGerencial_(rua, numero, bairro, cidade, estado, cep) {
+  return [rua, numero, bairro, cidade, estado, cep]
+    .filter(function(parte) {
+      return parte !== "" && parte !== null && parte !== undefined;
+    })
+    .join(", ");
 }
 
 function montarRegistrosEventosColetivosRelatorio(estrutura) {
@@ -7681,6 +7880,8 @@ function formatarTipoAtendimentoRelatorio(valor) {
     "registrar falta": "Registrar como FALTA",
     "registrar como falta": "Registrar como FALTA",
     "arquivamento": "Arquivamento",
+    "ppms": "PPMS",
+    "incidente critico": "Incidente Crítico",
     "plantao psicologico": "Plant\u00e3o Psicol\u00f3gico",
     "psicoterapia - individual": "Psicoterapia - Individual",
     "psicoterapia individual": "Psicoterapia - Individual",
@@ -7773,6 +7974,9 @@ function montarResumoRelatorio(registros) {
   let pessoasEventos = 0;
   let pessoasGrupos = 0;
   let pessoasPalestras = 0;
+  let totalPpms = 0;
+  let totalIncidentesCriticos = 0;
+  let totalAtendimentosOnline = 0;
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) {
@@ -7786,6 +7990,14 @@ function montarResumoRelatorio(registros) {
     }
 
     totalAtendimentos++;
+
+    if (registro.registroPpms || registro.registroIncidenteCritico) {
+      if (registro.registroPpms) totalPpms++;
+      if (registro.registroIncidenteCritico) totalIncidentesCriticos++;
+
+      pessoas[obterChavePessoa(registro)] = true;
+      return;
+    }
 
     if (registro.eventoColetivo) {
       const quantidadePessoasEvento = Number(registro.quantidadePessoasEvento || 0);
@@ -7801,6 +8013,10 @@ function montarResumoRelatorio(registros) {
       }
 
       return;
+    }
+
+    if (normalizar(registro.modalidadeAtendimento) === "online") {
+      totalAtendimentosOnline++;
     }
 
     totalAtendimentosIndividuais++;
@@ -7842,6 +8058,9 @@ function montarResumoRelatorio(registros) {
     pessoasPalestras: pessoasPalestras,
     pessoasEventos: pessoasEventos,
     pessoasTotalGeral: Object.keys(pessoas).length + pessoasEventos,
+    totalPpms: totalPpms,
+    totalIncidentesCriticos: totalIncidentesCriticos,
+    totalAtendimentosOnline: totalAtendimentosOnline,
     totalFaltas: totalFaltas,
     totalAltas: totalAltas,
     totalArquivamentos: totalArquivamentos,
@@ -7854,10 +8073,14 @@ function montarResumoRelatorio(registros) {
 }
 
 function montarDistribuicoesRelatorio(registros) {
+  const registrosNaps = (registros || []).filter(function(registro) {
+    return !registro.moduloEspecial;
+  });
+
   return {
     porMes: contarPorCampo(registros, "mesCadastro"),
-    porMesNaps: contarPorMesNapsRelatorio(registros),
-    porNAPS: contarPorCampo(registros, "naps"),
+    porMesNaps: contarPorMesNapsRelatorio(registrosNaps),
+    porNAPS: contarPorCampo(registrosNaps, "naps"),
     porTipo: contarPorCampo(registros, "tipoAtendimento"),
     porPostoGraduacao: contarPorCampo(registros, "postoGraduacao"),
     porMotivo: contarPorCampo(registros, "motivo"),
@@ -7865,14 +8088,44 @@ function montarDistribuicoesRelatorio(registros) {
     porCidade: contarPorCampo(registros, "cidade"),
     porBairro: contarPorCampo(registros, "bairro"),
     porResponsavel: contarPorCampo(registros, "responsavel"),
-    porResponsavelNaps: contarPorCampo(registros, "responsavelNaps"),
+    porResponsavelNaps: contarPorCampo(registrosNaps, "responsavelNaps"),
     porSituacao: contarPorCampo(registros, "situacaoStatus"),
     porSexo: contarPorCampo(registros, "sexo"),
     porEstadoCivil: contarPorCampo(registros, "estadoCivil"),
     porFaixaEtaria: contarPorCampo(registros, "faixaEtaria"),
     porTempoServico: contarPorCampo(registros, "tempoServico"),
     porParentesco: contarPorVinculo(registros, "parentesco"),
-    porTipoMotivoPrincipal: montarTipoMotivoPrincipalRelatorio(registros)
+    porTipoMotivoPrincipal: montarTipoMotivoPrincipalRelatorio(registros),
+    ppms: montarDistribuicaoPpmsGerencial_(registros),
+    incidenteCritico: montarDistribuicaoIncidenteCriticoGerencial_(registros)
+  };
+}
+
+function montarDistribuicaoPpmsGerencial_(registros) {
+  const ppms = (registros || []).filter(function(registro) {
+    return !!registro.registroPpms;
+  });
+
+  return {
+    total: ppms.length,
+    porMes: contarPorCampo(ppms, "mesCadastro"),
+    porNatureza: contarPorCampo(ppms, "naturezaPpms"),
+    porFatorPrecipitante: contarPorCampo(ppms, "fatorPrecipitantePpms"),
+    porRespostaInicial: contarPorCampo(ppms, "respostaInicialPpms")
+  };
+}
+
+function montarDistribuicaoIncidenteCriticoGerencial_(registros) {
+  const incidentes = (registros || []).filter(function(registro) {
+    return !!registro.registroIncidenteCritico;
+  });
+
+  return {
+    total: incidentes.length,
+    porMes: contarPorCampo(incidentes, "mesCadastro"),
+    porModalidade: contarPorCampo(incidentes, "modalidadeIncidente"),
+    porVitima: contarPorCampo(incidentes, "vitimaIncidente"),
+    porServico: contarPorCampo(incidentes, "servicoIncidente")
   };
 }
 
@@ -7881,6 +8134,7 @@ function montarTipoMotivoPrincipalRelatorio(registros) {
 
   registros.forEach(function(registro) {
     if (ehRegistroFalta(registro)) return;
+    if (registro.moduloEspecial) return;
 
     const tipo = registro.tipoAtendimento || "nao informado";
     const motivo = registro.motivo || "nao informado";
@@ -8351,6 +8605,7 @@ function contarPorCampo(registros, campo) {
 
   registros.forEach(function(registro) {
     if (registro.eventoColetivo && campoEhPerfilIndividualRelatorio(campo)) return;
+    if (registro.moduloEspecial && campo === "motivo") return;
 
     adicionarContagemRelatorio(agrupamento, registro[campo], campo);
   });
