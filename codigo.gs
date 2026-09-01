@@ -19,6 +19,7 @@ const ABA_VINCULOS = "pessoas_vinculadas";
 const ABA_BUSCA_RAPIDA = "cadastro_busca_rapida";
 const ABA_USUARIOS = "usuarios_sistema";
 const ABA_CEPS_CACHE = "ceps_cache";
+const ABA_CEPS_PENDENTES_MAPA = "ceps_pendentes_mapa";
 const ABA_RECADOS = "recados_sistema";
 const ABA_EVENTOS_COLETIVOS = "eventos_coletivos";
 const ABA_PARTICIPANTES_EVENTO = "participantes_evento";
@@ -33,6 +34,16 @@ const BUSCA_RAPIDA_CADASTROS_ATIVA = true;
 const BUSCA_RAPIDA_CADASTROS_ABA_TEMP = "cadastro_busca_rapida_rebuild";
 const BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_DADOS = 2000;
 const BUSCA_RAPIDA_CADASTROS_TAMANHO_LOTE_GRAVACAO = 5000;
+const DIAGNOSTICO_PERFORMANCE_MAPA_ATIVO = true;
+const CACHE_CEPS_MAPA_TAMANHO_LOTE = 10;
+const CACHE_CEPS_MAPA_INTERVALO_MS = 1100;
+const CACHE_CEPS_MAPA_MAXIMO_TENTATIVAS = 3;
+const CACHE_CEPS_MAPA_FUNCAO_GATILHO = "processarFilaCepsMapaAutomaticamente";
+const CACHE_CEPS_MAPA_PLANILHA_PROPERTY = "SAIC_CACHE_CEPS_MAPA_PLANILHA_ID";
+const MAPA_CALOR_LIMITE_ATENDIMENTOS_AMOSTRA = 5000;
+const MAPA_CALOR_LIMITE_CEPS_AMOSTRA = 1000;
+const MAPA_CALOR_LIMITE_MARCADORES_RESIDENCIAS = 800;
+const MAPA_CALOR_MAXIMO_BLOCOS_LEITURA_PERIODO = 24;
 const CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO = {};
 
 const PERFIL_ADMINISTRADOR = "administrador";
@@ -112,6 +123,15 @@ const CABECALHOS_CEPS_CACHE = [
   "longitude",
   "endereco",
   "data_atualizacao"
+];
+
+const CABECALHOS_CEPS_PENDENTES_MAPA = [
+  "cep",
+  "status",
+  "tentativas",
+  "ultima_tentativa",
+  "mensagem",
+  "data_inclusao"
 ];
 
 const CABECALHOS_RECADOS = [
@@ -5069,60 +5089,77 @@ function formatarDataHoraRelatorioNaps(data) {
 }
 
 function obterDadosMapaCalor(filtros, idToken) {
+  const inicioPerformance = Date.now();
   validarAdministradorPorToken(idToken);
 
   const filtrosMapa = normalizarFiltrosMapaCalor(filtros || {});
   const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  registrarPlanilhaCacheCepsMapa_(ss);
   const sheet = estrutura.sheetDados;
-  const dados = lerDadosPadrao(sheet, CABECALHOS_DADOS, 1);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = [];
+  const registrosPeriodo = carregarRegistrosMapaCalorPeriodo_(sheet, filtrosMapa);
 
-  for (let i = 1; i < dados.length; i++) {
-    registros.push(montarRegistroRelatorio(dados[i], {}, usuariosPorEmail));
-  }
+  registrarPerformanceMapaCalor_(
+    "leitura e filtro antecipado do periodo",
+    inicioPerformance,
+    "registros=" + registrosPeriodo.length
+  );
 
-  const filtrosPreparados = prepararFiltrosRelatorio(filtrosMapa);
-  const filtrados = registros.filter(function(registro) {
-    return registroPassaFiltrosRelatorio(registro, filtrosPreparados);
-  });
-  const faltasFiltradas = filtrados.filter(function(registro) {
+  const faltasFiltradas = registrosPeriodo.filter(function(registro) {
     return ehRegistroFalta(registro);
   });
-  const atendimentosFiltrados = filtrados.filter(function(registro) {
+  const atendimentosFiltrados = registrosPeriodo.filter(function(registro) {
     return !ehRegistroFalta(registro) && !ehRegistroArquivamento(registro);
   });
+  const amostraGeografica = selecionarAmostraGeograficaMapa_(
+    atendimentosFiltrados,
+    MAPA_CALOR_LIMITE_ATENDIMENTOS_AMOSTRA,
+    MAPA_CALOR_LIMITE_CEPS_AMOSTRA
+  );
+  const atendimentosGeograficos = amostraGeografica.registros;
+  const pessoasDistintasPeriodo = {};
 
-  const napsReferencia = carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail);
+  atendimentosFiltrados.forEach(function(registro) {
+    pessoasDistintasPeriodo[obterChavePessoa(registro)] = true;
+  });
+
+  registrarPerformanceMapaCalor_(
+    "selecao da amostra geografica",
+    inicioPerformance,
+    "atendimentos=" + atendimentosGeograficos.length +
+      " ceps=" + amostraGeografica.totalCepsAmostra
+  );
+
   const contextoCoordenadas = criarContextoCoordenadasMapa(ss);
+  const napsReferencia = carregarNapsReferenciaMapaCalor(
+    ss,
+    usuariosPorEmail,
+    contextoCoordenadas
+  );
   const gruposRegiao = {};
   const gruposResidencia = {};
   const cargaNaps = {};
-  const pessoasDistintas = {};
   const distanciaAlerta = Number(filtrosMapa.distanciaAlertaKm || 20);
   let totalDistanciaAtual = 0;
   let totalComDistancia = 0;
   let totalDistanciaNapsMaisProximo = 0;
   let totalComDistanciaNapsMaisProximo = 0;
   let maiorDistanciaNapsMaisProximo = 0;
-  let cepsSemCadastro = 0;
+  const cepsSemCadastro = amostraGeografica.totalSemCep;
   let cepsSemCoordenada = 0;
   let registrosSemNaps = 0;
 
   preencherNapsReferenciaCargaMapa(cargaNaps, napsReferencia);
 
-  atendimentosFiltrados.forEach(function(registro) {
+  atendimentosGeograficos.forEach(function(registro) {
     const chavePessoa = obterChavePessoa(registro);
     const cepResidencia = somenteNumeros(registro.cep);
     const nomeNaps = String(registro.naps || "nao informado").trim() || "nao informado";
     const chaveNaps = normalizar(nomeNaps);
     const dadosNaps = napsReferencia[chaveNaps] || null;
 
-    pessoasDistintas[chavePessoa] = true;
-
     if (cepResidencia.length !== 8) {
-      cepsSemCadastro++;
       if (!dadosNaps || !dadosNaps.coordenadas) registrosSemNaps++;
       atualizarNapsCargaMapa(cargaNaps, nomeNaps, dadosNaps, registro, null, distanciaAlerta);
       return;
@@ -5210,15 +5247,26 @@ function obterDadosMapaCalor(filtros, idToken) {
     );
   });
 
-  salvarNovasCoordenadasMapa(contextoCoordenadas);
+  const statusFilaCeps = enfileirarCepsPendentesMapa_(
+    ss,
+    Object.keys(contextoCoordenadas.cepsPendentes || {})
+  );
 
   const regioes = montarRegioesMapaCalor(gruposRegiao, filtrosMapa);
-  const residencias = montarResidenciasMapaCalor(gruposResidencia);
+  const todasResidencias = montarResidenciasMapaCalor(gruposResidencia);
+  const residencias = selecionarResidenciasVisuaisMapa_(
+    todasResidencias,
+    MAPA_CALOR_LIMITE_MARCADORES_RESIDENCIAS
+  );
   const naps = montarNapsMapaCalor(cargaNaps);
+  const atendimentosMapeados = Math.max(
+    0,
+    atendimentosGeograficos.length - cepsSemCoordenada
+  );
   const resumo = montarResumoMapaCalor({
     totalAtendimentos: atendimentosFiltrados.length,
     totalFaltas: faltasFiltradas.length,
-    pessoasDistintas: Object.keys(pessoasDistintas).length,
+    pessoasDistintas: Object.keys(pessoasDistintasPeriodo).length,
     regioesMapeadas: regioes.length,
     distanciaMediaAtualKm: mediaArredondadaMapa(totalDistanciaAtual, totalComDistancia),
     distanciaMediaNapsMaisProximoKm: mediaArredondadaMapa(totalDistanciaNapsMaisProximo, totalComDistanciaNapsMaisProximo),
@@ -5228,9 +5276,34 @@ function obterDadosMapaCalor(filtros, idToken) {
     cepsSemCadastro: cepsSemCadastro,
     cepsSemCoordenada: cepsSemCoordenada,
     registrosSemNaps: registrosSemNaps,
-    cepsGeocodificadosAgora: contextoCoordenadas.geocodificadosAgora,
-    limiteGeocodificacaoAtingido: contextoCoordenadas.limiteAtingido
+    cepsGeocodificadosAgora: 0,
+    limiteGeocodificacaoAtingido: false,
+    cepsPendentesUnicos: Object.keys(contextoCoordenadas.cepsPendentes || {}).length,
+    cepsPendentesFila: statusFilaCeps.totalProcessaveis,
+    cepsComFalha: statusFilaCeps.totalComFalha,
+    filaCepsOcupada: !!statusFilaCeps.filaOcupada,
+    cacheCepsEmProcessamento: existeGatilhoCacheCepsMapa_(),
+    atendimentosMapeados: atendimentosMapeados,
+    percentualCoberturaMapa: atendimentosGeograficos.length > 0
+      ? Math.round(atendimentosMapeados / atendimentosGeograficos.length * 1000) / 10
+      : 0,
+    totalAtendimentosAmostra: atendimentosGeograficos.length,
+    totalAtendimentosComCepPeriodo: amostraGeografica.totalAtendimentosComCep,
+    totalCepsPeriodo: amostraGeografica.totalCepsPeriodo,
+    totalCepsAmostra: amostraGeografica.totalCepsAmostra,
+    amostraGeograficaAplicada: amostraGeografica.aplicada,
+    totalResidenciasMapeadas: todasResidencias.length,
+    marcadoresResidenciasExibidos: residencias.length,
+    amostraVisualAplicada: todasResidencias.length > residencias.length
   });
+
+  registrarPerformanceMapaCalor_(
+    "calculos e montagem da resposta",
+    inicioPerformance,
+    "residencias=" + todasResidencias.length +
+      " marcadores=" + residencias.length +
+      " fila_novos=" + Number(statusFilaCeps.adicionadosAgora || 0)
+  );
 
   return {
     filtrosAplicados: filtrosMapa,
@@ -5248,8 +5321,419 @@ function obterDadosMapaCalor(filtros, idToken) {
       napsSobrecarga: naps.slice(0, 15),
       regioesCandidatas: regioes.slice(0, 15)
     },
+    cacheCoordenadas: statusFilaCeps,
     avisos: montarAvisosMapaCalor(resumo)
   };
+}
+
+function carregarRegistrosMapaCalorPeriodo_(sheet, filtrosMapa) {
+  if (!sheet || sheet.getLastRow() < 2) return [];
+
+  const ultimaLinha = sheet.getLastRow();
+  const quantidadeLinhas = ultimaLinha - 1;
+  const quantidadeColunas = Math.max(sheet.getLastColumn(), CABECALHOS_DADOS.length);
+  const indicesPadrao = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_DADOS);
+  const indiceDataAtual = indicesPadrao[26];
+
+  if (indiceDataAtual < 0) return [];
+
+  const inicio = obterDataInicio(filtrosMapa.dataInicial);
+  const fim = obterDataFim(filtrosMapa.dataFinal);
+  const valoresData = sheet
+    .getRange(2, indiceDataAtual + 1, quantidadeLinhas, 1)
+    .getValues();
+  const linhasSelecionadas = [];
+  const blocos = [];
+  let blocoAtual = null;
+
+  for (let i = 0; i < valoresData.length; i++) {
+    const data = obterData(valoresData[i][0]);
+    const dentroDoPeriodo = !!data &&
+      (!inicio || data >= inicio) &&
+      (!fim || data <= fim);
+
+    if (!dentroDoPeriodo) {
+      blocoAtual = null;
+      continue;
+    }
+
+    linhasSelecionadas.push({
+      deslocamento: i,
+      data: data
+    });
+
+    if (!blocoAtual) {
+      blocoAtual = {
+        inicio: i,
+        quantidade: 1
+      };
+      blocos.push(blocoAtual);
+    } else {
+      blocoAtual.quantidade++;
+    }
+  }
+
+  if (linhasSelecionadas.length === 0) return [];
+
+  if (blocos.length <= MAPA_CALOR_MAXIMO_BLOCOS_LEITURA_PERIODO) {
+    return carregarRegistrosMapaPorBlocos_(
+      sheet,
+      blocos,
+      quantidadeColunas,
+      indicesPadrao
+    );
+  }
+
+  return carregarRegistrosMapaPorColunas_(
+    sheet,
+    quantidadeLinhas,
+    linhasSelecionadas,
+    indicesPadrao
+  );
+}
+
+function carregarRegistrosMapaPorBlocos_(sheet, blocos, quantidadeColunas, indicesPadrao) {
+  const registros = [];
+
+  blocos.forEach(function(bloco) {
+    const linhas = sheet
+      .getRange(bloco.inicio + 2, 1, bloco.quantidade, quantidadeColunas)
+      .getValues();
+
+    linhas.forEach(function(linhaAtual) {
+      const linhaPadrao = normalizarLinhaParaCabecalhoPadrao(linhaAtual, indicesPadrao);
+      registros.push(montarRegistroMinimoMapa_(linhaPadrao));
+    });
+  });
+
+  return registros;
+}
+
+function carregarRegistrosMapaPorColunas_(sheet, quantidadeLinhas, linhasSelecionadas, indicesPadrao) {
+  const definicoes = [
+    { campo: "id", indicePadrao: 0 },
+    { campo: "tipoAtendimento", indicePadrao: 2 },
+    { campo: "re", indicePadrao: 4 },
+    { campo: "nome", indicePadrao: 5 },
+    { campo: "cpf", indicePadrao: 6 },
+    { campo: "cep", indicePadrao: 17 },
+    { campo: "bairro", indicePadrao: 19 },
+    { campo: "cidade", indicePadrao: 20 },
+    { campo: "estado", indicePadrao: 21 },
+    { campo: "naps", indicePadrao: 28 }
+  ].map(function(definicao) {
+    return {
+      campo: definicao.campo,
+      indiceAtual: indicesPadrao[definicao.indicePadrao]
+    };
+  }).filter(function(definicao) {
+    return definicao.indiceAtual >= 0;
+  });
+  const registros = linhasSelecionadas.map(function(item) {
+    return {
+      id: "",
+      tipoAtendimento: "",
+      re: "",
+      nome: "",
+      cpf: "",
+      cep: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      naps: "",
+      dataCadastroData: item.data
+    };
+  });
+  const gruposColunas = agruparColunasMapa_(definicoes);
+
+  gruposColunas.forEach(function(grupo) {
+    const valores = sheet
+      .getRange(2, grupo.inicio + 1, quantidadeLinhas, grupo.fim - grupo.inicio + 1)
+      .getValues();
+
+    linhasSelecionadas.forEach(function(item, indiceRegistro) {
+      grupo.definicoes.forEach(function(definicao) {
+        registros[indiceRegistro][definicao.campo] =
+          valores[item.deslocamento][definicao.indiceAtual - grupo.inicio];
+      });
+    });
+  });
+
+  registros.forEach(function(registro) {
+    registro.naps = formatarNapsRelatorio(registro.naps || "nao informado");
+    registro.bairro = formatarLocalidadeRelatorio(registro.bairro);
+    registro.cidade = formatarLocalidadeRelatorio(registro.cidade);
+    registro.estado = formatarCampoMaiusculoRelatorio(registro.estado);
+  });
+
+  return registros;
+}
+
+function agruparColunasMapa_(definicoes) {
+  const ordenadas = definicoes.slice().sort(function(a, b) {
+    return a.indiceAtual - b.indiceAtual;
+  });
+  const grupos = [];
+
+  ordenadas.forEach(function(definicao) {
+    const ultimo = grupos.length ? grupos[grupos.length - 1] : null;
+
+    if (!ultimo || definicao.indiceAtual - ultimo.fim > 3) {
+      grupos.push({
+        inicio: definicao.indiceAtual,
+        fim: definicao.indiceAtual,
+        definicoes: [definicao]
+      });
+      return;
+    }
+
+    ultimo.fim = definicao.indiceAtual;
+    ultimo.definicoes.push(definicao);
+  });
+
+  return grupos;
+}
+
+function montarRegistroMinimoMapa_(linha) {
+  return {
+    id: linha[0] || "",
+    tipoAtendimento: linha[2] || "",
+    re: linha[4] || "",
+    nome: linha[5] || "",
+    cpf: linha[6] || "",
+    cep: linha[17] || "",
+    bairro: formatarLocalidadeRelatorio(linha[19]),
+    cidade: formatarLocalidadeRelatorio(linha[20]),
+    estado: formatarCampoMaiusculoRelatorio(linha[21]),
+    naps: formatarNapsRelatorio(linha[28] || "nao informado"),
+    dataCadastroData: obterData(linha[26])
+  };
+}
+
+function registrarPerformanceMapaCalor_(etapa, inicio, detalhe) {
+  if (!DIAGNOSTICO_PERFORMANCE_MAPA_ATIVO) return;
+
+  Logger.log(
+    "[PERF SAIC] obterDadosMapaCalor | " + etapa +
+    " | total: " + (Date.now() - inicio) + " ms" +
+    (detalhe ? " | " + detalhe : "")
+  );
+}
+
+function selecionarAmostraGeograficaMapa_(registros, limiteAtendimentos, limiteCeps) {
+  const lista = Array.isArray(registros) ? registros : [];
+  const maximoAtendimentos = Math.max(1, Number(limiteAtendimentos || 5000));
+  const maximoCeps = Math.max(1, Number(limiteCeps || 1000));
+  const gruposPorCep = {};
+  let totalSemCep = 0;
+  let totalAtendimentosComCep = 0;
+
+  lista.forEach(function(registro) {
+    const cep = somenteNumeros(registro && registro.cep);
+
+    if (cep.length !== 8) {
+      totalSemCep++;
+      return;
+    }
+
+    totalAtendimentosComCep++;
+
+    if (!gruposPorCep[cep]) {
+      gruposPorCep[cep] = {
+        cep: cep,
+        registros: [],
+        naps: {}
+      };
+    }
+
+    gruposPorCep[cep].registros.push(registro);
+
+    const naps = normalizar(registro.naps || "nao informado") || "nao informado";
+    gruposPorCep[cep].naps[naps] = true;
+  });
+
+  const grupos = Object.keys(gruposPorCep).map(function(cep) {
+    return gruposPorCep[cep];
+  });
+
+  if (grupos.length <= maximoCeps && totalAtendimentosComCep <= maximoAtendimentos) {
+    return {
+      registros: lista.filter(function(registro) {
+        return somenteNumeros(registro && registro.cep).length === 8;
+      }),
+      totalSemCep: totalSemCep,
+      totalAtendimentosComCep: totalAtendimentosComCep,
+      totalCepsPeriodo: grupos.length,
+      totalCepsAmostra: grupos.length,
+      aplicada: false
+    };
+  }
+
+  const gruposSelecionados = selecionarGruposCepAmostraMapa_(grupos, maximoCeps);
+  const cotas = distribuirCotasAmostraMapa_(gruposSelecionados, maximoAtendimentos);
+  const amostra = [];
+
+  gruposSelecionados.forEach(function(grupo, indice) {
+    Array.prototype.push.apply(
+      amostra,
+      selecionarItensDistribuidosMapa_(grupo.registros, cotas[indice])
+    );
+  });
+
+  return {
+    registros: amostra,
+    totalSemCep: totalSemCep,
+    totalAtendimentosComCep: totalAtendimentosComCep,
+    totalCepsPeriodo: grupos.length,
+    totalCepsAmostra: gruposSelecionados.length,
+    aplicada: amostra.length < totalAtendimentosComCep || gruposSelecionados.length < grupos.length
+  };
+}
+
+function selecionarGruposCepAmostraMapa_(grupos, limiteCeps) {
+  const lista = Array.isArray(grupos) ? grupos.slice() : [];
+  const maximo = Math.min(lista.length, Math.max(1, Number(limiteCeps || 1000)));
+
+  if (lista.length <= maximo) return lista;
+
+  const selecionados = [];
+  const cepsSelecionados = {};
+
+  function adicionar(grupo) {
+    if (!grupo || cepsSelecionados[grupo.cep] || selecionados.length >= maximo) return;
+    cepsSelecionados[grupo.cep] = true;
+    selecionados.push(grupo);
+  }
+
+  const porVolume = lista.slice().sort(function(a, b) {
+    if (b.registros.length !== a.registros.length) {
+      return b.registros.length - a.registros.length;
+    }
+
+    return a.cep.localeCompare(b.cep);
+  });
+  const quantidadeVolume = Math.min(maximo, Math.max(1, Math.floor(maximo * 0.2)));
+  porVolume.slice(0, quantidadeVolume).forEach(adicionar);
+
+  // Inclui o CEP mais representativo de cada NAPS antes de completar a distribuicao.
+  const melhorPorNaps = {};
+
+  porVolume.forEach(function(grupo) {
+    Object.keys(grupo.naps || {}).forEach(function(naps) {
+      if (!melhorPorNaps[naps]) melhorPorNaps[naps] = grupo;
+    });
+  });
+
+  Object.keys(melhorPorNaps).sort().forEach(function(naps) {
+    adicionar(melhorPorNaps[naps]);
+  });
+
+  // O CEP possui ordenacao territorial; a selecao sistematica distribui a amostra.
+  const porCep = lista.slice().sort(function(a, b) {
+    return a.cep.localeCompare(b.cep);
+  });
+  const vagas = maximo - selecionados.length;
+
+  for (let i = 0; i < vagas && selecionados.length < maximo; i++) {
+    const indice = vagas === 1
+      ? Math.floor((porCep.length - 1) / 2)
+      : Math.round(i * (porCep.length - 1) / (vagas - 1));
+    adicionar(porCep[indice]);
+  }
+
+  if (selecionados.length < maximo) {
+    porCep.some(function(grupo) {
+      adicionar(grupo);
+      return selecionados.length >= maximo;
+    });
+  }
+
+  return selecionados;
+}
+
+function distribuirCotasAmostraMapa_(grupos, limiteAtendimentos) {
+  const lista = Array.isArray(grupos) ? grupos : [];
+  const maximo = Math.max(1, Number(limiteAtendimentos || 5000));
+  const cotas = lista.map(function() { return 1; });
+
+  if (lista.length === 0) return [];
+
+  if (lista.length >= maximo) {
+    return cotas.map(function(valor, indice) {
+      return indice < maximo ? valor : 0;
+    });
+  }
+
+  const totalDisponivel = lista.reduce(function(total, grupo) {
+    return total + grupo.registros.length;
+  }, 0);
+  const alvo = Math.min(maximo, totalDisponivel);
+  let vagas = alvo - lista.length;
+  const totalExtras = lista.reduce(function(total, grupo) {
+    return total + Math.max(0, grupo.registros.length - 1);
+  }, 0);
+
+  if (vagas <= 0 || totalExtras <= 0) return cotas;
+
+  const fracoes = [];
+  let distribuidas = 0;
+
+  lista.forEach(function(grupo, indice) {
+    const disponiveis = Math.max(0, grupo.registros.length - 1);
+    const valorExato = disponiveis / totalExtras * vagas;
+    const inteiros = Math.min(disponiveis, Math.floor(valorExato));
+
+    cotas[indice] += inteiros;
+    distribuidas += inteiros;
+    fracoes.push({
+      indice: indice,
+      fracao: valorExato - inteiros,
+      disponiveis: disponiveis
+    });
+  });
+
+  let restantes = vagas - distribuidas;
+
+  fracoes.sort(function(a, b) {
+    if (b.fracao !== a.fracao) return b.fracao - a.fracao;
+    return lista[b.indice].registros.length - lista[a.indice].registros.length;
+  });
+
+  while (restantes > 0) {
+    let adicionou = false;
+
+    for (let i = 0; i < fracoes.length && restantes > 0; i++) {
+      const item = fracoes[i];
+
+      if (cotas[item.indice] >= lista[item.indice].registros.length) continue;
+
+      cotas[item.indice]++;
+      restantes--;
+      adicionou = true;
+    }
+
+    if (!adicionou) break;
+  }
+
+  return cotas;
+}
+
+function selecionarItensDistribuidosMapa_(itens, quantidade) {
+  const lista = Array.isArray(itens) ? itens : [];
+  const total = Math.max(0, Math.min(lista.length, Number(quantidade || 0)));
+
+  if (total === 0) return [];
+  if (total >= lista.length) return lista.slice();
+  if (total === 1) return [lista[Math.floor((lista.length - 1) / 2)]];
+
+  const selecionados = [];
+
+  for (let i = 0; i < total; i++) {
+    const indice = Math.round(i * (lista.length - 1) / (total - 1));
+    selecionados.push(lista[indice]);
+  }
+
+  return selecionados;
 }
 
 // FILTROS E APOIO DOS PAINEIS GERENCIAIS
@@ -5282,7 +5766,7 @@ function normalizarFiltrosMapaCalor(filtros) {
   return base;
 }
 
-function carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail) {
+function carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail, contextoCoordenadas) {
   const mapa = {};
 
   Object.keys(usuariosPorEmail || {}).forEach(function(email) {
@@ -5303,7 +5787,7 @@ function carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail) {
     }
   }
 
-  const contexto = criarContextoCoordenadasMapa(ss);
+  const contexto = contextoCoordenadas || criarContextoCoordenadasMapa(ss);
 
   Object.keys(mapa).forEach(function(chave) {
     const item = mapa[chave];
@@ -5314,8 +5798,6 @@ function carregarNapsReferenciaMapaCalor(ss, usuariosPorEmail) {
       item.longitude = item.coordenadas.longitude;
     }
   });
-
-  salvarNovasCoordenadasMapa(contexto);
 
   return mapa;
 }
@@ -5361,8 +5843,9 @@ function criarContextoCoordenadasMapa(ss) {
     sheet: sheet,
     mapa: mapa,
     novasLinhas: [],
+    cepsPendentes: {},
     geocodificadosAgora: 0,
-    limiteGeocodificacao: 120,
+    limiteGeocodificacao: 0,
     limiteAtingido: false
   };
 }
@@ -5373,26 +5856,8 @@ function obterCoordenadasCEPMapa(cep, contexto) {
   if (cepNormalizado.length !== 8) return null;
   if (contexto.mapa[cepNormalizado]) return contexto.mapa[cepNormalizado];
 
-  if (contexto.geocodificadosAgora >= contexto.limiteGeocodificacao) {
-    contexto.limiteAtingido = true;
-    return null;
-  }
-
-  const coordenadas = geocodificarCEPMapa(cepNormalizado);
-
-  if (!coordenadas) return null;
-
-  contexto.mapa[cepNormalizado] = coordenadas;
-  contexto.geocodificadosAgora++;
-  contexto.novasLinhas.push([
-    formatarCEP(cepNormalizado),
-    coordenadas.latitude,
-    coordenadas.longitude,
-    coordenadas.endereco || formatarCEP(cepNormalizado) + ", Brasil",
-    new Date()
-  ]);
-
-  return coordenadas;
+  contexto.cepsPendentes[cepNormalizado] = true;
+  return null;
 }
 
 function geocodificarCEPMapa(cepNormalizado) {
@@ -5425,6 +5890,531 @@ function salvarNovasCoordenadasMapa(contexto) {
   if (!contexto || !contexto.novasLinhas || contexto.novasLinhas.length === 0) return;
 
   gravarLinhasPadraoAbaixo(contexto.sheet, contexto.novasLinhas, CABECALHOS_CEPS_CACHE);
+}
+
+// CACHE CONTROLADO DE COORDENADAS DO MAPA
+// O carregamento normal apenas consulta o cache. CEPs ausentes entram nesta
+// fila e sao geocodificados em pequenos lotes, fora da montagem do mapa.
+function enfileirarCepsPendentesMapa_(ss, ceps) {
+  const lista = Array.isArray(ceps) ? ceps : [];
+  const unicos = {};
+
+  lista.forEach(function(cep) {
+    const normalizado = somenteNumeros(cep);
+    if (normalizado.length === 8) unicos[normalizado] = true;
+  });
+
+  if (Object.keys(unicos).length === 0) {
+    return obterStatusFilaCepsMapa_(ss);
+  }
+
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lockObtido = lock.tryLock(250);
+
+    if (!lockObtido) {
+      return {
+        totalProcessaveis: Object.keys(unicos).length,
+        totalComFalha: 0,
+        adicionadosAgora: 0,
+        filaOcupada: true,
+        mensagem: "A fila de coordenadas ja esta sendo processada. O mapa continuou com o cache disponivel."
+      };
+    }
+
+    const planilha = ss || obterPlanilhaCacheCepsMapa_();
+    registrarPlanilhaCacheCepsMapa_(planilha);
+    const sheetCache = obterOuCriarAba(planilha, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+    const sheetFila = obterOuCriarAbaFilaCepsMapa_(planilha);
+    const cacheExistente = carregarCepsExistentesMapa_(sheetCache);
+    const filaExistente = carregarCepsExistentesFilaMapa_(sheetFila);
+    const agora = new Date();
+    const novasLinhas = [];
+
+    Object.keys(unicos).sort().forEach(function(cep) {
+      if (cacheExistente[cep] || filaExistente[cep]) return;
+
+      novasLinhas.push([
+        formatarCEP(cep),
+        "pendente",
+        0,
+        "",
+        "Aguardando processamento",
+        agora
+      ]);
+    });
+
+    if (novasLinhas.length > 0) {
+      garantirQuantidadeLinhasMapa_(
+        sheetFila,
+        sheetFila.getLastRow() + novasLinhas.length
+      );
+      gravarLinhasPadraoAbaixo(
+        sheetFila,
+        novasLinhas,
+        CABECALHOS_CEPS_PENDENTES_MAPA
+      );
+    }
+
+    const status = obterStatusFilaCepsMapa_(planilha);
+    status.adicionadosAgora = novasLinhas.length;
+    status.filaOcupada = false;
+    return status;
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+}
+
+function iniciarAtualizacaoCacheCepsMapa(idToken) {
+  validarAdministradorPorToken(idToken);
+
+  const ss = obterPlanilhaCacheCepsMapa_();
+  const statusInicial = obterStatusFilaCepsMapa_(ss);
+
+  if (statusInicial.totalProcessaveis < 1) {
+    return {
+      concluido: true,
+      totalProcessados: 0,
+      totalSucessos: 0,
+      totalFalhas: statusInicial.totalComFalha,
+      totalPendente: 0,
+      gatilhoAtivo: false,
+      mensagem: statusInicial.totalComFalha > 0
+        ? "Nao ha CEPs pendentes. Existem CEPs com falha definitiva para revisao."
+        : "O cache de coordenadas ja esta atualizado."
+    };
+  }
+
+  const resultado = processarLoteFilaCepsMapa_();
+
+  if (resultado.totalPendente > 0) {
+    garantirGatilhoCacheCepsMapa_();
+    resultado.gatilhoAtivo = existeGatilhoCacheCepsMapa_();
+    resultado.mensagem += resultado.gatilhoAtivo
+      ? " A sincronizacao continuara automaticamente em segundo plano."
+      : " Execute novamente esta funcao para processar o proximo lote.";
+  }
+
+  return resultado;
+}
+
+function processarFilaCepsMapaAutomaticamente() {
+  try {
+    const resultado = processarLoteFilaCepsMapa_();
+    Logger.log("Cache de CEPs do mapa: " + JSON.stringify(resultado));
+    return resultado;
+  } catch (erro) {
+    Logger.log("Falha controlada no cache de CEPs do mapa: " + erro);
+    return {
+      concluido: false,
+      mensagem: String(erro && erro.message ? erro.message : erro)
+    };
+  }
+}
+
+function processarLoteFilaCepsMapa_() {
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const ss = obterPlanilhaCacheCepsMapa_();
+    const sheetCache = obterOuCriarAba(ss, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+    const sheetFila = obterOuCriarAbaFilaCepsMapa_(ss);
+    const dadosFila = lerDadosPadrao(
+      sheetFila,
+      CABECALHOS_CEPS_PENDENTES_MAPA,
+      1
+    );
+    const cacheExistente = carregarCepsExistentesMapa_(sheetCache);
+    const selecionados = [];
+
+    for (let i = 1; i < dadosFila.length; i++) {
+      const linha = dadosFila[i];
+      const cep = somenteNumeros(linha[0]);
+      const tentativas = Number(linha[2] || 0);
+
+      if (cep.length !== 8) continue;
+      if (tentativas >= CACHE_CEPS_MAPA_MAXIMO_TENTATIVAS) continue;
+
+      selecionados.push({
+        numeroLinha: i + 1,
+        cep: cep,
+        tentativas: tentativas
+      });
+
+      if (selecionados.length >= CACHE_CEPS_MAPA_TAMANHO_LOTE) break;
+    }
+
+    if (selecionados.length === 0) {
+      removerGatilhosCacheCepsMapa_();
+      const statusSemFila = obterStatusFilaCepsMapa_(ss);
+
+      return {
+        concluido: true,
+        totalProcessados: 0,
+        totalSucessos: 0,
+        totalFalhas: statusSemFila.totalComFalha,
+        totalPendente: 0,
+        gatilhoAtivo: false,
+        mensagem: statusSemFila.totalComFalha > 0
+          ? "Fila concluida com alguns CEPs nao localizados."
+          : "Cache de coordenadas atualizado."
+      };
+    }
+
+    const linhasCache = [];
+    const linhasConcluidas = [];
+    const atualizacoesFila = [];
+    let consultasGeocoder = 0;
+    let interrompidoPorLimite = false;
+
+    for (let j = 0; j < selecionados.length; j++) {
+      const item = selecionados[j];
+
+      if (cacheExistente[item.cep]) {
+        linhasConcluidas.push(item.numeroLinha);
+        continue;
+      }
+
+      if (consultasGeocoder > 0) {
+        Utilities.sleep(CACHE_CEPS_MAPA_INTERVALO_MS);
+      }
+
+      try {
+        const coordenadas = geocodificarCEPMapa(item.cep);
+        consultasGeocoder++;
+
+        if (coordenadas) {
+          linhasCache.push([
+            formatarCEP(item.cep),
+            coordenadas.latitude,
+            coordenadas.longitude,
+            coordenadas.endereco || formatarCEP(item.cep) + ", Brasil",
+            new Date()
+          ]);
+          cacheExistente[item.cep] = true;
+          linhasConcluidas.push(item.numeroLinha);
+        } else {
+          const novasTentativas = item.tentativas + 1;
+          atualizacoesFila.push({
+            numeroLinha: item.numeroLinha,
+            status: novasTentativas >= CACHE_CEPS_MAPA_MAXIMO_TENTATIVAS
+              ? "falha"
+              : "erro",
+            tentativas: novasTentativas,
+            mensagem: "CEP nao localizado pelo geocoder"
+          });
+        }
+      } catch (erro) {
+        const mensagemErro = String(erro && erro.message ? erro.message : erro);
+
+        if (erroEhLimiteGeocoderMapa_(mensagemErro)) {
+          atualizacoesFila.push({
+            numeroLinha: item.numeroLinha,
+            status: "pendente",
+            tentativas: item.tentativas,
+            mensagem: "Processamento pausado temporariamente pelo servico de geocodificacao"
+          });
+          interrompidoPorLimite = true;
+          break;
+        }
+
+        const novasTentativas = item.tentativas + 1;
+        atualizacoesFila.push({
+          numeroLinha: item.numeroLinha,
+          status: novasTentativas >= CACHE_CEPS_MAPA_MAXIMO_TENTATIVAS
+            ? "falha"
+            : "erro",
+          tentativas: novasTentativas,
+          mensagem: mensagemErro.substring(0, 250)
+        });
+      }
+    }
+
+    if (linhasCache.length > 0) {
+      garantirQuantidadeLinhasMapa_(
+        sheetCache,
+        sheetCache.getLastRow() + linhasCache.length
+      );
+      gravarLinhasPadraoAbaixo(sheetCache, linhasCache, CABECALHOS_CEPS_CACHE);
+    }
+
+    atualizacoesFila.forEach(function(item) {
+      sheetFila
+        .getRange(item.numeroLinha, 2, 1, 4)
+        .setValues([[
+          item.status,
+          item.tentativas,
+          new Date(),
+          item.mensagem
+        ]]);
+    });
+
+    removerLinhasConcluidasFilaMapa_(sheetFila, linhasConcluidas);
+
+    ajustarGradeFilaCepsMapa_(sheetFila);
+    SpreadsheetApp.flush();
+
+    const statusFinal = obterStatusFilaCepsMapa_(ss);
+
+    if (statusFinal.totalProcessaveis < 1) {
+      removerGatilhosCacheCepsMapa_();
+    }
+
+    return {
+      concluido: statusFinal.totalProcessaveis < 1,
+      totalProcessados: consultasGeocoder,
+      totalSucessos: linhasCache.length,
+      totalFalhas: statusFinal.totalComFalha,
+      totalPendente: statusFinal.totalProcessaveis,
+      gatilhoAtivo: statusFinal.totalProcessaveis > 0 && existeGatilhoCacheCepsMapa_(),
+      pausadoPorLimite: interrompidoPorLimite,
+      mensagem: interrompidoPorLimite
+        ? "Lote pausado pelo limite temporario do geocoder. Nenhum erro foi propagado ao mapa."
+        : linhasCache.length + " CEP(s) adicionados ao cache; " +
+          statusFinal.totalProcessaveis + " ainda pendente(s)."
+    };
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+}
+
+function cancelarAtualizacaoCacheCepsMapa(idToken) {
+  validarAdministradorPorToken(idToken);
+  const removidos = removerGatilhosCacheCepsMapa_();
+
+  return {
+    gatilhosRemovidos: removidos,
+    mensagem: "Sincronizacao automatica interrompida. A fila de CEPs foi preservada."
+  };
+}
+
+function obterStatusCacheCepsMapa(idToken) {
+  validarAdministradorPorToken(idToken);
+  const status = obterStatusFilaCepsMapa_(obterPlanilhaCacheCepsMapa_());
+  status.gatilhoAtivo = existeGatilhoCacheCepsMapa_();
+  return status;
+}
+
+function registrarPlanilhaCacheCepsMapa_(ss) {
+  if (!ss || typeof ss.getId !== "function") return "";
+
+  const idPlanilha = String(ss.getId() || "").trim();
+  if (!idPlanilha) return "";
+
+  PropertiesService
+    .getScriptProperties()
+    .setProperty(CACHE_CEPS_MAPA_PLANILHA_PROPERTY, idPlanilha);
+
+  return idPlanilha;
+}
+
+function obterPlanilhaCacheCepsMapa_() {
+  const ativa = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (ativa) {
+    registrarPlanilhaCacheCepsMapa_(ativa);
+    return ativa;
+  }
+
+  const idPlanilha = String(
+    PropertiesService
+      .getScriptProperties()
+      .getProperty(CACHE_CEPS_MAPA_PLANILHA_PROPERTY) || ""
+  ).trim();
+
+  if (!idPlanilha) {
+    throw new Error(
+      "A planilha do cache de coordenadas ainda nao foi registrada. " +
+      "Abra o Mapa de Calor uma vez ou execute autorizarServicosSAIC no editor."
+    );
+  }
+
+  return SpreadsheetApp.openById(idPlanilha);
+}
+
+function obterOuCriarAbaFilaCepsMapa_(ss) {
+  const sheet = obterOuCriarAba(
+    ss,
+    ABA_CEPS_PENDENTES_MAPA,
+    CABECALHOS_CEPS_PENDENTES_MAPA
+  );
+
+  ajustarGradeFilaCepsMapa_(sheet);
+  return sheet;
+}
+
+function carregarCepsExistentesMapa_(sheetCache) {
+  const mapa = {};
+  const ultimaLinha = sheetCache ? sheetCache.getLastRow() : 0;
+
+  if (!sheetCache || ultimaLinha < 2) return mapa;
+
+  sheetCache
+    .getRange(2, 1, ultimaLinha - 1, 1)
+    .getDisplayValues()
+    .forEach(function(linha) {
+      const cep = somenteNumeros(linha[0]);
+      if (cep.length === 8) mapa[cep] = true;
+    });
+
+  return mapa;
+}
+
+function carregarCepsExistentesFilaMapa_(sheetFila) {
+  const mapa = {};
+  const ultimaLinha = sheetFila ? sheetFila.getLastRow() : 0;
+
+  if (!sheetFila || ultimaLinha < 2) return mapa;
+
+  sheetFila
+    .getRange(2, 1, ultimaLinha - 1, 1)
+    .getDisplayValues()
+    .forEach(function(linha) {
+      const cep = somenteNumeros(linha[0]);
+      if (cep.length === 8) mapa[cep] = true;
+    });
+
+  return mapa;
+}
+
+function obterStatusFilaCepsMapa_(ss) {
+  const planilha = ss || obterPlanilhaCacheCepsMapa_();
+  const sheetFila = obterOuCriarAbaFilaCepsMapa_(planilha);
+  const ultimaLinha = sheetFila.getLastRow();
+  let totalProcessaveis = 0;
+  let totalComFalha = 0;
+
+  if (ultimaLinha >= 2) {
+    const dados = lerDadosPadrao(
+      sheetFila,
+      CABECALHOS_CEPS_PENDENTES_MAPA,
+      2
+    );
+
+    dados.forEach(function(linha) {
+      const cep = somenteNumeros(linha[0]);
+      const tentativas = Number(linha[2] || 0);
+
+      if (cep.length !== 8) return;
+
+      if (tentativas >= CACHE_CEPS_MAPA_MAXIMO_TENTATIVAS || normalizar(linha[1]) === "falha") {
+        totalComFalha++;
+      } else {
+        totalProcessaveis++;
+      }
+    });
+  }
+
+  return {
+    totalNaFila: Math.max(0, ultimaLinha - 1),
+    totalProcessaveis: totalProcessaveis,
+    totalComFalha: totalComFalha,
+    gatilhoAtivo: existeGatilhoCacheCepsMapa_()
+  };
+}
+
+function garantirGatilhoCacheCepsMapa_() {
+  if (existeGatilhoCacheCepsMapa_()) return false;
+
+  try {
+    ScriptApp
+      .newTrigger(CACHE_CEPS_MAPA_FUNCAO_GATILHO)
+      .timeBased()
+      .everyMinutes(5)
+      .create();
+  } catch (erro) {
+    Logger.log("Nao foi possivel criar o gatilho do cache de CEPs: " + erro);
+    return false;
+  }
+
+  return true;
+}
+
+function existeGatilhoCacheCepsMapa_() {
+  try {
+    return ScriptApp.getProjectTriggers().some(function(gatilho) {
+      return gatilho.getHandlerFunction() === CACHE_CEPS_MAPA_FUNCAO_GATILHO;
+    });
+  } catch (erro) {
+    return false;
+  }
+}
+
+function removerGatilhosCacheCepsMapa_() {
+  let removidos = 0;
+
+  ScriptApp.getProjectTriggers().forEach(function(gatilho) {
+    if (gatilho.getHandlerFunction() === CACHE_CEPS_MAPA_FUNCAO_GATILHO) {
+      ScriptApp.deleteTrigger(gatilho);
+      removidos++;
+    }
+  });
+
+  return removidos;
+}
+
+function erroEhLimiteGeocoderMapa_(mensagem) {
+  const texto = normalizar(mensagem);
+
+  return texto.indexOf("demasiadas vezes") >= 0 ||
+    texto.indexOf("too many times") >= 0 ||
+    texto.indexOf("rate limit") >= 0 ||
+    texto.indexOf("quota") >= 0 ||
+    texto.indexOf("limite") >= 0;
+}
+
+function garantirQuantidadeLinhasMapa_(sheet, ultimaLinhaNecessaria) {
+  const atuais = sheet.getMaxRows();
+
+  if (ultimaLinhaNecessaria > atuais) {
+    sheet.insertRowsAfter(atuais, ultimaLinhaNecessaria - atuais);
+  }
+}
+
+function removerLinhasConcluidasFilaMapa_(sheet, numerosLinhas) {
+  let totalLinhasGrade = sheet.getMaxRows();
+
+  (numerosLinhas || [])
+    .slice()
+    .sort(function(a, b) { return b - a; })
+    .forEach(function(numeroLinha) {
+      if (numeroLinha < 2 || numeroLinha > sheet.getLastRow()) return;
+
+      if (totalLinhasGrade > 2) {
+        sheet.deleteRow(numeroLinha);
+        totalLinhasGrade--;
+      } else {
+        sheet
+          .getRange(numeroLinha, 1, 1, CABECALHOS_CEPS_PENDENTES_MAPA.length)
+          .clearContent();
+      }
+    });
+}
+
+function ajustarGradeFilaCepsMapa_(sheet) {
+  const colunasAlvo = CABECALHOS_CEPS_PENDENTES_MAPA.length;
+  const colunasAtuais = sheet.getMaxColumns();
+
+  if (colunasAtuais > colunasAlvo) {
+    sheet.deleteColumns(colunasAlvo + 1, colunasAtuais - colunasAlvo);
+  } else if (colunasAtuais < colunasAlvo) {
+    sheet.insertColumnsAfter(colunasAtuais, colunasAlvo - colunasAtuais);
+  }
+
+  const linhasAlvo = Math.max(2, sheet.getLastRow());
+  const linhasAtuais = sheet.getMaxRows();
+
+  if (linhasAtuais > linhasAlvo) {
+    sheet.deleteRows(linhasAlvo + 1, linhasAtuais - linhasAlvo);
+  } else if (linhasAtuais < linhasAlvo) {
+    sheet.insertRowsAfter(linhasAtuais, linhasAlvo - linhasAtuais);
+  }
 }
 
 function criarGrupoRegiaoMapa(chave, cepBase, bairro, cidade, estado) {
@@ -5672,6 +6662,63 @@ function montarResidenciasMapaCalor(gruposResidencia) {
     });
 }
 
+function selecionarResidenciasVisuaisMapa_(residencias, limite) {
+  const lista = Array.isArray(residencias) ? residencias : [];
+  const maximo = Math.max(1, Number(limite || MAPA_CALOR_LIMITE_MARCADORES_RESIDENCIAS));
+
+  if (lista.length <= maximo) return lista;
+
+  const selecionadas = [];
+  const cepsSelecionados = {};
+
+  function adicionar(item) {
+    if (!item) return;
+
+    const chave = somenteNumeros(item.cep) || [item.latitude, item.longitude].join("|");
+    if (cepsSelecionados[chave]) return;
+
+    cepsSelecionados[chave] = true;
+    selecionadas.push(item);
+  }
+
+  // Preserva os pontos de maior volume, que determinam a intensidade do mapa.
+  lista.slice(0, Math.max(1, Math.floor(maximo * 0.2))).forEach(adicionar);
+
+  // Garante que a residencia mais distante continue disponivel na leitura gerencial.
+  adicionar(lista.slice().sort(function(a, b) {
+    return Number(b.distanciaNapsMaisProximoKm || 0) -
+      Number(a.distanciaNapsMaisProximoKm || 0);
+  })[0]);
+
+  // Completa a amostra de forma deterministica e distribuida geograficamente.
+  const geograficas = lista.slice().sort(function(a, b) {
+    const latitude = Number(a.latitude || 0) - Number(b.latitude || 0);
+    if (latitude !== 0) return latitude;
+
+    const longitude = Number(a.longitude || 0) - Number(b.longitude || 0);
+    if (longitude !== 0) return longitude;
+
+    return String(a.cep || "").localeCompare(String(b.cep || ""), "pt-BR");
+  });
+  const vagas = maximo - selecionadas.length;
+
+  for (let i = 0; i < vagas && selecionadas.length < maximo; i++) {
+    const indice = vagas === 1
+      ? 0
+      : Math.round(i * (geograficas.length - 1) / (vagas - 1));
+    adicionar(geograficas[indice]);
+  }
+
+  if (selecionadas.length < maximo) {
+    geograficas.some(function(item) {
+      adicionar(item);
+      return selecionadas.length >= maximo;
+    });
+  }
+
+  return selecionadas;
+}
+
 function obterNomeMaisFrequenteMapa(contagem) {
   let melhorNome = "";
   let melhorTotal = 0;
@@ -5726,7 +6773,22 @@ function montarResumoMapaCalor(base) {
     cepsSemCoordenada: base.cepsSemCoordenada || 0,
     registrosSemNaps: base.registrosSemNaps || 0,
     cepsGeocodificadosAgora: base.cepsGeocodificadosAgora || 0,
-    limiteGeocodificacaoAtingido: !!base.limiteGeocodificacaoAtingido
+    limiteGeocodificacaoAtingido: !!base.limiteGeocodificacaoAtingido,
+    cepsPendentesUnicos: base.cepsPendentesUnicos || 0,
+    cepsPendentesFila: base.cepsPendentesFila || 0,
+    cepsComFalha: base.cepsComFalha || 0,
+    filaCepsOcupada: !!base.filaCepsOcupada,
+    cacheCepsEmProcessamento: !!base.cacheCepsEmProcessamento,
+    atendimentosMapeados: base.atendimentosMapeados || 0,
+    percentualCoberturaMapa: base.percentualCoberturaMapa || 0,
+    totalAtendimentosAmostra: base.totalAtendimentosAmostra || 0,
+    totalAtendimentosComCepPeriodo: base.totalAtendimentosComCepPeriodo || 0,
+    totalCepsPeriodo: base.totalCepsPeriodo || 0,
+    totalCepsAmostra: base.totalCepsAmostra || 0,
+    amostraGeograficaAplicada: !!base.amostraGeograficaAplicada,
+    totalResidenciasMapeadas: base.totalResidenciasMapeadas || 0,
+    marcadoresResidenciasExibidos: base.marcadoresResidenciasExibidos || 0,
+    amostraVisualAplicada: !!base.amostraVisualAplicada
   };
 }
 
@@ -5746,11 +6808,52 @@ function montarAvisosMapaCalor(resumo) {
   }
 
   if (resumo.cepsSemCoordenada > 0) {
-    avisos.push(resumo.cepsSemCoordenada + " atendimento(s) ainda sem coordenada calculada para o CEP.");
+    avisos.push(
+      resumo.cepsSemCoordenada +
+      " atendimento(s) ainda sem coordenada calculada. O mapa foi carregado parcialmente sem consultar o geocoder em excesso."
+    );
+  }
+
+  if (resumo.cepsPendentesUnicos > 0) {
+    avisos.push(
+      resumo.cepsPendentesUnicos +
+      " CEP(s) unico(s) da amostra aguardam processamento no cache."
+    );
+  }
+
+  if (resumo.cepsComFalha > 0) {
+    avisos.push(
+      resumo.cepsComFalha +
+      " CEP(s) nao foram localizados apos o limite de tentativas e precisam de revisao."
+    );
+  }
+
+  if (resumo.filaCepsOcupada) {
+    avisos.push(
+      "A fila de coordenadas ja estava em processamento. O mapa foi carregado com o cache disponivel e tentara incluir os CEPs restantes na proxima atualizacao."
+    );
   }
 
   if (resumo.registrosSemNaps > 0) {
     avisos.push(resumo.registrosSemNaps + " atendimento(s) sem CEP do NAPS para calcular distancia atual.");
+  }
+
+  if (resumo.amostraGeograficaAplicada) {
+    avisos.push(
+      "O periodo possui " + resumo.totalAtendimentos +
+      " atendimento(s). A analise geografica utilizou uma amostra distribuida de " +
+      resumo.totalAtendimentosAmostra + " atendimento(s) e " +
+      resumo.totalCepsAmostra + " CEP(s), entre " +
+      resumo.totalCepsPeriodo + " CEP(s) validos do periodo."
+    );
+  }
+
+  if (resumo.amostraVisualAplicada) {
+    avisos.push(
+      "Os calculos consideraram " + resumo.totalResidenciasMapeadas +
+      " CEP(s). Para manter o mapa leve, foram desenhados " +
+      resumo.marcadoresResidenciasExibidos + " marcadores representativos."
+    );
   }
 
   return avisos;
@@ -7499,6 +8602,9 @@ function autorizarServicosSAIC() {
     muteHttpExceptions: true
   });
 
-  SpreadsheetApp.getActiveSpreadsheet().getName();
+  const planilhaAtiva = SpreadsheetApp.getActiveSpreadsheet();
+  planilhaAtiva.getName();
+  registrarPlanilhaCacheCepsMapa_(planilhaAtiva);
+  ScriptApp.getProjectTriggers();
+  Maps.newGeocoder();
 }
-
