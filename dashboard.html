@@ -497,6 +497,24 @@
       margin: 0 0 12px;
     }
 
+    .module-chart-head {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .module-chart-head h3 {
+      margin: 0;
+    }
+
+    .module-chart-head select {
+      max-width: 230px;
+      min-width: 180px;
+    }
+
     .chart-wrap {
       height: 286px;
       position: relative;
@@ -1517,6 +1535,14 @@ h3,
 .metric:nth-child(8) strong { color: var(--chart-blue) !important; }
 .metric:nth-child(9)::before { background: var(--chart-green-dark) !important; }
 .metric:nth-child(9) strong { color: var(--chart-green-dark) !important; }
+.metric:nth-child(10)::before { background: var(--chart-slate) !important; }
+.metric:nth-child(10) strong { color: var(--chart-slate) !important; }
+.metric:nth-child(11)::before { background: var(--chart-blue) !important; }
+.metric:nth-child(11) strong { color: var(--chart-blue) !important; }
+.metric:nth-child(12)::before { background: var(--chart-green-dark) !important; }
+.metric:nth-child(12) strong { color: var(--chart-green-dark) !important; }
+.metric:nth-child(13)::before { background: var(--chart-amber) !important; }
+.metric:nth-child(13) strong { color: var(--chart-amber) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -1947,6 +1973,18 @@ h3,
           <strong id="metricEventos">0</strong>
         </div>
         <div class="metric">
+          <span>Atendimentos PPMS</span>
+          <strong id="metricPpms">0</strong>
+        </div>
+        <div class="metric">
+          <span>Incidentes Críticos</span>
+          <strong id="metricIncidentesCriticos">0</strong>
+        </div>
+        <div class="metric">
+          <span>Atendimentos Online</span>
+          <strong id="metricOnline">0</strong>
+        </div>
+        <div class="metric">
           <span>Pessoas em grupos</span>
           <strong id="metricPessoasGrupos">0</strong>
         </div>
@@ -2065,6 +2103,38 @@ h3,
           <p id="vazioSituacaoSexo" class="empty"></p>
         </div>
 
+        <div class="chart-box">
+          <div class="module-chart-head">
+            <h3>PPMS</h3>
+            <select id="dimensaoGraficoPpms" onchange="atualizarGraficoPpms()" aria-label="Dimensão do gráfico PPMS">
+              <option value="natureza">Natureza</option>
+              <option value="fator">Fator precipitante</option>
+              <option value="resposta">Resposta inicial</option>
+            </select>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="graficoPpms"></canvas>
+          </div>
+          <p id="notaPpms" class="chart-note"></p>
+          <p id="vazioPpms" class="empty"></p>
+        </div>
+
+        <div class="chart-box">
+          <div class="module-chart-head">
+            <h3>Incidente Crítico</h3>
+            <select id="dimensaoGraficoIncidente" onchange="atualizarGraficoIncidente()" aria-label="Dimensão do gráfico de Incidente Crítico">
+              <option value="modalidade">Modalidade</option>
+              <option value="vitima">Vítima</option>
+              <option value="servico">Serviço</option>
+            </select>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="graficoIncidente"></canvas>
+          </div>
+          <p id="notaIncidente" class="chart-note"></p>
+          <p id="vazioIncidente" class="empty"></p>
+        </div>
+
         <div class="ranking-box">
           <h3>Hipóteses de diagnóstico mais frequentes</h3>
           <div id="rankingMotivos"></div>
@@ -2088,6 +2158,8 @@ h3,
     let modoGrafico = "quantidade";
     let selecoesEvolucaoNaps = {};
     let seletorEvolucaoExpandido = false;
+    let dimensaoPpmsDashboard = "natureza";
+    let dimensaoIncidenteDashboard = "modalidade";
     const graficos = {};
     const cores = ["#2563eb", "#16a34a", "#f59e0b", "#7c3aed", "#0891b2", "#4f46e5", "#65a30d", "#0f766e", "#a855f7", "#0284c7", "#ca8a04", "#475569"];
 
@@ -2243,6 +2315,9 @@ h3,
       document.getElementById("metricTotal").innerText = formatarNumero(resumo.totalAtendimentos);
       document.getElementById("metricPessoas").innerText = formatarNumero(resumo.pessoasDistintas);
       document.getElementById("metricEventos").innerText = formatarNumero(resumo.totalEventosColetivos);
+      document.getElementById("metricPpms").innerText = formatarNumero(resumo.totalPpms);
+      document.getElementById("metricIncidentesCriticos").innerText = formatarNumero(resumo.totalIncidentesCriticos);
+      document.getElementById("metricOnline").innerText = formatarNumero(resumo.totalAtendimentosOnline);
       document.getElementById("metricPessoasGrupos").innerText = formatarNumero(resumo.pessoasGrupos);
       document.getElementById("metricPessoasPalestras").innerText = formatarNumero(resumo.pessoasPalestras);
       document.getElementById("metricPessoasTotal").innerText = formatarNumero(resumo.pessoasTotalGeral);
@@ -2311,7 +2386,57 @@ h3,
       criarGrafico("motivo", "graficoMotivo", "bar", graficosDados.porMotivo || [], "vazioMotivo", "");
       criarGrafico("opm", "graficoOPM", "bar", graficosDados.porOPM || [], "vazioOPM", "");
       criarGraficoSituacaoSexo(graficosDados.porSituacao || [], graficosDados.porSexo || []);
+      renderizarGraficoPpms(graficosDados.ppms || {});
+      renderizarGraficoIncidente(graficosDados.incidenteCritico || {});
       atualizarNotasGraficos(Object.assign({}, graficosDados, { evolucao: evolucaoSelecionada }));
+    }
+
+    function atualizarGraficoPpms() {
+      const seletor = document.getElementById("dimensaoGraficoPpms");
+      dimensaoPpmsDashboard = seletor ? seletor.value : "natureza";
+
+      if (dadosDashboardAtual) {
+        renderizarGraficoPpms((dadosDashboardAtual.graficos || {}).ppms || {});
+      }
+    }
+
+    function renderizarGraficoPpms(dados) {
+      const seletor = document.getElementById("dimensaoGraficoPpms");
+      if (seletor) seletor.value = dimensaoPpmsDashboard;
+
+      const configuracoes = {
+        natureza: { lista: dados.porNatureza || [], rotulo: "natureza" },
+        fator: { lista: dados.porFatorPrecipitante || [], rotulo: "fator precipitante" },
+        resposta: { lista: dados.porRespostaInicial || [], rotulo: "resposta inicial" }
+      };
+      const atual = configuracoes[dimensaoPpmsDashboard] || configuracoes.natureza;
+
+      criarGrafico("ppms", "graficoPpms", "bar", atual.lista, "vazioPpms", "");
+      definirTexto("notaPpms", montarNotaDistribuicao(atual.lista, atual.rotulo));
+    }
+
+    function atualizarGraficoIncidente() {
+      const seletor = document.getElementById("dimensaoGraficoIncidente");
+      dimensaoIncidenteDashboard = seletor ? seletor.value : "modalidade";
+
+      if (dadosDashboardAtual) {
+        renderizarGraficoIncidente((dadosDashboardAtual.graficos || {}).incidenteCritico || {});
+      }
+    }
+
+    function renderizarGraficoIncidente(dados) {
+      const seletor = document.getElementById("dimensaoGraficoIncidente");
+      if (seletor) seletor.value = dimensaoIncidenteDashboard;
+
+      const configuracoes = {
+        modalidade: { lista: dados.porModalidade || [], rotulo: "modalidade" },
+        vitima: { lista: dados.porVitima || [], rotulo: "vítima" },
+        servico: { lista: dados.porServico || [], rotulo: "serviço" }
+      };
+      const atual = configuracoes[dimensaoIncidenteDashboard] || configuracoes.modalidade;
+
+      criarGrafico("incidente", "graficoIncidente", "bar", atual.lista, "vazioIncidente", "");
+      definirTexto("notaIncidente", montarNotaDistribuicao(atual.lista, atual.rotulo));
     }
 
     function criarGraficoNAPSComparativo(graficosDados) {
@@ -2373,7 +2498,7 @@ h3,
 
       vazio.innerText = labelsOriginais.length === 0 ? "Sem dados no período." : "";
       if (container) {
-        container.style.height = Math.max(420, labelsOriginais.length * 54) + "px";
+        container.style.height = Math.max(460, labelsOriginais.length * 74) + "px";
       }
       destruirGrafico("napsComparativo");
 
@@ -2398,9 +2523,9 @@ h3,
           },
           datasets: {
             bar: {
-              categoryPercentage: 0.68,
-              barPercentage: 0.72,
-              maxBarThickness: 16
+              categoryPercentage: 0.84,
+              barPercentage: 0.90,
+              maxBarThickness: 15
             }
           },
           plugins: {
@@ -2429,7 +2554,11 @@ h3,
           chart.data.datasets.forEach(function(dataset, datasetIndex) {
             const meta = chart.getDatasetMeta(datasetIndex);
 
+            if (!chart.isDatasetVisible(datasetIndex) || meta.hidden) return;
+
             meta.data.forEach(function(barra, indice) {
+              if (!barra || barra.skip || barra.hidden) return;
+
               const valorOriginal = dataset.dadosOriginais
                 ? Number(dataset.dadosOriginais[indice] || 0)
                 : Number(dataset.data[indice] || 0);
@@ -2442,10 +2571,21 @@ h3,
 
               if (!valorOriginal) return;
 
+              const posicaoX = Number(barra.x);
+              const posicaoBase = Number(barra.base);
+              const posicaoY = Number(barra.y);
+
+              if (
+                !Number.isFinite(posicaoX) ||
+                !Number.isFinite(posicaoBase) ||
+                !Number.isFinite(posicaoY) ||
+                Math.abs(posicaoX - posicaoBase) < 1
+              ) return;
+
               ctx.fillText(
                 texto,
-                barra.x + 6,
-                barra.y
+                posicaoX + 6,
+                posicaoY
               );
             });
           });
@@ -3084,12 +3224,45 @@ h3,
 
     function formatarRotuloDashboard(rotulo, contexto) {
       const texto = String(rotulo || "Não informado");
+      const chave = normalizarTextoDashboard(texto);
+      const traducoes = {
+        "ppms": "PPMS",
+        "incidente critico": "Incidente Crítico",
+        "tentativa de suicidio": "Tentativa de Suicídio",
+        "ideacao com planejamento": "Ideação com planejamento",
+        "ideacao sem planejamento": "Ideação sem planejamento",
+        "comunicacao de intencao": "Comunicação de intenção",
+        "aceitou atendimento psicologico": "Aceitou atendimento psicológico",
+        "recusou atendimento": "Recusou atendimento",
+        "aceitou parcialmente": "Aceitou parcialmente",
+        "saude (transtornos mentais)": "Saúde (transtornos mentais)",
+        "saude (doencas pre-existentes)": "Saúde (doenças pré-existentes)",
+        "compulsao por alcool/outras drogas": "Compulsão por álcool/outras drogas",
+        "assedio moral": "Assédio moral",
+        "motivos de saude": "Motivos de saúde",
+        "homicidio": "Homicídio",
+        "suicidio": "Suicídio",
+        "acidente de transito": "Acidente de trânsito",
+        "conjuge": "Cônjuge",
+        "mae": "Mãe",
+        "irmao(a)": "Irmão(a)"
+      };
+
+      if (traducoes[chave]) return traducoes[chave];
 
       if (contexto === "opm" || contexto === "naps") {
         return texto.toUpperCase();
       }
 
       return capitalizar(texto);
+    }
+
+    function normalizarTextoDashboard(valor) {
+      return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
     }
 
     function formatarNumero(valor) {
@@ -3129,4 +3302,3 @@ h3,
   </script>
 </body>
 </html>
-
