@@ -1541,6 +1541,12 @@ h3,
 .metric:nth-child(8) strong { color: var(--chart-blue) !important; }
 .metric:nth-child(9)::before { background: var(--chart-green-dark) !important; }
 .metric:nth-child(9) strong { color: var(--chart-green-dark) !important; }
+.metric:nth-child(10)::before { background: var(--chart-slate) !important; }
+.metric:nth-child(10) strong { color: var(--chart-slate) !important; }
+.metric:nth-child(11)::before { background: var(--chart-blue) !important; }
+.metric:nth-child(11) strong { color: var(--chart-blue) !important; }
+.metric:nth-child(12)::before { background: var(--chart-green-dark) !important; }
+.metric:nth-child(12) strong { color: var(--chart-green-dark) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -1935,6 +1941,8 @@ h3,
       <nav id="abasRelatorio" class="tabs">
         <button class="tab-button active" data-tab="resumo" onclick="trocarAba('resumo')">Resumo</button>
         <button class="tab-button" data-tab="atendimentos" onclick="trocarAba('atendimentos')">Demandas</button>
+        <button class="tab-button" data-tab="ppms" onclick="trocarAba('ppms')">PPMS</button>
+        <button class="tab-button" data-tab="incidente" onclick="trocarAba('incidente')">Incidente Crítico</button>
         <button class="tab-button" data-tab="perfil" onclick="trocarAba('perfil')">Perfil</button>
         <button class="tab-button" data-tab="localidade" onclick="trocarAba('localidade')">OPM / Localidade</button>
         <button class="tab-button" data-tab="vinculos" onclick="trocarAba('vinculos')">Vínculos</button>
@@ -2200,6 +2208,9 @@ function formatarDataInput(data) {
         montarMetrica("Atendimentos", resumo.totalAtendimentos),
         montarMetrica("Pessoas", resumo.pessoasDistintas),
         montarMetrica("Grupos e Palestras", resumo.totalEventosColetivos),
+        montarMetrica("Atendimentos PPMS", resumo.totalPpms),
+        montarMetrica("Incidentes Críticos", resumo.totalIncidentesCriticos),
+        montarMetrica("Atendimentos Online", resumo.totalAtendimentosOnline),
         montarMetrica("Pessoas em grupos", resumo.pessoasGrupos),
         montarMetrica("Pessoas em palestras", resumo.pessoasPalestras),
         montarMetrica("Total de pessoas", resumo.pessoasTotalGeral),
@@ -2381,6 +2392,44 @@ function formatarDataInput(data) {
             ${montarGraficoBarras("Tipo de atendimento", d.porTipo, { limite: 12 })}
             ${montarGraficoBarras("Hipóteses de diagnóstico", d.porMotivo, { limite: 15 })}
             ${montarTabelaTipoMotivo()}
+          </div>
+        `;
+      }
+
+      if (abaAtual === "ppms") {
+        const ppms = d.ppms || {};
+
+        return `
+          <div class="tab-grid">
+            <section class="chart-box wide">
+              <h3>Resumo quantitativo PPMS</h3>
+              <div class="individual-grid">
+                ${montarCardIndividual("Atendimentos PPMS", ppms.total || 0)}
+              </div>
+            </section>
+            ${montarGraficoBarras("Evolução mensal", ppms.porMes, { tipo: "mes", limite: 36, classe: "wide" })}
+            ${montarGraficoBarras("Natureza", ppms.porNatureza, { limite: 20 })}
+            ${montarGraficoBarras("Fator precipitante", ppms.porFatorPrecipitante, { limite: 20 })}
+            ${montarGraficoBarras("Resposta inicial", ppms.porRespostaInicial, { limite: 20, classe: "wide" })}
+          </div>
+        `;
+      }
+
+      if (abaAtual === "incidente") {
+        const incidente = d.incidenteCritico || {};
+
+        return `
+          <div class="tab-grid">
+            <section class="chart-box wide">
+              <h3>Resumo quantitativo de Incidente Crítico</h3>
+              <div class="individual-grid">
+                ${montarCardIndividual("Incidentes Críticos", incidente.total || 0)}
+              </div>
+            </section>
+            ${montarGraficoBarras("Evolução mensal", incidente.porMes, { tipo: "mes", limite: 36, classe: "wide" })}
+            ${montarGraficoBarras("Modalidade", incidente.porModalidade, { limite: 20 })}
+            ${montarGraficoBarras("Vítima", incidente.porVitima, { limite: 20 })}
+            ${montarGraficoBarras("Serviço", incidente.porServico, { limite: 20, classe: "wide" })}
           </div>
         `;
       }
@@ -2856,6 +2905,24 @@ function formatarDataInput(data) {
       const traducoes = {
         "nao informado": "Não informado",
         "sem data": "Sem data",
+        "ppms": "PPMS",
+        "incidente critico": "Incidente Crítico",
+        "tentativa de suicidio": "Tentativa de Suicídio",
+        "ideacao com planejamento": "Ideação com planejamento",
+        "ideacao sem planejamento": "Ideação sem planejamento",
+        "comunicacao de intencao": "Comunicação de intenção",
+        "aceitou atendimento psicologico": "Aceitou atendimento psicológico",
+        "recusou atendimento": "Recusou atendimento",
+        "aceitou parcialmente": "Aceitou parcialmente",
+        "saude (transtornos mentais)": "Saúde (transtornos mentais)",
+        "saude (doencas pre-existentes)": "Saúde (doenças pré-existentes)",
+        "compulsao por alcool/outras drogas": "Compulsão por álcool/outras drogas",
+        "assedio moral": "Assédio moral",
+        "motivos de saude": "Motivos de saúde",
+        "homicidio": "Homicídio",
+        "suicidio": "Suicídio",
+        "acidente de transito": "Acidente de trânsito",
+        "irmao(a)": "Irmão(a)",
         "ate 17 anos": "Até 17 anos",
         "ate 5 anos": "Até 5 anos",
         "mais de 35 anos": "Mais de 35 anos",
