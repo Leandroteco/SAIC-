@@ -686,6 +686,115 @@
       margin-top: 20px;
     }
 
+    .participant-cadastro-backdrop {
+      align-items: flex-start;
+      overflow-y: auto;
+      z-index: 60;
+    }
+
+    .participant-cadastro-modal {
+      margin: auto;
+      max-height: calc(100vh - 36px);
+      overflow: hidden;
+      padding: 0;
+      width: min(1040px, 100%);
+    }
+
+    .participant-modal-header {
+      align-items: flex-start;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+      padding: 22px 24px 18px;
+    }
+
+    .participant-modal-header h2 {
+      margin-bottom: 5px;
+    }
+
+    .participant-modal-header p {
+      line-height: 1.45;
+    }
+
+    .participant-modal-close {
+      align-items: center;
+      background: #eef3f5;
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      display: inline-flex;
+      flex: 0 0 auto;
+      font-size: 24px;
+      height: 38px;
+      justify-content: center;
+      margin: 0;
+      min-height: 38px;
+      padding: 0;
+      width: 38px;
+    }
+
+    .participant-modal-close:hover {
+      background: #dfe9ed;
+    }
+
+    .participant-modal-body {
+      max-height: calc(100vh - 154px);
+      overflow-y: auto;
+      padding: 8px 24px 24px;
+    }
+
+    .participant-modal-actions {
+      border-top: 1px solid #edf3f7;
+      justify-content: flex-end;
+      margin-top: 22px;
+      padding-top: 18px;
+    }
+
+    .participant-success {
+      padding: 42px 28px;
+      text-align: center;
+    }
+
+    .participant-success[hidden],
+    .participant-form-state[hidden] {
+      display: none;
+    }
+
+    .participant-success-icon {
+      align-items: center;
+      background: #e6f4ec;
+      border: 1px solid #b9dfc9;
+      border-radius: 999px;
+      color: var(--green);
+      display: inline-flex;
+      font-size: 28px;
+      font-weight: 900;
+      height: 62px;
+      justify-content: center;
+      margin-bottom: 18px;
+      width: 62px;
+    }
+
+    .participant-success h2 {
+      color: var(--ink);
+      font-size: 24px;
+      margin: 0 0 10px;
+    }
+
+    .participant-success p {
+      margin: 0 auto;
+      max-width: 590px;
+    }
+
+    .participant-success .modal-actions {
+      justify-content: center;
+    }
+
+    .participant-discard-backdrop {
+      z-index: 70;
+    }
+
     .event-pill {
       display: inline-flex;
       align-items: center;
@@ -1186,11 +1295,18 @@
       padding-bottom: 10px;
     }
 
-    #btnGerarLink,
     #btnAdicionarParticipanteManual {
       font-size: 13px;
       min-height: 36px;
       padding: 8px 12px;
+    }
+
+    #btnAbrirCadastroParticipante,
+    #btnGerarLink {
+      height: 44px;
+      min-height: 44px;
+      padding: 10px 16px;
+      white-space: nowrap;
     }
 
     @media (max-width: 900px) {
@@ -1309,6 +1425,47 @@
       .banner-institutional-logos {
         justify-content: flex-start;
         padding-left: 18px;
+      }
+
+      .participant-cadastro-backdrop {
+        padding: 10px;
+      }
+
+      .participant-cadastro-modal {
+        max-height: calc(100vh - 20px);
+      }
+
+      .participant-modal-header {
+        padding: 18px;
+      }
+
+      .participant-modal-body {
+        max-height: calc(100vh - 132px);
+        padding: 6px 18px 18px;
+      }
+
+      .participant-modal-actions,
+      .participant-success .modal-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .participant-modal-actions button,
+      .participant-success .modal-actions button {
+        width: 100%;
+      }
+
+      .participant-actions-main {
+        align-items: stretch;
+        width: 100%;
+      }
+
+      #btnAbrirCadastroParticipante,
+      #btnGerarLink {
+        height: 64px;
+        min-height: 64px;
+        white-space: normal;
+        width: 100%;
       }
     }
   </style>
@@ -1453,6 +1610,26 @@
         <h2 class="section-title">Participantes</h2>
         <p class="required-note">Use o cadastro manual quando o respons&aacute;vel for preencher por uma pessoa. Os cadastros enviados pelo link aparecem na lista abaixo.</p>
 
+        <div id="linkActions" class="actions participant-actions">
+          <div class="participant-actions-main">
+            <button id="btnAbrirCadastroParticipante" type="button" class="btn-primary" onclick="abrirModalCadastroParticipante()">Incluir participante</button>
+            <button id="btnGerarLink" type="button" class="btn-primary" onclick="gerarLinkParticipantes()">Gerar link para o participante preencher o cadastro</button>
+            <span id="statusGerarLink" class="saving-inline"></span>
+          </div>
+        </div>
+
+        <div id="modalCadastroParticipante" class="modal-backdrop participant-cadastro-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloCadastroParticipante" onclick="fecharCadastroParticipantePorFora(event)">
+          <article class="modal-box participant-cadastro-modal">
+            <div id="participanteCadastroFormulario" class="participant-form-state">
+              <div class="participant-modal-header">
+                <div>
+                  <h2 id="tituloCadastroParticipante">Incluir participante</h2>
+                  <p>Preencha os dados da pessoa que ser&aacute; inclu&iacute;da neste evento.</p>
+                </div>
+                <button type="button" class="participant-modal-close" onclick="solicitarFechamentoModalCadastroParticipante()" aria-label="Fechar cadastro de participante">&times;</button>
+              </div>
+
+              <div class="participant-modal-body">
         <div class="grid-3 participant-form-grid">
           <div class="manual-posto">
             <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
@@ -1820,14 +1997,36 @@
           </div>
         </div>
 
-        <div id="linkActions" class="actions participant-actions">
-          <div class="participant-actions-main">
-            <button id="btnGerarLink" type="button" class="btn-primary" onclick="gerarLinkParticipantes()">Gerar link para participantes</button>
-            <span id="statusGerarLink" class="saving-inline"></span>
-            <button id="btnAdicionarParticipanteManual" type="button" class="btn-primary" onclick="adicionarParticipanteManual()">Adicionar participante manual</button>
-            <span id="statusAdicionarParticipante" class="saving-inline"></span>
+                <div class="actions participant-modal-actions">
+                  <button id="btnAdicionarParticipanteManual" type="button" class="btn-primary" onclick="adicionarParticipanteManual()">Adicionar participante</button>
+                  <button id="btnLimparCadastroParticipante" type="button" class="btn-secondary" onclick="limparCadastroParticipante()">Limpar cadastro</button>
+                  <button type="button" class="btn-secondary" onclick="solicitarFechamentoModalCadastroParticipante()">Cancelar</button>
+                  <span id="statusAdicionarParticipante" class="saving-inline"></span>
+                </div>
+              </div>
+            </div>
+
+            <div id="participanteCadastroSucesso" class="participant-success" hidden>
+              <div class="participant-success-icon" aria-hidden="true">&#10003;</div>
+              <h2>Participante adicionado com sucesso!</h2>
+              <p>O registro ser&aacute; salvo definitivamente quando o evento for finalizado.</p>
+              <div class="modal-actions">
+                <button type="button" class="btn-primary" onclick="novoCadastroParticipante()">Novo cadastro</button>
+                <button type="button" class="btn-secondary" onclick="concluirCadastroParticipante()">Concluir</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div id="modalDescartarCadastroParticipante" class="modal-backdrop participant-discard-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloDescartarCadastroParticipante">
+          <div class="modal-box">
+            <h2 id="tituloDescartarCadastroParticipante">Descartar cadastro?</h2>
+            <p>Existem dados preenchidos que ainda n&atilde;o foram adicionados. Deseja descart&aacute;-los?</p>
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" onclick="fecharConfirmacaoDescarteParticipante()">Continuar preenchendo</button>
+              <button type="button" class="btn-danger" onclick="confirmarDescarteCadastroParticipante()">Descartar</button>
+            </div>
           </div>
-          <button type="button" class="btn-transparent" onclick="limparFormularioParticipante()">Limpar participante</button>
         </div>
 
         <div id="linkBox" class="link-box">
@@ -2205,6 +2404,8 @@
     }
 
     function resetarEstadoEvento() {
+      fecharConfirmacaoDescarteParticipante();
+      fecharModalCadastroParticipante(true);
       idEventoAtual = "";
       tokenEventoAtual = "";
       linkParticipanteAtual = "";
@@ -2379,12 +2580,22 @@
     }
 
     function adicionarParticipanteManual() {
-      if (!validarTemaEvento("Informe o tema do grupo antes de adicionar participantes.")) return;
-      if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], [])) return;
+      definirStatusAdicionarParticipante(false, "");
+
+      if (!validarTemaEvento("Informe o tema do grupo antes de adicionar participantes.")) {
+        definirStatusAdicionarParticipante(false, "Informe o tema do grupo antes de adicionar participantes.", "error");
+        return;
+      }
+
+      if (!validarDatasFormulario(["dataIngresso", "dataNascimento", "dataInatividade"], [])) {
+        definirStatusAdicionarParticipante(false, "Revise as datas informadas.", "error");
+        return;
+      }
 
       const campoOPM = document.getElementById("opmAtual");
       if (campoOPM && campoOPM.value.trim() && !padronizarCampoOPM(campoOPM)) {
         marcarCampoOPMInvalido(campoOPM);
+        definirStatusAdicionarParticipante(false, "Selecione uma OPM valida da lista.", "error");
         mostrarStatus("Selecione uma OPM válida da lista.", "error");
         campoOPM.focus();
         return;
@@ -2393,12 +2604,16 @@
       const participante = lerFormularioParticipante();
 
       if (!participante.nome) {
+        definirStatusAdicionarParticipante(false, "Informe o nome do participante.", "error");
         mostrarStatus("Informe o nome do participante.", "error");
+        document.getElementById("nome").focus();
         return;
       }
 
       if (!participante.cpf && !participante.re) {
+        definirStatusAdicionarParticipante(false, "Informe CPF ou R.E. do participante.", "error");
         mostrarStatus("Informe CPF ou R.E. do participante.", "error");
+        document.getElementById("re").focus();
         return;
       }
 
@@ -2421,6 +2636,7 @@
           renderizarParticipantes();
           atualizarContador();
           atualizarBotaoCancelarEvento();
+          mostrarSucessoCadastroParticipante();
           mostrarStatus(retorno.mensagem || "Participante adicionado a lista temporaria.", "success");
         })
         .withFailureHandler(function(erro) {
@@ -2921,6 +3137,127 @@
       atualizarCalculosDatasEvento();
     }
 
+    function abrirModalCadastroParticipante() {
+      if (!validarTemaEvento("Informe o tema do grupo antes de incluir participantes.")) return;
+
+      limparFormularioParticipante();
+      exibirFormularioCadastroParticipante();
+
+      const modal = document.getElementById("modalCadastroParticipante");
+      if (modal) modal.classList.add("active");
+
+      document.body.style.overflow = "hidden";
+      setTimeout(function() {
+        const primeiroCampo = document.getElementById("postoGraduacao");
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 0);
+    }
+
+    function exibirFormularioCadastroParticipante() {
+      const formulario = document.getElementById("participanteCadastroFormulario");
+      const sucesso = document.getElementById("participanteCadastroSucesso");
+
+      if (formulario) formulario.hidden = false;
+      if (sucesso) sucesso.hidden = true;
+      definirStatusAdicionarParticipante(false, "");
+    }
+
+    function mostrarSucessoCadastroParticipante() {
+      const formulario = document.getElementById("participanteCadastroFormulario");
+      const sucesso = document.getElementById("participanteCadastroSucesso");
+
+      if (formulario) formulario.hidden = true;
+      if (sucesso) sucesso.hidden = false;
+    }
+
+    function novoCadastroParticipante() {
+      limparFormularioParticipante();
+      exibirFormularioCadastroParticipante();
+
+      setTimeout(function() {
+        const primeiroCampo = document.getElementById("postoGraduacao");
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 0);
+    }
+
+    function concluirCadastroParticipante() {
+      fecharModalCadastroParticipante(true);
+    }
+
+    function solicitarFechamentoModalCadastroParticipante() {
+      const botaoAdicionar = document.getElementById("btnAdicionarParticipanteManual");
+      const sucesso = document.getElementById("participanteCadastroSucesso");
+
+      if (botaoAdicionar && botaoAdicionar.disabled) return;
+
+      if (sucesso && !sucesso.hidden) {
+        fecharModalCadastroParticipante(true);
+        return;
+      }
+
+      if (formularioParticipantePossuiDados()) {
+        const confirmacao = document.getElementById("modalDescartarCadastroParticipante");
+        if (confirmacao) confirmacao.classList.add("active");
+        return;
+      }
+
+      fecharModalCadastroParticipante(true);
+    }
+
+    function fecharCadastroParticipantePorFora(evento) {
+      if (evento && evento.target && evento.target.id === "modalCadastroParticipante") {
+        solicitarFechamentoModalCadastroParticipante();
+      }
+    }
+
+    function formularioParticipantePossuiDados() {
+      const campos = [
+        "postoGraduacao", "re", "cpf", "nome", "situacaoStatus", "email", "telefone",
+        "dataIngresso", "dataNascimento", "sexo", "opmAtual", "dataInatividade",
+        "estadoCivil", "cep", "rua", "bairro", "cidade", "estado", "numero", "complemento"
+      ];
+
+      return campos.some(function(id) {
+        const campo = document.getElementById(id);
+        return campo && String(campo.value || "").trim();
+      }) || Number(document.getElementById("numeroFilhos").value || 0) > 0;
+    }
+
+    function fecharConfirmacaoDescarteParticipante() {
+      const confirmacao = document.getElementById("modalDescartarCadastroParticipante");
+      if (confirmacao) confirmacao.classList.remove("active");
+    }
+
+    function confirmarDescarteCadastroParticipante() {
+      fecharConfirmacaoDescarteParticipante();
+      fecharModalCadastroParticipante(true);
+    }
+
+    function limparCadastroParticipante() {
+      const botaoAdicionar = document.getElementById("btnAdicionarParticipanteManual");
+      if (botaoAdicionar && botaoAdicionar.disabled) return;
+
+      limparFormularioParticipante();
+      definirStatusAdicionarParticipante(false, "");
+      focarPrimeiroCampoParticipante();
+    }
+
+    function focarPrimeiroCampoParticipante() {
+      setTimeout(function() {
+        const primeiroCampo = document.getElementById("postoGraduacao");
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 0);
+    }
+
+    function fecharModalCadastroParticipante(limparCampos) {
+      const modal = document.getElementById("modalCadastroParticipante");
+
+      if (modal) modal.classList.remove("active");
+      if (limparCampos === true) limparFormularioParticipante();
+      exibirFormularioCadastroParticipante();
+      document.body.style.overflow = "";
+    }
+
     function removerParticipanteManual(indice) {
       participantesManuais.splice(indice, 1);
       renderizarParticipantes();
@@ -3079,6 +3416,21 @@
 
     document.getElementById("quantidadeInformada").addEventListener("input", atualizarContador);
 
+    document.addEventListener("keydown", function(evento) {
+      if (evento.key !== "Escape") return;
+
+      const confirmacao = document.getElementById("modalDescartarCadastroParticipante");
+      if (confirmacao && confirmacao.classList.contains("active")) {
+        fecharConfirmacaoDescarteParticipante();
+        return;
+      }
+
+      const modal = document.getElementById("modalCadastroParticipante");
+      if (modal && modal.classList.contains("active")) {
+        solicitarFechamentoModalCadastroParticipante();
+      }
+    });
+
     function validarTemaEvento(mensagem) {
       if (valorCampo("tema")) return true;
 
@@ -3088,8 +3440,10 @@
     }
 
     function setCarregando(carregando, mensagem) {
+      document.getElementById("btnAbrirCadastroParticipante").disabled = carregando;
       document.getElementById("btnGerarLink").disabled = carregando;
       document.getElementById("btnAdicionarParticipanteManual").disabled = carregando;
+      document.getElementById("btnLimparCadastroParticipante").disabled = carregando;
       document.getElementById("btnAtualizarParticipantes").disabled = carregando;
       document.getElementById("btnSalvarEvento").disabled = carregando;
       document.getElementById("btnCancelarEvento").disabled = carregando;
