@@ -311,6 +311,20 @@
       width: 100%;
     }
 
+    .data-periodo-info {
+      color: #64748b;
+      display: none;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-top: 5px;
+      min-height: 16px;
+    }
+
+    .data-periodo-info.visivel {
+      display: block;
+    }
+
     textarea {
       min-height: 100px;
       resize: vertical;
@@ -2790,7 +2804,7 @@ body {
 
       <section class="ajuda-item">
         <h3>Busca</h3>
-        <p>Antes de preencher tudo novamente, pesquise por R.E., CPF ou nome. Na busca por R.E., o número pode ser digitado sem o dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações que forem necessárias antes de salvar o novo atendimento.</p>
+        <p>Antes de preencher tudo novamente, pesquise pelo CPF completo ou pelo R.E. completo com dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações que forem necessárias antes de salvar o novo atendimento.</p>
       </section>
 
       <section class="ajuda-item">
@@ -2955,19 +2969,19 @@ body {
 <!-- Formulario de atendimento: concentra busca, dados pessoais, endereco e salvamento. -->
 <div class="container">
 
-  <!-- Busca inicial: localiza cadastro por R.E., CPF ou nome antes de preencher o atendimento. -->
+  <!-- Busca inicial: localiza cadastro por R.E. completo ou CPF completo antes de preencher o atendimento. -->
   <h2 class="titulo-centralizado">Identificação do Atendimento</h2>
 
  <!-- ==================================================== -->
-<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- pesquisa de RE e CPF completo                       -->
 <!-- ==================================================== -->
 
 <div class="grid-2">
   <div>
-    <label>Buscar por R.E., CPF ou Nome</label>
+    <label>Buscar por R.E. completo ou CPF completo</label>
     <input
   id="campoBusca"
-  placeholder="R.E./Nome com 5 caracteres ou CPF completo"
+  placeholder="Ex.: 123456-7 ou 000.000.000-00"
   oninput="limparAvisosBusca(); mascaraBusca(this)"
   onkeydown="buscarComEnter(event)">
   </div>
@@ -2990,7 +3004,7 @@ body {
 
 <div id="areaRelatorios"></div>
  <!-- ==================================================== -->
-<!-- pesquisa de RE, CPF, NOME                         -->
+<!-- pesquisa de RE e CPF completo                       -->
 <!-- ==================================================== -->
 
 
@@ -3063,6 +3077,7 @@ body {
     <div>
       <label>Data de Nascimento</label>
       <input id="dataNascimento" type="date" max="9999-12-31" oninput="validarAnoDataCampo(this)" onblur="validarAnoDataCampo(this)" required>
+      <span id="infoDataNascimento" class="data-periodo-info" aria-live="polite"></span>
     </div>
   </div>
 
@@ -3368,11 +3383,13 @@ body {
     <div>
       <label>Data de Ingresso</label>
       <input id="dataIngresso" type="date" max="9999-12-31" oninput="validarAnoDataCampo(this)" onblur="validarAnoDataCampo(this)" required>
+      <span id="infoDataIngresso" class="data-periodo-info" aria-live="polite"></span>
     </div>
 
     <div>
       <label>Data de Inatividade</label>
       <input id="dataInatividade" type="date" max="9999-12-31" oninput="validarAnoDataCampo(this)" onblur="validarAnoDataCampo(this)" disabled>
+      <span id="infoDataInatividade" class="data-periodo-info" aria-live="polite"></span>
     </div>
   </div>
 
@@ -3605,6 +3622,7 @@ document.addEventListener("DOMContentLoaded", function() {
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeEmail();
     atualizarCamposOutros();
+    configurarIndicadoresPeriodoDatas();
     preencherResponsavelLogado();
     configurarOcultarImpressaoAoEditar();
     configurarFechamentoUltimosAtendimentos();
@@ -5121,9 +5139,86 @@ function atualizarCampoDataInatividade() {
     campoData.value = "";
     limparErroVisualCampo(campoData);
   }
+
+  atualizarIndicadoresPeriodoDatas();
+}
+
+function configurarIndicadoresPeriodoDatas() {
+  ["dataNascimento", "dataIngresso", "dataInatividade"].forEach(function(idCampo) {
+    const campo = document.getElementById(idCampo);
+
+    if (!campo) return;
+
+    campo.addEventListener("input", atualizarIndicadoresPeriodoDatas);
+    campo.addEventListener("change", atualizarIndicadoresPeriodoDatas);
+    campo.addEventListener("blur", atualizarIndicadoresPeriodoDatas);
+  });
+
+  atualizarIndicadoresPeriodoDatas();
+}
+
+function atualizarIndicadoresPeriodoDatas() {
+  const hoje = obterDataAtualSemHorario();
+  const campoDataNascimento = document.getElementById("dataNascimento");
+  const campoDataIngresso = document.getElementById("dataIngresso");
+  const campoDataInatividade = document.getElementById("dataInatividade");
+  const dataNascimento = campoDataNascimento ? parseDataFicha(campoDataNascimento.value) : null;
+  const dataIngresso = campoDataIngresso ? parseDataFicha(campoDataIngresso.value) : null;
+  const dataInatividade = campoDataInatividade ? parseDataFicha(campoDataInatividade.value) : null;
+  const idade = calcularIdadeFormulario(dataNascimento, hoje);
+  const tempoServico = dataIngresso ? calcularTempoServicoFicha(dataIngresso, hoje) : "";
+  const tempoInatividade =
+    campoDataInatividade && !campoDataInatividade.disabled && dataInatividade
+      ? calcularTempoServicoFicha(dataInatividade, hoje)
+      : "";
+
+  definirTextoIndicadorPeriodoData("infoDataNascimento", idade ? "Idade: " + idade : "");
+  definirTextoIndicadorPeriodoData(
+    "infoDataIngresso",
+    tempoServico ? "Tempo de serviço: " + tempoServico : ""
+  );
+  definirTextoIndicadorPeriodoData(
+    "infoDataInatividade",
+    tempoInatividade ? "Tempo de inatividade: " + tempoInatividade : ""
+  );
+}
+
+function obterDataAtualSemHorario() {
+  const hoje = new Date();
+
+  return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+}
+
+function calcularIdadeFormulario(dataNascimento, dataReferencia) {
+  if (!dataNascimento || !dataReferencia || dataReferencia < dataNascimento) return "";
+
+  let idade = dataReferencia.getFullYear() - dataNascimento.getFullYear();
+  const aniversarioNaoChegou =
+    dataReferencia.getMonth() < dataNascimento.getMonth() ||
+    (
+      dataReferencia.getMonth() === dataNascimento.getMonth() &&
+      dataReferencia.getDate() < dataNascimento.getDate()
+    );
+
+  if (aniversarioNaoChegou) idade--;
+
+  if (idade < 0) return "";
+  if (idade === 0) return "menos de 1 ano";
+
+  return idade + (idade === 1 ? " ano" : " anos");
+}
+
+function definirTextoIndicadorPeriodoData(idIndicador, texto) {
+  const indicador = document.getElementById(idIndicador);
+  const textoFinal = String(texto || "").trim();
+
+  if (!indicador) return;
+
+  indicador.innerText = textoFinal;
+  indicador.classList.toggle("visivel", Boolean(textoFinal));
 }
 /* ==================================================== */
-/* BUSCA POR RE, CPF, NOME                               */
+/* BUSCA POR RE COMPLETO OU CPF COMPLETO                 */
 /* ==================================================== */
 
 
@@ -5134,32 +5229,19 @@ function buscarCadastroTela() {
   const resultadoBusca = document.getElementById("resultadoBusca");
   const termo = campoBusca.value.trim();
   const numeros = termo.replace(/\D/g, "");
-  const textoNormalizado = termo
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+  const cpfCompleto = numeros.length === 11 && !/[A-Z]/i.test(termo);
+  const reCompleto = /^\d{6}-[\dA]$/i.test(termo);
 
   if (!termo) {
     resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Digite um R.E., CPF ou Nome para buscar.</p>`;
+      `<p style="color:#9a3412; font-weight:bold;">Informe o CPF completo ou o R.E. completo com dígito.</p>`;
     campoBusca.focus();
     return;
   }
 
-  const cpfCompleto = numeros.length === 11;
-  const pareceCpfIncompleto = numeros.length >= 8 && numeros.length < 11 && !/[A-Z]/i.test(termo);
-  const reOuNomeMinimo = textoNormalizado.length >= 5 || numeros.length >= 5;
-
-  if (pareceCpfIncompleto) {
+  if (!cpfCompleto && !reCompleto) {
     resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Para pesquisar por CPF, informe o CPF completo.</p>`;
-    return;
-  }
-
-  if (!cpfCompleto && !reOuNomeMinimo) {
-    resultadoBusca.innerHTML =
-      `<p style="color:#9a3412; font-weight:bold;">Digite pelo menos 5 caracteres para R.E./Nome ou informe o CPF completo.</p>`;
+      `<p style="color:#9a3412; font-weight:bold;">A pesquisa aceita somente CPF completo ou R.E. completo com dígito (ex.: 123456-7).</p>`;
     return;
   }
 
@@ -5386,17 +5468,17 @@ function preencherFormulario(r) {
 }
 
 
-// Aplica mascara inteligente no campo de busca sem atrapalhar pesquisa por nome.
+// Aplica mascara no campo de busca para CPF completo ou R.E. completo.
 function mascaraBusca(campo) {
   let valor = campo.value.toUpperCase();
 
-  // Se tiver letras que indicam nome, não aplica máscara
+  // Letras fora do digito A do R.E. sao mantidas para a validacao exibir a mensagem correta.
   if (/[B-Z]/.test(valor)) {
     campo.value = valor;
     return;
   }
 
-  // Se começa com A, é nome, não RE
+  // A isolado no inicio nao e R.E.; deixa a validacao orientar o usuario.
   if (valor.startsWith("A")) {
     campo.value = valor;
     return;
