@@ -398,7 +398,8 @@
 
     .grid-2,
     .grid-3,
-    .grid-4 {
+    .grid-4,
+    .grid-5 {
       display: grid;
       gap: 16px;
     }
@@ -415,8 +416,107 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+    .grid-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .grid-endereco-ppms {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(210px, 1.45fr) minmax(80px, 0.5fr) minmax(105px, 0.65fr);
+    }
+
+    .campo-rua-ppms,
+    .campo-bairro-ppms {
+      grid-column: span 2;
+    }
+
+    .campo-complemento-ppms {
+      grid-column: span 1;
+    }
+
     .field-span-2 {
       grid-column: span 2;
+    }
+
+    .patient-form-grid {
+      align-items: start;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .patient-re {
+      grid-column: span 3;
+      order: 2;
+    }
+
+    .patient-posto {
+      grid-column: span 3;
+      order: 1;
+    }
+
+    .patient-nome {
+      grid-column: span 6;
+      order: 3;
+    }
+
+    .patient-sexo,
+    .patient-nascimento,
+    .patient-estado-civil {
+      grid-column: span 4;
+    }
+
+    .patient-sexo {
+      order: 4;
+    }
+
+    .patient-nascimento {
+      order: 5;
+    }
+
+    .patient-filhos,
+    .patient-situacao,
+    .patient-ingresso,
+    .patient-inatividade {
+      grid-column: span 3;
+    }
+
+    .patient-estado-civil {
+      order: 6;
+    }
+
+    .patient-filhos {
+      order: 7;
+    }
+
+    .patient-situacao {
+      order: 8;
+    }
+
+    .patient-opm {
+      grid-column: span 6;
+      order: 9;
+    }
+
+    .patient-ingresso {
+      order: 10;
+    }
+
+    .patient-inatividade {
+      order: 11;
+    }
+
+    .patient-escala {
+      grid-column: span 6;
+      order: 12;
+    }
+
+    .field-helper {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      min-height: 18px;
+      padding-top: 5px;
     }
 
     .check-field {
@@ -436,6 +536,23 @@
       flex-direction: column;
       flex-wrap: wrap;
       gap: 8px;
+    }
+
+    .check-field.compacto {
+      padding: 9px 12px;
+    }
+
+    .check-field.compacto .checkbox-row {
+      align-items: center;
+      flex-direction: row;
+      gap: 12px;
+    }
+
+    .campo-escala-ppms .check-field {
+      align-items: center;
+      display: flex;
+      min-height: 42px;
+      width: 100%;
     }
 
     .checkbox-option {
@@ -861,9 +978,23 @@
       .grid-2,
       .grid-3,
       .grid-4,
-      .field-span-2 {
+      .grid-5,
+      .grid-endereco-ppms,
+      .field-span-2,
+      .campo-rua-ppms,
+      .campo-bairro-ppms,
+      .campo-complemento-ppms {
         grid-column: 1 / -1;
         grid-template-columns: 1fr;
+      }
+
+      .patient-form-grid > div {
+        grid-column: 1 / -1;
+      }
+
+      .check-field.compacto .checkbox-row {
+        align-items: flex-start;
+        flex-direction: column;
       }
     }
 
@@ -1218,8 +1349,8 @@
 
       <section class="section" aria-label="Dados pessoais e funcionais">
         <h2 class="section-title">Dados Pessoais e Funcionais</h2>
-        <div class="grid-4">
-          <div>
+        <div class="grid-5 patient-form-grid">
+          <div class="patient-posto">
             <label for="postoGraduacao">Posto/Gradua&ccedil;&atilde;o</label>
             <select id="postoGraduacao" required>
               <option value="">Selecione</option>
@@ -1239,19 +1370,19 @@
             </select>
           </div>
 
-          <div>
+          <div class="patient-re">
             <label for="re">R.E.</label>
             <input id="re" type="text" placeholder="000000-0" oninput="mascaraRE(this)" required>
           </div>
 
-          <div class="field-span-2">
+          <div class="patient-nome">
             <label for="nome">Nome</label>
             <input id="nome" type="text" oninput="converterMaiusculasSemAcento(this)" required>
           </div>
 
-          <div>
+          <div class="patient-situacao">
             <label for="situacaoStatus">Situa&ccedil;&atilde;o/Status</label>
-            <select id="situacaoStatus" onchange="atualizarEscalaPorSituacao()" required>
+            <select id="situacaoStatus" onchange="atualizarEscalaPorSituacao(); atualizarObrigatoriedadeDataInatividade()" required>
               <option value="">Selecione</option>
               <option>agregado(a)</option>
               <option>ativo administrativo</option>
@@ -1261,7 +1392,7 @@
             </select>
           </div>
 
-          <div>
+          <div class="patient-sexo">
             <label for="sexo">Sexo</label>
             <select id="sexo" required>
               <option value="">Selecione</option>
@@ -1271,9 +1402,9 @@
             </select>
           </div>
 
-          <div>
+          <div class="patient-opm">
             <label for="opmAtual">OPM Atual/&Uacute;ltima</label>
-            <input id="opmAtual" type="text" list="listaOPM" placeholder="OPM ou unidade" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)" required>
+            <input id="opmAtual" type="text" list="listaOPM" placeholder="Digite ou selecione a OPM" oninput="converterMaiusculasSemAcento(this); limparErroVisualCampo(this)" onblur="padronizarCampoOPM(this)" required>
             <datalist id="listaOPM">
               <option value="1.BAEP">1.BAEP</option>
               <option value="1.BPAMB">1.BPAMB</option>
@@ -1519,22 +1650,110 @@
             </datalist>
           </div>
 
-          <div class="check-field">
+          <div class="patient-ingresso">
+            <label for="dataIngresso">Data de Ingresso</label>
+            <input id="dataIngresso" type="date" max="9999-12-31" oninput="limparErroVisualCampo(this); atualizarCalculosDatas()" onblur="validarAnoDataCampo(this); atualizarCalculosDatas()" required>
+            <span id="tempoServico" class="field-helper"></span>
+          </div>
+
+          <div class="patient-inatividade">
+            <label for="dataInatividade">Data de Inatividade</label>
+            <input id="dataInatividade" type="date" max="9999-12-31" oninput="limparErroVisualCampo(this); atualizarCalculosDatas()" onblur="validarAnoDataCampo(this); atualizarCalculosDatas()" disabled>
+            <span id="tempoInatividade" class="field-helper"></span>
+          </div>
+
+          <div class="patient-nascimento">
+            <label for="dataNascimento">Data de Nascimento</label>
+            <input id="dataNascimento" type="date" max="9999-12-31" oninput="limparErroVisualCampo(this); atualizarCalculosDatas()" onblur="validarAnoDataCampo(this); atualizarCalculosDatas()" required>
+            <span id="idadeCalculada" class="field-helper"></span>
+          </div>
+
+          <div class="patient-estado-civil">
+            <label for="estadoCivil">Estado Civil</label>
+            <select id="estadoCivil" required>
+              <option value="">Selecione</option>
+              <option>solteiro(a)</option>
+              <option>casado(a)</option>
+              <option>divorciado(a)</option>
+              <option>viuvo(a)</option>
+              <option>uniao estavel</option>
+              <option>nao informado</option>
+            </select>
+          </div>
+
+          <div class="patient-filhos">
+            <label for="numeroFilhos">N&uacute;mero de Filhos</label>
+            <input id="numeroFilhos" type="number" min="0" max="10" value="0" oninput="ajustarNumeroFilhos(this)">
+          </div>
+
+          <div class="campo-escala-ppms patient-escala">
             <label>Escala</label>
-            <div class="checkbox-row">
-              <label class="checkbox-option" for="servico">
-                <input id="servico" type="checkbox" value="servico" onchange="alternarServicoFolga(this)">
-                Servi&ccedil;o
-              </label>
-              <label class="checkbox-option" for="folga">
-                <input id="folga" type="checkbox" value="folga" onchange="alternarServicoFolga(this)">
-                Folga
-              </label>
-              <label class="checkbox-option" for="inTinere">
-                <input id="inTinere" type="checkbox" value="in tinere" onchange="alternarServicoFolga(this)">
-                In tinere
-              </label>
+            <div class="check-field compacto">
+              <div class="checkbox-row">
+                <label class="checkbox-option" for="servico">
+                  <input id="servico" type="checkbox" value="servico" onchange="alternarServicoFolga(this)">
+                  Servi&ccedil;o
+                </label>
+                <label class="checkbox-option" for="folga">
+                  <input id="folga" type="checkbox" value="folga" onchange="alternarServicoFolga(this)">
+                  Folga
+                </label>
+                <label class="checkbox-option" for="inTinere">
+                  <input id="inTinere" type="checkbox" value="in tinere" onchange="alternarServicoFolga(this)">
+                  In tinere
+                </label>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Endereco">
+        <h2 class="section-title">Endere&ccedil;o</h2>
+        <div class="grid-endereco-ppms">
+          <div>
+            <label for="cep">CEP</label>
+            <input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="mascaraCEP(this)" onblur="buscarCep()" required>
+          </div>
+
+          <div>
+            <label for="tipoLocalEndereco">Tipo do local</label>
+            <select id="tipoLocalEndereco" required>
+              <option value="">Selecione</option>
+              <option value="residencial">Residencial</option>
+              <option value="funcional">Funcional</option>
+              <option value="outro local relacionado">Outro local relacionado</option>
+            </select>
+          </div>
+
+          <div class="campo-rua-ppms">
+            <label for="rua">Rua</label>
+            <input id="rua" type="text" required>
+          </div>
+
+          <div>
+            <label for="numero">N&uacute;mero</label>
+            <input id="numero" type="text" required>
+          </div>
+
+          <div class="campo-bairro-ppms">
+            <label for="bairro">Bairro</label>
+            <input id="bairro" type="text" required>
+          </div>
+
+          <div>
+            <label for="cidade">Cidade</label>
+            <input id="cidade" type="text" required>
+          </div>
+
+          <div>
+            <label for="estado">Estado</label>
+            <input id="estado" type="text" maxlength="2" oninput="converterMaiusculasSemAcento(this)" required>
+          </div>
+
+          <div class="campo-complemento-ppms">
+            <label for="complemento">Complemento</label>
+            <input id="complemento" type="text" placeholder="Digite complemento, referencia ou detalhe do local">
           </div>
         </div>
       </section>
@@ -1645,7 +1864,9 @@
       carregarOpcoesEquipeIncidente();
       configurarMenuPrincipalPorPerfil();
       registrarLimpezaStatusAoEditar();
+      atualizarCalculosDatas();
       atualizarEscalaPorSituacao();
+      atualizarObrigatoriedadeDataInatividade();
       mostrarStatus("Pronto para registrar incidente critico.", "");
     });
 
@@ -2132,7 +2353,20 @@
         vitima: valorCampo("vitima"),
         sexo: valorCampo("sexo"),
         modalidade: valorCampo("modalidade"),
-        servico: obterServicoIncidente()
+        servico: obterServicoIncidente(),
+        dataIngresso: valorDataCampo("dataIngresso"),
+        dataInatividade: valorDataCampo("dataInatividade"),
+        numeroFilhos: valorCampo("numeroFilhos"),
+        dataNascimento: valorDataCampo("dataNascimento"),
+        estadoCivil: valorCampo("estadoCivil"),
+        cep: valorCampo("cep"),
+        rua: valorCampo("rua"),
+        bairro: valorCampo("bairro"),
+        cidade: valorCampo("cidade"),
+        estado: valorCampo("estado"),
+        numero: valorCampo("numero"),
+        complemento: valorCampo("complemento"),
+        tipoLocalEndereco: valorCampo("tipoLocalEndereco")
       };
     }
 
@@ -2145,12 +2379,35 @@
         "nome",
         "opmAtual",
         "situacaoStatus",
+        "dataIngresso",
+        "dataNascimento",
+        "estadoCivil",
         "vitima",
         "sexo",
-        "modalidade"
+        "modalidade",
+        "cep",
+        "rua",
+        "bairro",
+        "cidade",
+        "estado",
+        "numero",
+        "tipoLocalEndereco"
       ];
       const camposComErro = [];
       let opmInvalida = false;
+
+      if (statusExigeDataInatividadeIncidente()) {
+        idsObrigatorios.push("dataInatividade");
+      }
+
+      if (situacaoPermiteEscalaIncidente(normalizarTextoFichaIncidente(valorCampo("situacaoStatus"))) && !obterServicoIncidente()) {
+        ["servico", "folga", "inTinere"].forEach(function(id) {
+          const campo = document.getElementById(id);
+          if (campo) campo.parentElement.style.color = "#b42318";
+        });
+        mostrarStatus("Informe se estava em servi\u00e7o, folga ou in tinere.", "error");
+        return false;
+      }
 
       document.querySelectorAll("input, select, textarea").forEach(limparErroVisualCampo);
 
@@ -2163,7 +2420,10 @@
         }
       });
 
-      if (!validarDatasFormulario(["dataFato", "dataAcionamento"], ["dataFato", "dataAcionamento"])) {
+      if (!validarDatasFormulario(
+        ["dataFato", "dataAcionamento", "dataIngresso", "dataInatividade", "dataNascimento"],
+        ["dataFato", "dataAcionamento", "dataIngresso", "dataNascimento"]
+      )) {
         camposComErro.push(document.getElementById("dataFato"));
       }
 
@@ -2189,6 +2449,8 @@
 
         if (campo.type === "checkbox") {
           campo.checked = false;
+        } else if (campo.id === "numeroFilhos") {
+          campo.value = "0";
         } else {
           campo.value = "";
         }
@@ -2198,7 +2460,9 @@
 
       preencherPsicologoResponsavel();
       preencherDatasIncidenteSeVazias();
+      atualizarCalculosDatas();
       atualizarEscalaPorSituacao();
+      atualizarObrigatoriedadeDataInatividade();
       limparAlteracaoPendenteNavegacao();
     }
 
@@ -2244,6 +2508,7 @@
       ["servico", "folga", "inTinere"].forEach(function(id) {
         const campo = document.getElementById(id);
         if (campo && campo !== campoMarcado) campo.checked = false;
+        if (campo) campo.parentElement.style.color = "";
       });
     }
 
@@ -2256,6 +2521,7 @@
         if (!campo) return;
 
         campo.disabled = !permiteEscala;
+        campo.parentElement.style.color = "";
         if (!permiteEscala) campo.checked = false;
       });
     }
@@ -2266,12 +2532,122 @@
         situacaoNormalizada === "ativo operacional";
     }
 
+    function statusExigeDataInatividadeIncidente() {
+      const situacao = normalizarTextoFichaIncidente(valorCampo("situacaoStatus"));
+      return situacao === "inativo" || situacao === "exonerado(a)";
+    }
+
+    function atualizarObrigatoriedadeDataInatividade() {
+      const campo = document.getElementById("dataInatividade");
+      if (!campo) return;
+
+      const exigida = statusExigeDataInatividadeIncidente();
+      campo.required = exigida;
+      campo.disabled = !exigida;
+
+      if (!exigida) {
+        campo.value = "";
+        limparErroVisualCampo(campo);
+      }
+
+      atualizarCalculosDatas();
+    }
+
     function obterServicoIncidente() {
       if (document.getElementById("servico") && document.getElementById("servico").checked) return "servico";
       if (document.getElementById("folga") && document.getElementById("folga").checked) return "folga";
       if (document.getElementById("inTinere") && document.getElementById("inTinere").checked) return "in tinere";
 
       return "";
+    }
+
+    function atualizarCalculosDatas() {
+      const hoje = new Date();
+
+      preencherTexto("idadeCalculada", calcularIdadeAnos(obterDataPorCampoBrasil("dataNascimento"), hoje));
+      preencherTexto("tempoServico", calcularAnosMeses(obterDataPorCampoBrasil("dataIngresso"), hoje, "Tempo de servi\u00e7o"));
+      preencherTexto("tempoInatividade", calcularAnosMeses(obterDataPorCampoBrasil("dataInatividade"), hoje, "Tempo de inatividade"));
+    }
+
+    function calcularIdadeAnos(data, hoje) {
+      if (!data) return "";
+
+      let anos = hoje.getFullYear() - data.getFullYear();
+      const aniversarioPassou = hoje.getMonth() > data.getMonth() ||
+        (hoje.getMonth() === data.getMonth() && hoje.getDate() >= data.getDate());
+
+      if (!aniversarioPassou) anos--;
+
+      return anos >= 0 ? "Idade: " + anos + " ano" + (anos === 1 ? "" : "s") : "";
+    }
+
+    function calcularAnosMeses(data, hoje, rotulo) {
+      if (!data) return "";
+
+      let anos = hoje.getFullYear() - data.getFullYear();
+      let meses = hoje.getMonth() - data.getMonth();
+
+      if (hoje.getDate() < data.getDate()) meses--;
+      if (meses < 0) {
+        anos--;
+        meses += 12;
+      }
+
+      if (anos < 0) return "";
+
+      return rotulo + ": " + anos + " ano" + (anos === 1 ? "" : "s") + " e " +
+        meses + " mes" + (meses === 1 ? "" : "es");
+    }
+
+    function obterDataPorCampoBrasil(id) {
+      const valorIso = converterDataBrasilParaISO(valorCampo(id));
+      const partes = valorIso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+      if (!partes) return null;
+
+      const data = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+
+      if (data.getFullYear() !== Number(partes[1]) ||
+        data.getMonth() !== Number(partes[2]) - 1 ||
+        data.getDate() !== Number(partes[3])) {
+        return null;
+      }
+
+      return data;
+    }
+
+    function preencherTexto(id, texto) {
+      const elemento = document.getElementById(id);
+      if (elemento) elemento.innerText = texto || "";
+    }
+
+    function buscarCep() {
+      const campoCep = document.getElementById("cep");
+      const cep = campoCep ? campoCep.value.replace(/\D/g, "") : "";
+
+      if (cep.length !== 8) return;
+
+      fetch("https://viacep.com.br/ws/" + cep + "/json/")
+        .then(function(resposta) {
+          return resposta.json();
+        })
+        .then(function(dados) {
+          if (dados.erro) {
+            mostrarStatus("CEP n\u00e3o encontrado.", "error");
+            return;
+          }
+
+          document.getElementById("rua").value = dados.logradouro || "";
+          document.getElementById("bairro").value = dados.bairro || "";
+          document.getElementById("cidade").value = dados.localidade || "";
+          document.getElementById("estado").value = dados.uf || "";
+          ["rua", "bairro", "cidade", "estado"].forEach(function(id) {
+            limparErroVisualCampo(document.getElementById(id));
+          });
+        })
+        .catch(function() {
+          mostrarStatus("Erro ao buscar CEP.", "error");
+        });
     }
 
     function preencherPsicologoResponsavel() {
@@ -2511,6 +2887,12 @@
       campo.value = digitoFinal ? numerosAntesHifen + "-" + digitoFinal : numerosAntesHifen;
     }
 
+    function mascaraCEP(campo) {
+      let valor = campo.value.replace(/\D/g, "").substring(0, 8);
+      valor = valor.replace(/(\d{5})(\d)/, "$1-$2");
+      campo.value = valor;
+    }
+
     function mascaraDataBrasil(campo) {
       let valor = campo.value.replace(/\D/g, "").substring(0, 8);
 
@@ -2595,6 +2977,16 @@
       if (!partes) return "";
 
       return partes[3] + "-" + partes[2] + "-" + partes[1];
+    }
+
+    function ajustarNumeroFilhos(campo) {
+      let valor = Number(campo.value);
+
+      if (campo.value === "") return;
+      if (valor < 0) valor = 0;
+      if (valor > 10) valor = 10;
+
+      campo.value = valor;
     }
 
     function limparErroVisualCampo(campo) {
