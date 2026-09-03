@@ -227,7 +227,20 @@ const CABECALHOS_INCIDENTE_CRITICO = [
   "responsavel_pelo_registro",
   "email_responsavel",
   "napsAtendimento",
-  "servico"
+  "servico",
+  "data_ingresso",
+  "data_inatividade",
+  "numero_filhos",
+  "data_nascimento",
+  "estado_civil",
+  "cep",
+  "rua",
+  "bairro",
+  "cidade",
+  "estado",
+  "numero",
+  "complemento",
+  "tipo_local_endereco"
 ];
 
 const CABECALHOS_EQUIPE_INCIDENTE = [
@@ -358,7 +371,7 @@ function configurarEstruturaPlanilha() {
   const sheetParticipantesEvento = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO, CABECALHOS_PARTICIPANTES_EVENTO);
   const sheetParticipantesEventoIndice = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO_INDICE, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
   const sheetIncidenteCritico = obterOuCriarAba(ss, ABA_INCIDENTE_CRITICO, CABECALHOS_INCIDENTE_CRITICO);
-  garantirCabecalhoFinal(sheetIncidenteCritico, "servico");
+  garantirCabecalhosIncidenteCritico_(sheetIncidenteCritico);
   const sheetEquipeIncidente = obterOuCriarAba(ss, ABA_EQUIPE_INCIDENTE, CABECALHOS_EQUIPE_INCIDENTE);
   const sheetPpms = obterOuCriarAba(ss, ABA_PPMS, CABECALHOS_PPMS);
   garantirCabecalhoFinal(sheetPpms, "tipo_local_endereco");
@@ -418,7 +431,7 @@ function configurarEstruturaSalvamentoAtendimentoRapida_() {
 function configurarEstruturaIncidenteCritico() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetIncidenteCritico = obterOuCriarAba(ss, ABA_INCIDENTE_CRITICO, CABECALHOS_INCIDENTE_CRITICO);
-  garantirCabecalhoFinal(sheetIncidenteCritico, "servico");
+  garantirCabecalhosIncidenteCritico_(sheetIncidenteCritico);
 
   return {
     sheetIncidenteCritico: sheetIncidenteCritico,
@@ -466,6 +479,30 @@ function garantirCabecalhoFinal(sheet, cabecalho) {
   if (mapa[chave] !== undefined) return;
 
   sheet.getRange(1, sheet.getLastColumn() + 1).setValue(cabecalho);
+  limparCacheIndicesCabecalhosPadrao_();
+}
+
+function garantirCabecalhosIncidenteCritico_(sheet) {
+  const mapa = obterMapaCabecalhos(sheet, sheet.getLastColumn());
+  const faltantes = CABECALHOS_INCIDENTE_CRITICO.filter(function(cabecalho) {
+    return mapa[normalizarCabecalho(cabecalho)] === undefined;
+  });
+
+  if (faltantes.length === 0) return;
+
+  const primeiraColunaNova = sheet.getLastColumn() + 1;
+  const ultimaColunaNecessaria = primeiraColunaNova + faltantes.length - 1;
+
+  if (sheet.getMaxColumns() < ultimaColunaNecessaria) {
+    sheet.insertColumnsAfter(
+      sheet.getMaxColumns(),
+      ultimaColunaNecessaria - sheet.getMaxColumns()
+    );
+  }
+
+  sheet
+    .getRange(1, primeiraColunaNova, 1, faltantes.length)
+    .setValues([faltantes]);
   limparCacheIndicesCabecalhosPadrao_();
 }
 
@@ -1843,7 +1880,20 @@ function salvarIncidenteCritico(dados, idToken) {
       incidente.responsavel,
       incidente.emailResponsavel,
       incidente.napsAtendimento,
-      incidente.servico
+      incidente.servico,
+      incidente.dataIngresso,
+      incidente.dataInatividade,
+      incidente.numeroFilhos,
+      incidente.dataNascimento,
+      incidente.estadoCivil,
+      incidente.cep,
+      incidente.rua,
+      incidente.bairro,
+      incidente.cidade,
+      incidente.estado,
+      incidente.numero,
+      incidente.complemento,
+      incidente.tipoLocalEndereco
     ]], CABECALHOS_INCIDENTE_CRITICO);
 
     return {
@@ -1863,6 +1913,9 @@ function prepararDadosIncidenteCritico(dados, usuario) {
 
   const dataFato = validarDataFormulario(dados.dataFato, "Data do Fato");
   const dataAcionamento = validarDataFormulario(dados.dataAcionamento, "Data do Acionamento");
+  const dataIngresso = validarDataFormulario(dados.dataIngresso, "Data de Ingresso");
+  const dataNascimento = validarDataFormulario(dados.dataNascimento, "Data de Nascimento");
+  const dataInatividade = validarDataFormulario(dados.dataInatividade, "Data de Inatividade");
   const responsavel = normalizar(usuario.nome || "");
   const emailResponsavel = normalizar(usuario.email || "");
   const napsAtendimento = String(usuario.naps || "").trim().toUpperCase();
@@ -1882,10 +1935,31 @@ function prepararDadosIncidenteCritico(dados, usuario) {
     sexo: normalizar(dados.sexo),
     modalidade: normalizar(dados.modalidade),
     servico: normalizarServicoIncidente(dados.servico),
+    dataIngresso: dataIngresso,
+    dataInatividade: dataInatividade,
+    numeroFilhos: normalizarNumeroFilhosPPMS(dados.numeroFilhos),
+    dataNascimento: dataNascimento,
+    estadoCivil: normalizar(dados.estadoCivil),
+    cep: formatarCEP(dados.cep),
+    rua: normalizar(dados.rua),
+    bairro: normalizar(dados.bairro),
+    cidade: normalizar(dados.cidade),
+    estado: String(dados.estado || "").trim().toUpperCase(),
+    numero: String(dados.numero || "").trim(),
+    complemento: normalizar(dados.complemento),
+    tipoLocalEndereco: normalizarTipoLocalEnderecoPPMS(dados.tipoLocalEndereco),
     responsavel: responsavel,
     emailResponsavel: emailResponsavel,
     napsAtendimento: napsAtendimento
   };
+
+  if (statusExigeDataInatividadePPMS(incidente.situacaoStatus) && !incidente.dataInatividade) {
+    throw new Error("Data de Inatividade e obrigatoria para a situacao/status informada.");
+  }
+
+  if (situacaoPermiteEscalaPPMS(incidente.situacaoStatus) && !incidente.servico) {
+    throw new Error("Informe se estava em servico, folga ou in tinere.");
+  }
 
   const obrigatorios = [
     ["Data do Fato", incidente.dataFato],
@@ -1895,9 +1969,19 @@ function prepararDadosIncidenteCritico(dados, usuario) {
     ["Nome", incidente.nome],
     ["OPM Atual", incidente.opmAtual],
     ["Situacao/Status", incidente.situacaoStatus],
+    ["Data de Ingresso", incidente.dataIngresso],
+    ["Data de Nascimento", incidente.dataNascimento],
+    ["Estado Civil", incidente.estadoCivil],
     ["Vitima", incidente.vitima],
     ["Sexo", incidente.sexo],
     ["Modalidade", incidente.modalidade],
+    ["CEP", incidente.cep],
+    ["Rua", incidente.rua],
+    ["Bairro", incidente.bairro],
+    ["Cidade", incidente.cidade],
+    ["Estado", incidente.estado],
+    ["Numero", incidente.numero],
+    ["Tipo do local", incidente.tipoLocalEndereco],
     ["Responsavel", incidente.responsavel],
     ["NAPS", incidente.napsAtendimento]
   ];
