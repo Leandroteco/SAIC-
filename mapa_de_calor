@@ -1190,6 +1190,13 @@ body {
   color: #287a55;
 }
 
+.territorial-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 5px;
+}
+
 .navegacao-overlay {
   align-items: center;
   background: rgba(15, 23, 42, 0.42);
@@ -1840,6 +1847,7 @@ body.mapa-tema-escuro .btn-map-theme:hover {
 
             <div id="statusMapa" class="status-line">Informe o periodo e atualize o mapa.</div>
             <div id="statusCoberturaMapa" class="status-line">A cobertura das coordenadas aparecer&aacute; ap&oacute;s a consulta.</div>
+            <div class="territorial-note">Atendimentos realizados na modalidade online n&atilde;o s&atilde;o considerados nesta an&aacute;lise territorial.</div>
           </section>
 
           <section class="decision-grid" aria-label="Indicadores territoriais">
