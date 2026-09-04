@@ -2521,10 +2521,20 @@ function criarRascunhoEventoColetivo(dados, idToken) {
     const estrutura = configurarEstruturaEventosColetivos(false);
     const sheetEventos = estrutura.sheetEventosColetivos;
     const evento = prepararDadosEventoColetivo(dados, usuario);
+
+    if (!tipoEventoUsaParticipantes(evento.tipoEvento)) {
+      throw new Error("Palestras nao utilizam rascunho.");
+    }
+
     let idEvento = String(dados.idEvento || "").trim();
     let tokenEvento = String(dados.tokenEvento || "").trim();
     let dataCriacao = new Date();
-    const localizados = localizarEventoERascunhoColetivo(sheetEventos, idEvento, usuario.email);
+    const localizados = localizarEventoERascunhoColetivo(
+      sheetEventos,
+      idEvento,
+      usuario.email,
+      "grupo"
+    );
     let existente = localizados.evento;
 
     if (!evento.tema) {
@@ -2633,7 +2643,12 @@ function salvarEventoColetivo(dados, participantesManuais, idToken) {
     let dataCriacao = new Date();
     let eventoCriadoAgora = false;
     const dataFechamento = new Date();
-    const localizados = localizarEventoERascunhoColetivo(sheetEventos, idEvento, usuario.email);
+    const localizados = localizarEventoERascunhoColetivo(
+      sheetEventos,
+      idEvento,
+      usuario.email,
+      tipoEventoUsaParticipantes(evento.tipoEvento) ? "grupo" : false
+    );
     let existente = localizados.evento;
     const rascunhoAberto = localizados.rascunho;
 
@@ -2826,7 +2841,8 @@ function obterRascunhoEventoColetivo(idToken) {
   const estrutura = configurarEstruturaEventosColetivos(false);
   const rascunho = localizarRascunhoEventoColetivoPorResponsavel(
     estrutura.sheetEventosColetivos,
-    usuario.email
+    usuario.email,
+    "grupo"
   );
 
   if (!rascunho) {
@@ -2863,8 +2879,8 @@ function salvarRascunhoParticipantesManuais(dadosEvento, participantesManuais, i
 
     medir("configurar estrutura de eventos");
 
-    if (!tipoEventoUsaParticipantes(evento.tipoEvento) && listaManual.length > 0) {
-      throw new Error("Este tipo de evento nao recebe cadastro individual de participantes.");
+    if (!tipoEventoUsaParticipantes(evento.tipoEvento)) {
+      throw new Error("Palestras nao utilizam rascunho.");
     }
 
     const participantesValidos = prepararParticipantesManuaisEvento(
@@ -2880,7 +2896,12 @@ function salvarRascunhoParticipantesManuais(dadosEvento, participantesManuais, i
     let tokenEvento = String((dadosEvento && dadosEvento.tokenEvento) || "").trim();
     let dataCriacao = new Date();
     let eventoCriadoAgora = false;
-    const localizados = localizarEventoERascunhoColetivo(sheetEventos, idEvento, usuario.email);
+    const localizados = localizarEventoERascunhoColetivo(
+      sheetEventos,
+      idEvento,
+      usuario.email,
+      "grupo"
+    );
     let existente = localizados.evento;
     const rascunhoAberto = localizados.rascunho;
 
@@ -3055,7 +3076,12 @@ function registrarParticipanteEventoManual(dadosEvento, participante, idToken) {
     let idEvento = String(dadosEvento.idEvento || "").trim();
     let tokenEvento = String(dadosEvento.tokenEvento || "").trim();
     let dataCriacao = new Date();
-    const localizados = localizarEventoERascunhoColetivo(sheetEventos, idEvento, usuario.email);
+    const localizados = localizarEventoERascunhoColetivo(
+      sheetEventos,
+      idEvento,
+      usuario.email,
+      "grupo"
+    );
     let existente = localizados.evento;
     const rascunhoAberto = localizados.rascunho;
 
@@ -3175,7 +3201,11 @@ function cancelarEventoColetivo(dadosEvento, idToken) {
     }
 
     if (!existente) {
-      existente = localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, usuario.email);
+      existente = localizarRascunhoEventoColetivoPorResponsavel(
+        sheetEventos,
+        usuario.email,
+        "grupo"
+      );
     }
 
     if (!existente) {
@@ -3805,9 +3835,11 @@ function atualizarParticipantesPendentesEventoEmLote(sheetParticipantes, linhasP
   sheetParticipantes.getRangeList(referenciasDataValidacao).setValue(new Date());
 }
 
-function localizarEventoERascunhoColetivo(sheetEventos, idEvento, emailResponsavel) {
+function localizarEventoERascunhoColetivo(sheetEventos, idEvento, emailResponsavel, tipoRascunho) {
   const id = String(idEvento || "").trim();
   const email = normalizar(emailResponsavel);
+  const localizarRascunho = tipoRascunho !== false;
+  const tipo = normalizarTipoEventoColetivo(tipoRascunho);
   const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2);
   let evento = null;
   let rascunho = null;
@@ -3823,9 +3855,11 @@ function localizarEventoERascunhoColetivo(sheetEventos, idEvento, emailResponsav
     }
 
     if (
+      localizarRascunho &&
       email &&
       normalizar(linha[10]) === "rascunho" &&
-      normalizar(linha[5]) === email
+      normalizar(linha[5]) === email &&
+      (!tipo || normalizarTipoEventoColetivo(linha[1]) === tipo)
     ) {
       rascunho = referencia;
     }
@@ -3837,8 +3871,9 @@ function localizarEventoERascunhoColetivo(sheetEventos, idEvento, emailResponsav
   };
 }
 
-function localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, emailResponsavel) {
+function localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, emailResponsavel, tipoEvento) {
   const email = normalizar(emailResponsavel);
+  const tipo = normalizarTipoEventoColetivo(tipoEvento);
   const ultimaLinha = sheetEventos.getLastRow();
 
   if (!email || ultimaLinha < 2) return null;
@@ -3850,6 +3885,7 @@ function localizarRascunhoEventoColetivoPorResponsavel(sheetEventos, emailRespon
 
     if (normalizar(linha[10]) !== "rascunho") continue;
     if (normalizar(linha[5]) !== email) continue;
+    if (tipo && normalizarTipoEventoColetivo(linha[1]) !== tipo) continue;
 
     return {
       numeroLinha: i + 2,
