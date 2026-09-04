@@ -844,6 +844,24 @@
       justify-self: start;
     }
 
+    .btn-draft {
+      align-items: center;
+      background: var(--blue-soft);
+      border: 1px solid #b7ccd6;
+      border-radius: 8px;
+      color: var(--blue);
+      display: flex;
+      font-size: 15px;
+      justify-content: center;
+      min-height: 46px;
+      padding: 11px 18px;
+      width: 100%;
+    }
+
+    .btn-draft:hover {
+      background: #dceaf0;
+    }
+
     .btn-success {
       align-items: center;
       background: #0f766e;
@@ -929,10 +947,10 @@
       border-radius: var(--radius);
       box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
       padding: 24px;
-      width: min(460px, 94vw);
+      width: min(580px, 94vw);
     }
 
-    .confirmacao-navegacao-modal span {
+    .confirmacao-navegacao-modal > span {
       color: var(--red);
       display: block;
       font-size: 12px;
@@ -966,6 +984,11 @@
     .confirmacao-navegacao-acoes button {
       margin-top: 0;
       width: auto;
+    }
+
+    .confirmacao-navegacao-status {
+      margin-top: 14px;
+      min-height: 20px;
     }
 
     .navegacao-spinner {
@@ -1482,11 +1505,13 @@
   <div id="confirmacaoNavegacaoOverlay" class="confirmacao-navegacao-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmacaoNavegacaoTitulo">
     <div class="confirmacao-navegacao-modal">
       <span>Dados n&atilde;o salvos</span>
-      <h2 id="confirmacaoNavegacaoTitulo">Sair sem salvar?</h2>
-      <p>Existem dados preenchidos que ainda n&atilde;o foram salvos. Deseja sair desta tela mesmo assim?</p>
+      <h2 id="confirmacaoNavegacaoTitulo">Deseja salvar o rascunho?</h2>
+      <p>Existem informa&ccedil;&otilde;es ainda n&atilde;o salvas. Voc&ecirc; pode salvar o rascunho antes de sair, descartar as altera&ccedil;&otilde;es ou continuar preenchendo.</p>
+      <div id="statusSaidaRascunho" class="saving-inline confirmacao-navegacao-status" aria-live="polite"></div>
       <div class="confirmacao-navegacao-acoes">
-        <button type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">Continuar preenchendo</button>
-        <button type="button" class="btn-primary" onclick="confirmarSaidaSemSalvar()">Sair sem salvar</button>
+        <button id="btnContinuarNavegacao" type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">Continuar preenchendo</button>
+        <button id="btnSairSemSalvar" type="button" class="btn-danger" onclick="confirmarSaidaSemSalvar()">Sair sem salvar</button>
+        <button id="btnSalvarRascunhoESair" type="button" class="btn-primary" onclick="salvarRascunhoESair()">Salvar rascunho e sair</button>
       </div>
     </div>
   </div>
@@ -2054,6 +2079,8 @@
         <h2 class="section-title">Finalizar</h2>
         <div class="actions event-save-actions">
           <span id="contadorEvento" class="event-pill">0 participantes</span>
+          <button id="btnSalvarRascunho" type="button" class="btn-draft" onclick="salvarRascunhoParticipantes()">Salvar rascunho</button>
+          <span id="statusSalvarRascunho" class="saving-inline"></span>
           <button id="btnSalvarEvento" type="button" class="btn-success" onclick="salvarEvento()">Salvar Workshop</button>
           <span id="statusSalvarEvento" class="saving-inline"></span>
         </div>
@@ -2159,6 +2186,13 @@
       carregarRascunhoEventoAberto();
     });
 
+    window.addEventListener("beforeunload", function(evento) {
+      if (!navegacaoAlteracoesPendentes) return;
+
+      evento.preventDefault();
+      evento.returnValue = "";
+    });
+
     function selecionarEvento(tipo, preservarEstado) {
       tipo = normalizarTipoEventoTela(tipo);
 
@@ -2192,6 +2226,8 @@
       document.getElementById("quantityPanel").style.display = usaParticipantes ? "none" : "block";
       document.getElementById("modalidadePanel").style.display = usaModalidade ? "block" : "none";
       document.getElementById("observacoesPanel").className = usaModalidade ? "field-span-2" : "observacoes-grupo";
+      document.getElementById("btnSalvarRascunho").style.display = usaParticipantes ? "flex" : "none";
+      document.getElementById("statusSalvarRascunho").style.display = usaParticipantes ? "inline-flex" : "none";
       if (!usaModalidade) document.getElementById("modalidadeEvento").value = "";
       document.getElementById("btnSalvarEvento").innerText = "Salvar " + rotulo;
       atualizarContador();
@@ -2248,15 +2284,18 @@
     }
 
     function encerrarSessaoSAIC() {
+      if (navegacaoAlteracoesPendentes) {
+        abrirConfirmacaoNavegacao(function() {
+          confirmarEncerrarSessaoSAIC();
+        });
+        return;
+      }
+
       const overlay = document.getElementById("sessaoOverlay");
       const texto = document.getElementById("sessaoTexto");
 
       if (texto) {
         texto.innerText = "Ao encerrar, o SAIC voltar\u00e1 para a tela de login neste navegador.";
-
-        if (typeof navegacaoAlteracoesPendentes !== "undefined" && navegacaoAlteracoesPendentes) {
-          texto.innerText = "Existem dados n\u00e3o salvos. Ao encerrar a sess\u00e3o, eles ser\u00e3o perdidos.";
-        }
       }
 
       if (overlay) {
@@ -2372,6 +2411,7 @@
 
     function abrirConfirmacaoNavegacao(acaoConfirmada) {
       acaoConfirmadaNavegacao = typeof acaoConfirmada === "function" ? acaoConfirmada : null;
+      definirStatusSaidaRascunho(false, "");
 
       const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
       if (overlay) overlay.classList.add("ativo");
@@ -2379,6 +2419,7 @@
 
     function fecharConfirmacaoNavegacao() {
       acaoConfirmadaNavegacao = null;
+      definirStatusSaidaRascunho(false, "");
 
       const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
       if (overlay) overlay.classList.remove("ativo");
@@ -2393,6 +2434,25 @@
       if (overlay) overlay.classList.remove("ativo");
 
       if (typeof acao === "function") acao();
+    }
+
+    function salvarRascunhoESair() {
+      const acao = acaoConfirmadaNavegacao;
+
+      if (typeof acao !== "function") {
+        fecharConfirmacaoNavegacao();
+        return;
+      }
+
+      salvarRascunhoParticipantes(function() {
+        acaoConfirmadaNavegacao = null;
+
+        const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
+        if (overlay) overlay.classList.remove("ativo");
+
+        definirStatusSaidaRascunho(false, "");
+        acao();
+      }, true);
     }
 
     function marcarAlteracaoPendenteNavegacao() {
@@ -2412,6 +2472,7 @@
       participantesManuais = [];
       participantesLink = [];
       eventoRascunhoAberto = false;
+      definirStatusSalvarRascunho(false, "");
       document.getElementById("linkParticipante").value = "";
       document.getElementById("linkBox").style.display = "none";
       document.getElementById("quantidadeInformada").value = "";
@@ -2447,6 +2508,7 @@
       definirStatusSalvarEvento(false, "");
       definirStatusGerarLink(false, "");
       definirStatusAdicionarParticipante(false, "");
+      definirStatusSalvarRascunho(false, "");
       definirStatusAtualizarParticipantes(false, "");
       definirStatusCancelarEvento(false, "");
       definirStatusCancelarParticipante(false, "");
@@ -2617,34 +2679,53 @@
         return;
       }
 
-      definirStatusAdicionarParticipante(true, "Adicionando participante...");
-      setCarregando(true, "Adicionando participante ao rascunho...");
-      google.script.run
-        .withSuccessHandler(function(retorno) {
-          setCarregando(false);
-          definirStatusAdicionarParticipante(false, "Participante adicionado.", "success");
-          idEventoAtual = retorno.idEvento || idEventoAtual;
-          tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
-          linkParticipanteAtual = retorno.linkParticipante || linkParticipanteAtual;
-          eventoRascunhoAberto = true;
-          marcarAlteracaoPendenteNavegacao();
-          participantesManuais = [];
-          participantesLink = retorno.participantes || [];
-          document.getElementById("linkParticipante").value = linkParticipanteAtual;
-          document.getElementById("linkBox").style.display = linkParticipanteAtual ? "block" : "none";
-          limparFormularioParticipante();
-          renderizarParticipantes();
-          atualizarContador();
-          atualizarBotaoCancelarEvento();
-          mostrarSucessoCadastroParticipante();
-          mostrarStatus(retorno.mensagem || "Participante adicionado a lista temporaria.", "success");
+      const duplicidade = localizarDuplicidadeParticipanteNaTela(participante);
+
+      if (duplicidade === "cpf") {
+        definirStatusAdicionarParticipante(false, "Este CPF ja esta na lista do evento.", "error");
+        mostrarStatus("Este CPF ja esta na lista do evento.", "error");
+        document.getElementById("cpf").focus();
+        return;
+      }
+
+      if (duplicidade === "re") {
+        definirStatusAdicionarParticipante(false, "Este R.E. ja esta na lista do evento.", "error");
+        mostrarStatus("Este R.E. ja esta na lista do evento.", "error");
+        document.getElementById("re").focus();
+        return;
+      }
+
+      participantesManuais.push(participante);
+      marcarAlteracaoPendenteNavegacao();
+      limparFormularioParticipante();
+      renderizarParticipantes();
+      atualizarContador();
+      definirStatusAdicionarParticipante(false, "Participante adicionado.", "success");
+      mostrarSucessoCadastroParticipante();
+      mostrarStatus("Participante adicionado a lista temporaria.", "success");
+    }
+
+    function localizarDuplicidadeParticipanteNaTela(participante) {
+      const cpf = somenteNumerosTela(participante && participante.cpf);
+      const re = somenteNumerosTela(participante && participante.re);
+      const existentes = participantesManuais.concat(
+        participantesLink.filter(function(item) {
+          return String((item && item.status) || "").toLowerCase() !== "cancelado";
         })
-        .withFailureHandler(function(erro) {
-          setCarregando(false);
-          definirStatusAdicionarParticipante(false, obterMensagemErro(erro), "error");
-          mostrarStatus(obterMensagemErro(erro), "error");
-        })
-        .registrarParticipanteEventoManual(montarDadosEvento(), participante, tokenGoogle);
+      );
+
+      for (let i = 0; i < existentes.length; i++) {
+        const existente = existentes[i] || {};
+
+        if (cpf && somenteNumerosTela(existente.cpf) === cpf) return "cpf";
+        if (re && somenteNumerosTela(existente.re) === re) return "re";
+      }
+
+      return "";
+    }
+
+    function somenteNumerosTela(valor) {
+      return String(valor || "").replace(/\D/g, "");
     }
 
     function cancelarEvento() {
@@ -3312,6 +3393,121 @@
         .listarParticipantesEvento(chaveEvento, tokenGoogle);
     }
 
+    function salvarRascunhoParticipantes(aoConcluir, solicitadoNaSaida) {
+      const salvarParaSair = solicitadoNaSaida === true;
+      const concluirSalvamento = typeof aoConcluir === "function" ? aoConcluir : null;
+
+      if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) {
+        if (salvarParaSair) {
+          definirStatusSaidaRascunho(false, "Confira a data do evento antes de salvar.", "error");
+        }
+        return;
+      }
+
+      if (!validarTemaEvento("Informe o tema antes de salvar o rascunho.")) {
+        if (salvarParaSair) {
+          definirStatusSaidaRascunho(false, "Informe o tema antes de salvar o rascunho.", "error");
+        }
+        return;
+      }
+
+      const dadosEvento = montarDadosEvento();
+
+      if (tipoEventoAtual === "palestra" && Number(dadosEvento.quantidadeInformada || 0) < 1) {
+        const mensagemQuantidade = "Informe a quantidade de participantes da palestra.";
+        mostrarStatus(mensagemQuantidade, "error");
+        if (salvarParaSair) definirStatusSaidaRascunho(false, mensagemQuantidade, "error");
+        document.getElementById("quantidadeInformada").focus();
+        return;
+      }
+
+      if (tipoEventoAtual === "palestra" && !dadosEvento.modalidadeEvento) {
+        const mensagemModalidade = "Informe a modalidade da palestra.";
+        mostrarStatus(mensagemModalidade, "error");
+        if (salvarParaSair) definirStatusSaidaRascunho(false, mensagemModalidade, "error");
+        document.getElementById("modalidadeEvento").focus();
+        return;
+      }
+
+      const participantesParaSalvar = participantesManuais.slice();
+
+      if (salvarParaSair) {
+        definirStatusSaidaRascunho(true, "Salvando rascunho antes de sair...");
+      } else {
+        definirStatusSalvarRascunho(true, "Salvando rascunho...");
+      }
+
+      setCarregando(true, "Salvando rascunho...");
+      google.script.run
+        .withSuccessHandler(function(retorno) {
+          setCarregando(false);
+          idEventoAtual = retorno.idEvento || idEventoAtual;
+          tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
+          linkParticipanteAtual = retorno.linkParticipante || linkParticipanteAtual;
+          eventoRascunhoAberto = true;
+          participantesManuais = [];
+          participantesLink = mesclarParticipantesServidor(
+            participantesLink,
+            retorno.participantesAdicionados || []
+          );
+          document.getElementById("linkParticipante").value = linkParticipanteAtual;
+          document.getElementById("linkBox").style.display = linkParticipanteAtual ? "block" : "none";
+          renderizarParticipantes();
+          atualizarContador();
+          atualizarBotaoCancelarEvento();
+          limparAlteracaoPendenteNavegacao();
+          if (salvarParaSair) {
+            definirStatusSaidaRascunho(false, "Rascunho salvo. Saindo...", "success");
+          } else {
+            definirStatusSalvarRascunho(false, "Rascunho salvo.", "success");
+          }
+          mostrarStatus(retorno.mensagem || "Rascunho salvo com sucesso.", "success");
+
+          if (concluirSalvamento) concluirSalvamento();
+        })
+        .withFailureHandler(function(erro) {
+          setCarregando(false);
+          const mensagemErro = obterMensagemErro(erro);
+
+          if (salvarParaSair) {
+            definirStatusSaidaRascunho(false, mensagemErro, "error");
+          } else {
+            definirStatusSalvarRascunho(false, mensagemErro, "error");
+          }
+          mostrarStatus(mensagemErro, "error");
+        })
+        .salvarRascunhoParticipantesManuais(
+          dadosEvento,
+          participantesParaSalvar,
+          tokenGoogle
+        );
+    }
+
+    function mesclarParticipantesServidor(participantesAtuais, participantesNovos) {
+      const resultado = [];
+      const posicoesPorId = {};
+
+      (Array.isArray(participantesAtuais) ? participantesAtuais : []).forEach(function(item) {
+        const id = String((item && item.idParticipante) || "").trim();
+        if (id) posicoesPorId[id] = resultado.length;
+        resultado.push(item);
+      });
+
+      (Array.isArray(participantesNovos) ? participantesNovos : []).forEach(function(item) {
+        const id = String((item && item.idParticipante) || "").trim();
+
+        if (id && posicoesPorId[id] !== undefined) {
+          resultado[posicoesPorId[id]] = item;
+          return;
+        }
+
+        if (id) posicoesPorId[id] = resultado.length;
+        resultado.push(item);
+      });
+
+      return resultado;
+    }
+
     function salvarEvento() {
       if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) return;
       if (!validarTemaEvento("Informe o tema antes de salvar.")) return;
@@ -3445,10 +3641,14 @@
       document.getElementById("btnAdicionarParticipanteManual").disabled = carregando;
       document.getElementById("btnLimparCadastroParticipante").disabled = carregando;
       document.getElementById("btnAtualizarParticipantes").disabled = carregando;
+      document.getElementById("btnSalvarRascunho").disabled = carregando;
       document.getElementById("btnSalvarEvento").disabled = carregando;
       document.getElementById("btnCancelarEvento").disabled = carregando;
       document.getElementById("btnConfirmarCancelamentoEvento").disabled = carregando;
       document.getElementById("btnConfirmarCancelamentoParticipante").disabled = carregando;
+      document.getElementById("btnContinuarNavegacao").disabled = carregando;
+      document.getElementById("btnSairSemSalvar").disabled = carregando;
+      document.getElementById("btnSalvarRascunhoESair").disabled = carregando;
 
       if (mensagem) mostrarStatus(mensagem, "");
     }
@@ -3483,6 +3683,28 @@
       el.className = "saving-inline" + (tipo ? " " + tipo : "");
       el.innerHTML = adicionando
         ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Adicionando...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusSalvarRascunho(salvando, texto, tipo) {
+      const el = document.getElementById("statusSalvarRascunho");
+
+      if (!el) return;
+
+      el.className = "saving-inline" + (tipo ? " " + tipo : "");
+      el.innerHTML = salvando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Salvando rascunho...") + '</span>'
+        : escaparHtml(texto || "");
+    }
+
+    function definirStatusSaidaRascunho(salvando, texto, tipo) {
+      const el = document.getElementById("statusSaidaRascunho");
+
+      if (!el) return;
+
+      el.className = "saving-inline confirmacao-navegacao-status" + (tipo ? " " + tipo : "");
+      el.innerHTML = salvando
+        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Salvando rascunho...") + '</span>'
         : escaparHtml(texto || "");
     }
 
