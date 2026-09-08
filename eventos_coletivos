@@ -1501,10 +1501,10 @@
   <div id="confirmacaoNavegacaoOverlay" class="confirmacao-navegacao-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmacaoNavegacaoTitulo">
     <div class="confirmacao-navegacao-modal">
       <span>Dados n&atilde;o salvos</span>
-      <h2 id="confirmacaoNavegacaoTitulo">Deseja sair sem salvar as altera&ccedil;&otilde;es?</h2>
+      <h2 id="confirmacaoNavegacaoTitulo">Deseja salvar as altera&ccedil;&otilde;es?</h2>
       <div class="confirmacao-navegacao-acoes">
-        <button id="btnContinuarNavegacao" type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">N&atilde;o</button>
-        <button id="btnSairSemSalvar" type="button" class="btn-danger" onclick="confirmarSaidaSemSalvar()">Sim</button>
+        <button id="btnContinuarNavegacao" type="button" class="btn-secondary" onclick="confirmarSaidaSemSalvar()">N&atilde;o</button>
+        <button id="btnSairSemSalvar" type="button" class="btn-primary" onclick="(function(acao){fecharConfirmacaoNavegacao();salvarEvento(acao);})(acaoConfirmadaNavegacao)">Sim</button>
       </div>
     </div>
   </div>
@@ -3632,7 +3632,7 @@
       return resultado;
     }
 
-    function salvarEvento() {
+    function salvarEvento(acaoAposSalvar) {
       if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) return;
       if (!validarTemaEvento("Informe o tema antes de salvar.")) return;
 
@@ -3661,7 +3661,7 @@
           atualizarContador();
           atualizarBotaoCancelarEvento();
           limparAlteracaoPendenteNavegacao();
-          mostrarStatus("Pronto para iniciar um grupo ou palestra.", "success", true);
+          mostrarStatus("Pronto para iniciar um grupo ou palestra.", "success", true); if (typeof acaoAposSalvar === "function") acaoAposSalvar();
         })
         .withFailureHandler(function(erro) {
           setCarregando(false);
