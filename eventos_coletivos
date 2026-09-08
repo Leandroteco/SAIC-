@@ -968,11 +968,6 @@
       width: auto;
     }
 
-    .confirmacao-navegacao-status {
-      margin-top: 14px;
-      min-height: 20px;
-    }
-
     .navegacao-spinner {
       animation: girar 0.8s linear infinite;
       border: 3px solid rgba(49, 95, 114, 0.18);
@@ -1473,6 +1468,25 @@
         width: 100%;
       }
     }
+    .prosen-panel { grid-column: 1 / -1; min-width: 0; border-top: 1px solid #d5dce2; border-bottom: 1px solid #d5dce2; padding: 16px 0; letter-spacing: 0; }
+    .prosen-panel[hidden], #prosenLista[hidden] { display: none !important; }
+    .prosen-modos { display: flex; flex-wrap: wrap; gap: 12px 24px; border: 0; margin: 0 0 12px; padding: 0; }
+    .prosen-modos legend { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .prosen-modos label { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+    .prosen-panel input[type="radio"] { width: 18px; height: 18px; min-height: 0; margin: 0; flex: 0 0 18px; accent-color: #287347; }
+    .prosen-filtros { display: flex; align-items: end; flex-wrap: wrap; gap: 12px 20px; }
+    .prosen-filtros > div { width: 120px; }
+    .prosen-filtros > strong { font-size: 15px; align-self: center; overflow-wrap: anywhere; }
+    #prosenStatus { font-size: 13px; color: #545b62; margin-top: 8px; overflow-wrap: anywhere; }
+    .prosen-turma-linha { display: grid; grid-template-columns: 18px 120px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 8px; border-bottom: 1px solid #e2e5e8; margin: 0; cursor: pointer; }
+    .prosen-turma-linha:has(input:checked) { background: #edf6ef; }
+    .prosen-turma-linha strong { font-size: 14px; }
+    .prosen-turma-linha span { font-size: 13px; font-weight: 400; overflow-wrap: anywhere; }
+    @media (max-width: 600px) {
+      .prosen-turma-linha { grid-template-columns: 18px minmax(0, 1fr); }
+      .prosen-turma-linha span { grid-column: 2; }
+    }
+
   </style>
 </head>
 
@@ -1486,14 +1500,11 @@
 
   <div id="confirmacaoNavegacaoOverlay" class="confirmacao-navegacao-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmacaoNavegacaoTitulo">
     <div class="confirmacao-navegacao-modal">
-      <span id="confirmacaoNavegacaoRotulo">Dados n&atilde;o salvos</span>
-      <h2 id="confirmacaoNavegacaoTitulo">Deseja salvar o rascunho?</h2>
-      <p id="confirmacaoNavegacaoTexto">Existem informa&ccedil;&otilde;es ainda n&atilde;o salvas. Voc&ecirc; pode salvar o rascunho antes de sair, descartar as altera&ccedil;&otilde;es ou continuar preenchendo.</p>
-      <div id="statusSaidaRascunho" class="saving-inline confirmacao-navegacao-status" aria-live="polite"></div>
+      <span>Dados n&atilde;o salvos</span>
+      <h2 id="confirmacaoNavegacaoTitulo">Deseja sair sem salvar as altera&ccedil;&otilde;es?</h2>
       <div class="confirmacao-navegacao-acoes">
-        <button id="btnContinuarNavegacao" type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">Continuar preenchendo</button>
-        <button id="btnSairSemSalvar" type="button" class="btn-danger" onclick="confirmarSaidaSemSalvar()">Sair sem salvar</button>
-        <button id="btnSalvarRascunhoESair" type="button" class="btn-primary" onclick="salvarRascunhoESair()">Salvar rascunho e sair</button>
+        <button id="btnContinuarNavegacao" type="button" class="btn-secondary" onclick="fecharConfirmacaoNavegacao()">N&atilde;o</button>
+        <button id="btnSairSemSalvar" type="button" class="btn-danger" onclick="confirmarSaidaSemSalvar()">Sim</button>
       </div>
     </div>
   </div>
@@ -1600,6 +1611,21 @@
           <div id="quantityPanel" class="quantity-panel">
             <label for="quantidadeInformada">Quantidade de participantes</label>
             <input id="quantidadeInformada" type="number" min="1" step="1" placeholder="Ex.: 80">
+          </div>
+
+          <div id="prosenPanel" class="prosen-panel" hidden>
+            <fieldset class="prosen-modos">
+              <legend>Turma PROSEN</legend>
+              <label><input id="prosenModoNova" type="radio" name="prosenModo" value="nova" checked onchange="mudarModoTurmaProsen()"> Nova turma</label>
+              <label><input id="prosenModoExistente" type="radio" name="prosenModo" value="existente" onchange="mudarModoTurmaProsen()"> Turma existente</label>
+            </fieldset>
+            <div class="prosen-filtros">
+              <div><label for="prosenAno">Ano da turma</label><input id="prosenAno" type="number" min="1900" max="9999" step="1" onchange="carregarTurmasProsen()"></div>
+              <button id="prosenAtualizar" type="button" class="btn-transparent" onclick="carregarTurmasProsen()">Atualizar turmas</button>
+              <strong id="prosenSelecionada" aria-live="polite"></strong>
+            </div>
+            <div id="prosenStatus" role="status" aria-live="polite"></div>
+            <div id="prosenLista" role="group" aria-label="Turmas salvas"></div>
           </div>
 
           <div id="observacoesPanel">
@@ -2173,6 +2199,203 @@
       evento.returnValue = "";
     });
 
+    let turmaProsenAtual = null;
+    let turmasProsenDisponiveis = [];
+    let requisicaoTurmasProsen = 0;
+    let carregandoTurmasProsen = false;
+    let operacaoEventoProsen = false;
+
+    function ehProsenTela() {
+      return tipoEventoAtual === "grupo" && document.getElementById("tema").value === "PROSEN";
+    }
+
+    function modoTurmaProsen() {
+      return document.getElementById("prosenModoExistente").checked ? "existente" : "nova";
+    }
+
+    function anoEventoProsen() {
+      return Number(valorDataCampo("dataEvento").slice(0, 4)) || new Date().getFullYear();
+    }
+
+    function limparTurmaProsen() {
+      requisicaoTurmasProsen++;
+      carregandoTurmasProsen = false;
+      turmaProsenAtual = null;
+      turmasProsenDisponiveis = [];
+      document.getElementById("prosenModoNova").checked = true;
+      document.getElementById("prosenAno").value = anoEventoProsen();
+      document.getElementById("prosenLista").replaceChildren();
+      document.getElementById("prosenSelecionada").textContent = "";
+      document.getElementById("prosenStatus").textContent = "";
+      document.getElementById("prosenPanel").hidden = true;
+    }
+
+    function atualizarControlesProsen() {
+      const painel = document.getElementById("prosenPanel");
+      painel.hidden = !ehProsenTela();
+      const vinculada = Boolean(idEventoAtual && turmaProsenAtual && turmaProsenAtual.id);
+      document.getElementById("prosenModoNova").disabled = vinculada || operacaoEventoProsen || carregandoTurmasProsen;
+      document.getElementById("prosenModoExistente").disabled = vinculada || operacaoEventoProsen || carregandoTurmasProsen;
+      document.getElementById("prosenAno").disabled = vinculada || operacaoEventoProsen || carregandoTurmasProsen || modoTurmaProsen() === "nova";
+      document.getElementById("prosenAtualizar").disabled = vinculada || operacaoEventoProsen || carregandoTurmasProsen;
+      document.getElementById("prosenLista").hidden = modoTurmaProsen() !== "existente" || vinculada;
+      document.querySelectorAll('input[name="turmaProsenOpcao"]').forEach(function(campo) {
+        campo.disabled = operacaoEventoProsen || carregandoTurmasProsen || vinculada;
+      });
+      document.getElementById("prosenSelecionada").textContent = turmaProsenAtual
+        ? "Turma " + turmaProsenAtual.numero + "/" + turmaProsenAtual.ano +
+          (vinculada ? " · Encontro em rascunho" : "") : "";
+    }
+
+    function alterarTemaProsen() {
+      if (idEventoAtual && turmaProsenAtual && turmaProsenAtual.id && !ehProsenTela()) {
+        document.getElementById("tema").value = "PROSEN";
+        mostrarStatus("Finalize ou cancele o rascunho antes de trocar o tema.", "error");
+        return;
+      }
+      if (!ehProsenTela()) { limparTurmaProsen(); return; }
+      if (!turmaProsenAtual) {
+        document.getElementById("prosenAno").value = anoEventoProsen();
+        carregarTurmasProsen();
+      } else atualizarControlesProsen();
+    }
+
+    function mudarModoTurmaProsen() {
+      if (idEventoAtual && turmaProsenAtual && turmaProsenAtual.id) return;
+      turmaProsenAtual = null;
+      if (modoTurmaProsen() === "nova") document.getElementById("prosenAno").value = anoEventoProsen();
+      marcarAlteracaoPendenteNavegacao();
+      carregarTurmasProsen();
+    }
+
+    function carregarTurmasProsen() {
+      if (!ehProsenTela()) return;
+      if (idEventoAtual && turmaProsenAtual && turmaProsenAtual.id) { atualizarControlesProsen(); return; }
+      const ano = Number(document.getElementById("prosenAno").value);
+      const sequencia = ++requisicaoTurmasProsen;
+      turmaProsenAtual = null;
+      turmasProsenDisponiveis = [];
+      document.getElementById("prosenLista").replaceChildren();
+      if (!Number.isInteger(ano) || ano < 1900 || ano > 9999) {
+        carregandoTurmasProsen = false;
+        document.getElementById("prosenStatus").textContent = "Informe um ano valido.";
+        atualizarControlesProsen();
+        return;
+      }
+      carregandoTurmasProsen = true;
+      document.getElementById("prosenStatus").textContent = "Consultando turmas...";
+      atualizarControlesProsen();
+      google.script.run.withSuccessHandler(function(retorno) {
+        if (sequencia !== requisicaoTurmasProsen || !ehProsenTela()) return;
+        carregandoTurmasProsen = false;
+        turmasProsenDisponiveis = retorno.turmas || [];
+        if (modoTurmaProsen() === "nova") {
+          turmaProsenAtual = retorno.proximoNumero
+            ? { modo: "nova", numero: retorno.proximoNumero, ano: ano, id: "" } : null;
+          document.getElementById("prosenStatus").textContent = turmaProsenAtual
+            ? "" : "As 10 turmas deste ano ja estao registradas ou reservadas neste NAPS.";
+        } else {
+          document.getElementById("prosenStatus").textContent = turmasProsenDisponiveis.length
+            ? "" : "Nenhuma turma salva neste NAPS e ano.";
+          renderizarTurmasProsen();
+        }
+        atualizarControlesProsen();
+      }).withFailureHandler(function(erro) {
+        if (sequencia !== requisicaoTurmasProsen) return;
+        carregandoTurmasProsen = false;
+        document.getElementById("prosenStatus").textContent = obterMensagemErro(erro);
+        atualizarControlesProsen();
+      }).listarTurmasProsen(ano, tokenGoogle);
+    }
+
+    function renderizarTurmasProsen() {
+      const destino = document.getElementById("prosenLista");
+      destino.replaceChildren();
+      turmasProsenDisponiveis.forEach(function(turma) {
+        const linha = document.createElement("label");
+        linha.className = "prosen-turma-linha";
+        const escolha = document.createElement("input");
+        escolha.type = "radio";
+        escolha.name = "turmaProsenOpcao";
+        escolha.value = turma.id;
+        escolha.checked = Boolean(turmaProsenAtual && turmaProsenAtual.id === turma.id);
+        escolha.addEventListener("change", function() { selecionarTurmaProsen(turma); });
+        const nome = document.createElement("strong");
+        nome.textContent = "Turma " + turma.rotulo;
+        const detalhe = document.createElement("span");
+        detalhe.textContent = "Ultimo encontro: " + turma.ultimaData.split("-").reverse().join("/") +
+          " · " + turma.participantes + " participantes · " + turma.encontros + " encontros";
+        linha.append(escolha, nome, detalhe);
+        destino.appendChild(linha);
+      });
+    }
+
+    function selecionarTurmaProsen(turma) {
+      if (idEventoAtual) {
+        mostrarStatus("Finalize ou cancele o rascunho atual antes de carregar outra turma.", "error");
+        renderizarTurmasProsen();
+        return;
+      }
+      if (participantesManuais.length && !window.confirm("Substituir a lista atual pelos participantes desta turma?")) {
+        renderizarTurmasProsen();
+        return;
+      }
+      const anterior = turmaProsenAtual;
+      const sequencia = ++requisicaoTurmasProsen;
+      carregandoTurmasProsen = true;
+      document.getElementById("prosenStatus").textContent = "Carregando participantes...";
+      atualizarControlesProsen();
+      google.script.run.withSuccessHandler(function(retorno) {
+        if (sequencia !== requisicaoTurmasProsen || !ehProsenTela()) return;
+        carregandoTurmasProsen = false;
+        turmaProsenAtual = Object.assign({}, retorno.turma, { modo: "existente" });
+        participantesManuais = (retorno.participantes || []).map(function(item) { return Object.assign({}, item); });
+        participantesLink = [];
+        document.getElementById("prosenStatus").textContent = "";
+        renderizarParticipantes();
+        atualizarContador();
+        renderizarTurmasProsen();
+        atualizarControlesProsen();
+        marcarAlteracaoPendenteNavegacao();
+      }).withFailureHandler(function(erro) {
+        if (sequencia !== requisicaoTurmasProsen) return;
+        carregandoTurmasProsen = false;
+        turmaProsenAtual = anterior;
+        document.getElementById("prosenStatus").textContent = obterMensagemErro(erro);
+        renderizarTurmasProsen();
+        atualizarControlesProsen();
+      }).obterTurmaProsen(turma.id, tokenGoogle);
+    }
+
+    function restaurarTurmaProsen(turma) {
+      if (!ehProsenTela()) { limparTurmaProsen(); return; }
+      if (!turma) { alterarTemaProsen(); return; }
+      requisicaoTurmasProsen++;
+      carregandoTurmasProsen = false;
+      turmaProsenAtual = Object.assign({}, turma, { modo: "existente" });
+      document.getElementById("prosenModoExistente").checked = true;
+      document.getElementById("prosenAno").value = turma.ano;
+      document.getElementById("prosenStatus").textContent = "";
+      atualizarControlesProsen();
+    }
+
+    function validarTurmaProsenTela() {
+      if (!ehProsenTela()) return true;
+      if (carregandoTurmasProsen || !turmaProsenAtual) {
+        mostrarStatus(carregandoTurmasProsen ? "Aguarde a consulta da turma." : "Selecione uma turma PROSEN.", "error");
+        return false;
+      }
+      return true;
+    }
+
+    document.getElementById("tema").addEventListener("change", alterarTemaProsen);
+    document.getElementById("dataEvento").addEventListener("change", function() {
+      if (ehProsenTela() && modoTurmaProsen() === "nova" && !(idEventoAtual && turmaProsenAtual && turmaProsenAtual.id)) {
+        document.getElementById("prosenAno").value = anoEventoProsen();
+        carregarTurmasProsen();
+      }
+    });
+
     function selecionarEvento(tipo, preservarEstado) {
       tipo = normalizarTipoEventoTela(tipo);
       const mudouTipo = tipo !== tipoEventoAtual;
@@ -2407,44 +2630,8 @@
       return mensagens[pagina] || "Carregando...";
     }
 
-    function abrirConfirmacaoNavegacao(acaoConfirmada, opcoes) {
+    function abrirConfirmacaoNavegacao(acaoConfirmada) {
       acaoConfirmadaNavegacao = typeof acaoConfirmada === "function" ? acaoConfirmada : null;
-      definirStatusSaidaRascunho(false, "");
-
-      const configuracao = opcoes || {};
-      const tipoDestino = normalizarTipoEventoTela(configuracao.tipoDestino);
-      const trocaTipo = Boolean(configuracao.tipoDestino) && tipoDestino !== tipoEventoAtual;
-      const permiteRascunho = tipoEventoAtual === "grupo";
-      const rotuloDestino = titulosEvento[tipoDestino] || "outra tela";
-      const titulo = document.getElementById("confirmacaoNavegacaoTitulo");
-      const texto = document.getElementById("confirmacaoNavegacaoTexto");
-      const botaoDescartar = document.getElementById("btnSairSemSalvar");
-      const botaoSalvar = document.getElementById("btnSalvarRascunhoESair");
-
-      if (titulo) {
-        titulo.innerText = permiteRascunho
-          ? "Deseja salvar o rascunho do Grupo?"
-          : "Descartar alterações da Palestra?";
-      }
-
-      if (texto) {
-        texto.innerText = permiteRascunho
-          ? "Existem informações ainda não salvas no Grupo. Você pode salvar o rascunho, descartar as alterações ou continuar preenchendo."
-          : "Palestras não utilizam rascunho. Para continuar, descarte as alterações ou volte ao preenchimento.";
-      }
-
-      if (botaoDescartar) {
-        botaoDescartar.innerText = trocaTipo
-          ? "Descartar e abrir " + rotuloDestino
-          : "Sair sem salvar";
-      }
-
-      if (botaoSalvar) {
-        botaoSalvar.style.display = permiteRascunho ? "inline-flex" : "none";
-        botaoSalvar.innerText = trocaTipo
-          ? "Salvar e abrir " + rotuloDestino
-          : "Salvar rascunho e sair";
-      }
 
       const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
       if (overlay) overlay.classList.add("ativo");
@@ -2452,7 +2639,6 @@
 
     function fecharConfirmacaoNavegacao() {
       acaoConfirmadaNavegacao = null;
-      definirStatusSaidaRascunho(false, "");
 
       const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
       if (overlay) overlay.classList.remove("ativo");
@@ -2467,32 +2653,6 @@
       if (overlay) overlay.classList.remove("ativo");
 
       if (typeof acao === "function") acao();
-    }
-
-    function salvarRascunhoESair() {
-      const acao = acaoConfirmadaNavegacao;
-
-      if (tipoEventoAtual !== "grupo") {
-        definirStatusSaidaRascunho(false, "Palestras não utilizam rascunho.", "error");
-        return;
-      }
-
-      if (typeof acao !== "function") {
-        fecharConfirmacaoNavegacao();
-        return;
-      }
-
-      salvarRascunhoParticipantes(function() {
-        acaoConfirmadaNavegacao = null;
-
-        const overlay = document.getElementById("confirmacaoNavegacaoOverlay");
-        if (overlay) overlay.classList.remove("ativo");
-
-        definirStatusSaidaRascunho(false, "");
-        setTimeout(function() {
-          acao();
-        }, 50);
-      }, true);
     }
 
     function marcarAlteracaoPendenteNavegacao() {
@@ -2512,6 +2672,7 @@
       participantesManuais = [];
       participantesLink = [];
       eventoRascunhoAberto = false;
+      limparTurmaProsen();
       document.getElementById("linkParticipante").value = "";
       document.getElementById("linkBox").style.display = "none";
       document.getElementById("quantidadeInformada").value = "";
@@ -2522,6 +2683,7 @@
     function limparIdentificacaoEvento() {
       document.getElementById("dataEvento").value = formatarDataBrasilInput(new Date());
       document.getElementById("tema").value = "";
+      limparTurmaProsen();
       document.getElementById("observacoes").value = "";
       document.getElementById("quantidadeInformada").value = "";
       document.getElementById("modalidadeEvento").value = "";
@@ -2579,6 +2741,7 @@
         motivo: "",
         quantidadeInformada: document.getElementById("quantidadeInformada").value,
         modalidadeEvento: document.getElementById("modalidadeEvento").value,
+        turmaProsen: ehProsenTela() ? turmaProsenAtual : null,
         observacoes: document.getElementById("observacoes").value
       };
     }
@@ -2637,6 +2800,7 @@
       atualizarContador();
       atualizarBotaoCancelarEvento();
       limparAlteracaoPendenteNavegacao();
+      restaurarTurmaProsen(rascunho.turmaProsen);
       mostrarStatus("Rascunho do Grupo carregado.", "success");
     }
 
@@ -2656,6 +2820,7 @@
           tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
           linkParticipanteAtual = retorno.linkParticipante || "";
           eventoRascunhoAberto = true;
+          restaurarTurmaProsen(retorno.turmaProsen);
           document.getElementById("linkParticipante").value = linkParticipanteAtual;
           document.getElementById("linkBox").style.display = "block";
           if (participantesManuais.length > 0) {
@@ -3442,89 +3607,6 @@
         .listarParticipantesEvento(chaveEvento, tokenGoogle);
     }
 
-    function salvarRascunhoParticipantes(aoConcluir, solicitadoNaSaida) {
-      const salvarParaSair = solicitadoNaSaida === true;
-      const concluirSalvamento = typeof aoConcluir === "function" ? aoConcluir : null;
-
-      if (tipoEventoAtual !== "grupo") {
-        definirStatusSaidaRascunho(false, "Palestras não utilizam rascunho.", "error");
-        return;
-      }
-
-      if (!validarDatasFormulario(["dataEvento"], ["dataEvento"])) {
-        if (salvarParaSair) {
-          definirStatusSaidaRascunho(false, "Confira a data do evento antes de salvar.", "error");
-        }
-        return;
-      }
-
-      if (!validarTemaEvento("Informe o tema antes de salvar o rascunho.")) {
-        if (salvarParaSair) {
-          definirStatusSaidaRascunho(false, "Informe o tema antes de salvar o rascunho.", "error");
-        }
-        return;
-      }
-
-      const dadosEvento = montarDadosEvento();
-
-      if (tipoEventoAtual === "palestra" && Number(dadosEvento.quantidadeInformada || 0) < 1) {
-        const mensagemQuantidade = "Informe a quantidade de participantes da palestra.";
-        mostrarStatus(mensagemQuantidade, "error");
-        if (salvarParaSair) definirStatusSaidaRascunho(false, mensagemQuantidade, "error");
-        document.getElementById("quantidadeInformada").focus();
-        return;
-      }
-
-      if (tipoEventoAtual === "palestra" && !dadosEvento.modalidadeEvento) {
-        const mensagemModalidade = "Informe a modalidade da palestra.";
-        mostrarStatus(mensagemModalidade, "error");
-        if (salvarParaSair) definirStatusSaidaRascunho(false, mensagemModalidade, "error");
-        document.getElementById("modalidadeEvento").focus();
-        return;
-      }
-
-      const participantesParaSalvar = participantesManuais.slice();
-
-      definirStatusSaidaRascunho(true, "Salvando rascunho antes de continuar...");
-
-      setCarregando(true, "Salvando rascunho...");
-      google.script.run
-        .withSuccessHandler(function(retorno) {
-          setCarregando(false);
-          idEventoAtual = retorno.idEvento || idEventoAtual;
-          tokenEventoAtual = retorno.tokenEvento || tokenEventoAtual;
-          linkParticipanteAtual = retorno.linkParticipante || linkParticipanteAtual;
-          eventoRascunhoAberto = true;
-          participantesManuais = [];
-          participantesLink = mesclarParticipantesServidor(
-            participantesLink,
-            retorno.participantesAdicionados || []
-          );
-          document.getElementById("linkParticipante").value = linkParticipanteAtual;
-          document.getElementById("linkBox").style.display = linkParticipanteAtual ? "block" : "none";
-          renderizarParticipantes();
-          atualizarContador();
-          atualizarBotaoCancelarEvento();
-          limparAlteracaoPendenteNavegacao();
-          definirStatusSaidaRascunho(false, "Rascunho salvo. Continuando...", "success");
-          mostrarStatus(retorno.mensagem || "Rascunho salvo com sucesso.", "success");
-
-          if (concluirSalvamento) concluirSalvamento();
-        })
-        .withFailureHandler(function(erro) {
-          setCarregando(false);
-          const mensagemErro = obterMensagemErro(erro);
-
-          definirStatusSaidaRascunho(false, mensagemErro, "error");
-          mostrarStatus(mensagemErro, "error");
-        })
-        .salvarRascunhoParticipantesManuais(
-          dadosEvento,
-          participantesParaSalvar,
-          tokenGoogle
-        );
-    }
-
     function mesclarParticipantesServidor(participantesAtuais, participantesNovos) {
       const resultado = [];
       const posicoesPorId = {};
@@ -3670,7 +3752,7 @@
     });
 
     function validarTemaEvento(mensagem) {
-      if (valorCampo("tema")) return true;
+      if (valorCampo("tema")) return validarTurmaProsenTela();
 
       mostrarStatus(mensagem || "Informe o tema.", "error");
       document.getElementById("tema").focus();
@@ -3678,6 +3760,10 @@
     }
 
     function setCarregando(carregando, mensagem) {
+      operacaoEventoProsen = carregando;
+      atualizarControlesProsen();
+      document.getElementById("tema").disabled = carregando;
+      document.getElementById("dataEvento").disabled = carregando;
       document.getElementById("btnAbrirCadastroParticipante").disabled = carregando;
       document.getElementById("btnGerarLink").disabled = carregando;
       document.getElementById("btnAdicionarParticipanteManual").disabled = carregando;
@@ -3689,7 +3775,6 @@
       document.getElementById("btnConfirmarCancelamentoParticipante").disabled = carregando;
       document.getElementById("btnContinuarNavegacao").disabled = carregando;
       document.getElementById("btnSairSemSalvar").disabled = carregando;
-      document.getElementById("btnSalvarRascunhoESair").disabled = carregando;
 
       if (mensagem) mostrarStatus(mensagem, "");
     }
@@ -3724,17 +3809,6 @@
       el.className = "saving-inline" + (tipo ? " " + tipo : "");
       el.innerHTML = adicionando
         ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Adicionando...") + '</span>'
-        : escaparHtml(texto || "");
-    }
-
-    function definirStatusSaidaRascunho(salvando, texto, tipo) {
-      const el = document.getElementById("statusSaidaRascunho");
-
-      if (!el) return;
-
-      el.className = "saving-inline confirmacao-navegacao-status" + (tipo ? " " + tipo : "");
-      el.innerHTML = salvando
-        ? '<span class="saving-spinner"></span><span>' + escaparHtml(texto || "Salvando rascunho...") + '</span>'
         : escaparHtml(texto || "");
     }
 
