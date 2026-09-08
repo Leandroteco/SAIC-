@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <!--
   SAIC - Relatorios gerenciais
@@ -315,6 +314,21 @@
       display: grid;
       gap: 14px;
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .filters-grid.filters-grid-primary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 640px;
+    }
+
+    .filters-advanced {
+      border-top: 1px solid var(--line-soft);
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+
+    .filters-advanced[hidden] {
+      display: none !important;
     }
 
     .field label {
@@ -1787,7 +1801,7 @@ h3,
         <span id="statusFiltros">Todos os registros</span>
       </div>
 
-      <div class="filters-grid">
+      <div class="filters-grid filters-grid-primary">
         <div class="field">
           <label>Data inicial</label>
           <input id="dataInicial" type="date">
@@ -1797,9 +1811,12 @@ h3,
           <label>Data final</label>
           <input id="dataFinal" type="date">
         </div>
+      </div>
 
-        <div class="field">
-          <label>Busca Individual</label>
+      <div id="filtrosAvancados" class="filters-advanced" hidden>
+        <div class="filters-grid">
+          <div class="field">
+            <label>Busca Individual</label>
           <input id="buscaLivre" placeholder="CPF completo, R.E. ou nome da pessoa atendida" oninput="mascararBuscaIndividual(this)">
         </div>
 
@@ -1925,9 +1942,11 @@ h3,
           <label>Parentesco/vínculo</label>
           <select id="parentesco"></select>
         </div>
+        </div>
       </div>
 
       <div class="filter-actions">
+        <button id="btnMaisFiltros" type="button" class="btn-light" aria-expanded="false" aria-controls="filtrosAvancados" onclick="alternarMaisFiltros()">Mais filtros</button>
         <button class="btn-secondary" onclick="limparFiltros()">Limpar filtros</button>
         <button id="btnGerar" class="btn-primary" onclick="carregarRelatorio()">Gerar relatório</button>
       </div>
@@ -1968,6 +1987,13 @@ let opcoesCarregadas = false;
 document.addEventListener("DOMContentLoaded", function() {
   prepararSelectsVazios();
   preencherMesVigente();
+
+  const filtrosAvancados = document.getElementById("filtrosAvancados");
+  if (filtrosAvancados) {
+    filtrosAvancados.addEventListener("input", atualizarBotaoMaisFiltros);
+    filtrosAvancados.addEventListener("change", atualizarBotaoMaisFiltros);
+  }
+  atualizarBotaoMaisFiltros();
 
   const administrador = tokenGoogle &&
     usuarioLogado &&
@@ -2030,7 +2056,35 @@ function formatarDataInput(data) {
   return `${ano}-${mes}-${dia}`;
 }
 
-    function coletarFiltros() {
+    function alternarMaisFiltros() {
+  const painel = document.getElementById("filtrosAvancados");
+  const botao = document.getElementById("btnMaisFiltros");
+  if (!painel || !botao) return;
+
+  const abrir = painel.hidden;
+  painel.hidden = !abrir;
+  botao.setAttribute("aria-expanded", String(abrir));
+  atualizarBotaoMaisFiltros();
+}
+
+function contarFiltrosOpcionaisAtivos() {
+  const filtros = coletarFiltros();
+  return Object.keys(filtros).filter(function(chave) {
+    return chave !== "dataInicial" && chave !== "dataFinal" && filtros[chave];
+  }).length;
+}
+
+function atualizarBotaoMaisFiltros() {
+  const botao = document.getElementById("btnMaisFiltros");
+  const painel = document.getElementById("filtrosAvancados");
+  if (!botao || !painel) return;
+
+  const ativos = contarFiltrosOpcionaisAtivos();
+  const rotulo = painel.hidden ? "Mais filtros" : "Ocultar filtros";
+  botao.innerText = rotulo + (ativos ? " (" + ativos + ")" : "");
+}
+
+function coletarFiltros() {
       return {
         dataInicial: valorCampo("dataInicial"),
         dataFinal: valorCampo("dataFinal"),
@@ -2161,17 +2215,15 @@ function formatarDataInput(data) {
         document.getElementById(id).value = "";
       });
 
+      atualizarBotaoMaisFiltros();
       carregarRelatorio();
     }
 
     function atualizarStatusFiltros() {
-      const filtros = coletarFiltros();
-      const ativos = Object.keys(filtros).filter(function(chave) {
-        return filtros[chave];
-      }).length;
-
+      const ativos = contarFiltrosOpcionaisAtivos();
       document.getElementById("statusFiltros").innerText =
-        ativos === 0 ? "Todos os registros" : ativos + " filtro(s) aplicado(s)";
+        ativos === 0 ? "Período selecionado" : ativos + " filtro(s) adicional(is)";
+      atualizarBotaoMaisFiltros();
     }
 
     function trocarAba(aba) {
