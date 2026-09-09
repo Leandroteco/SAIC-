@@ -1299,7 +1299,7 @@
       outline: none;
     }
 
-    .ajuda-incidente-overlay {
+    .ajuda-overlay {
       align-items: center;
       background: rgba(15, 23, 42, 0.44);
       display: none;
@@ -1307,25 +1307,25 @@
       justify-content: center;
       padding: 22px;
       position: fixed;
-      z-index: 140;
+      z-index: 120;
     }
 
-    .ajuda-incidente-overlay.ativo {
+    .ajuda-overlay.ativo {
       display: flex;
     }
 
-    .ajuda-incidente-modal {
+    .ajuda-modal {
       background: #ffffff;
       border: 1px solid var(--line);
       border-radius: 8px;
       box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
-      max-height: min(720px, 88vh);
-      max-width: 760px;
+      max-height: min(760px, 88vh);
+      max-width: 860px;
       overflow: hidden;
-      width: min(760px, 94vw);
+      width: min(860px, 94vw);
     }
 
-    .ajuda-incidente-cabecalho {
+    .ajuda-cabecalho {
       align-items: flex-start;
       background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
       border-bottom: 1px solid var(--line);
@@ -1335,7 +1335,7 @@
       padding: 22px 24px;
     }
 
-    .ajuda-incidente-cabecalho span {
+    .ajuda-cabecalho span {
       color: var(--red);
       display: block;
       font-size: 12px;
@@ -1344,51 +1344,141 @@
       text-transform: uppercase;
     }
 
-    .ajuda-incidente-cabecalho h2 {
+    .ajuda-cabecalho h2 {
+      border: 0;
       color: #293033;
       font-size: 26px;
       margin: 0;
+      padding: 0;
     }
 
-    .ajuda-incidente-fechar {
+    .ajuda-fechar {
       align-items: center;
       background: #eef3f6;
       border-radius: 999px;
       color: #293033;
       display: inline-flex;
-      flex: 0 0 38px;
       font-size: 24px;
       height: 38px;
       justify-content: center;
+      line-height: 1;
       margin: 0;
-      min-height: 38px;
       padding: 0;
       width: 38px;
     }
 
-    .ajuda-incidente-conteudo {
-      max-height: calc(88vh - 92px);
-      overflow-y: auto;
-      padding: 22px 24px 26px;
+    .ajuda-fechar:hover {
+      background: #dfe8ee;
     }
 
-    .ajuda-incidente-item + .ajuda-incidente-item {
-      border-top: 1px solid var(--line);
-      margin-top: 18px;
-      padding-top: 18px;
+    .ajuda-conteudo {
+      display: grid;
+      gap: 12px;
+      max-height: calc(min(760px, 88vh) - 84px);
+      overflow: auto;
+      padding: 18px 24px 24px;
     }
 
-    .ajuda-incidente-item h3 {
-      color: var(--ink);
-      font-size: 16px;
+    .ajuda-item {
+      background: #f8fbfd;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .ajuda-item h3 {
+      color: #143f4c;
+      font-size: 15px;
+      font-weight: 900;
       margin: 0 0 7px;
     }
 
-    .ajuda-incidente-item p {
-      color: var(--muted);
+    .ajuda-item p {
+      color: #475569;
       font-size: 14px;
-      line-height: 1.55;
+      font-weight: 650;
+      line-height: 1.5;
       margin: 0;
+    }
+
+    .ajuda-avaliacao-chamada {
+      background: #ffffff;
+      border-color: #cbd5df;
+    }
+
+    .btn-ajuda-avaliar {
+      margin-top: 12px;
+      max-width: 220px;
+      width: auto;
+    }
+
+    .avaliacao-modal {
+      max-width: 720px;
+      width: min(720px, 94vw);
+    }
+
+    .avaliacao-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .avaliacao-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .avaliacao-form label {
+      color: #293033;
+      display: block;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .avaliacao-form textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .avaliacao-acoes {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .avaliacao-status {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .avaliacao-status.success {
+      color: var(--green);
+    }
+
+    .avaliacao-status.error {
+      color: #b42318;
+    }
+
+    .spinner-mensagem {
+      animation: girar 0.8s linear infinite;
+      border: 3px solid rgba(71, 85, 105, 0.22);
+      border-radius: 50%;
+      border-top-color: var(--green);
+      display: inline-block;
+      flex: 0 0 auto;
+      height: 16px;
+      width: 16px;
+    }
+
+    .mensagem-processando {
+      align-items: center;
+      color: #475569;
+      display: inline-flex;
+      gap: 8px;
+      justify-content: center;
     }
 
     .module-form-sheet {
@@ -1453,6 +1543,18 @@
         left: 0;
         right: auto;
       }
+
+      .ajuda-cabecalho {
+        padding: 18px;
+      }
+
+      .ajuda-conteudo {
+        padding: 14px;
+      }
+
+      .avaliacao-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -1489,35 +1591,186 @@
     </div>
   </div>
 
-  <div id="ajudaIncidenteOverlay" class="ajuda-incidente-overlay" role="dialog" aria-modal="true" aria-labelledby="ajudaIncidenteTitulo" onclick="fecharAjudaIncidentePorFora(event)">
-    <article class="ajuda-incidente-modal">
-      <div class="ajuda-incidente-cabecalho">
-        <div>
-          <span>Orienta&ccedil;&otilde;es de uso</span>
-          <h2 id="ajudaIncidenteTitulo">Ajuda - Incidente Cr&iacute;tico</h2>
+<!-- Ajuda do usuario: orientacoes rapidas sem chamada para a planilha. -->
+<div id="ajudaOverlay" class="ajuda-overlay" role="dialog" aria-modal="true" aria-labelledby="ajudaTitulo" onclick="fecharAjudaPorFora(event)">
+  <article class="ajuda-modal">
+    <div class="ajuda-cabecalho">
+      <div>
+        <span>Orientações de uso</span>
+        <h2 id="ajudaTitulo">Ajuda do SAIC</h2>
+      </div>
+      <button type="button" class="ajuda-fechar" onclick="fecharAjuda()" aria-label="Fechar ajuda">&times;</button>
+    </div>
+
+    <div class="ajuda-conteudo">
+      <section class="ajuda-item">
+        <h3>Atendimento</h3>
+        <p>O SAIC registra cada atendimento realizado. Sempre que fizer um novo atendimento, preencha ou atualize os dados necessários e clique em salvar. O atendimento só fica registrado depois que aparecer a mensagem de confirmação.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Busca</h3>
+        <p>Antes de preencher tudo novamente, pesquise pelo CPF completo ou pelo R.E. completo com dígito. Quando o cadastro for localizado, confira os dados apresentados e atualize as informações que forem necessárias antes de salvar o novo atendimento.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Endereço</h3>
+        <p>Ao preencher o CEP, o sistema tenta completar automaticamente rua, bairro, cidade e estado. Confira os dados preenchidos e complete número e complemento quando houver.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Pessoa vinculada</h3>
+        <p>Use pessoa vinculada quando precisar relacionar outra pessoa ao atendimento principal, como acompanhante, familiar ou pessoa envolvida. Após selecionar o tipo de atendimento, essa área ficará disponível para preenchimento quando necessário.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Tipo de atendimento e hipótese de diagnóstico</h3>
+        <p>Selecione o tipo de atendimento e a hipótese de diagnóstico conforme o caso. Quando escolher “Outros” em Hipótese de diagnóstico, o sistema abrirá um campo específico para informar o código CID. Esse campo deve ser preenchido antes de salvar.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Falta, Alta e Arquivamento</h3>
+        <p>Use “Registrar como FALTA” quando o atendimento não ocorrer por ausência da pessoa atendida.</p>
+        <p>Use “Atendimento de ALTA” quando o atendimento representar encerramento, alta ou finalização do acompanhamento.</p>
+        <p>Quando houver faltas recorrentes, o responsável deve avaliar se cabe arquivamento conforme o caso e as orientações da unidade.</p>
+        <p>O Arquivamento não é automático. Ele deve ser avaliado pelo responsável e registrado somente quando houver decisão de arquivar o acompanhamento. Para isso, selecione “Arquivamento” no campo Tipo de Atendimento e salve o registro.</p>
+        <p>Confira sempre a opção escolhida antes de salvar.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Imprimir ficha</h3>
+        <p>Depois que o atendimento for salvo, o botão “Imprimir ficha” fica disponível. Por ele é possível abrir a ficha para imprimir ou salvar em PDF. A ficha pode ser complementada com informações antes da impressão, mas essas informações adicionais não ficam salvas pelo sistema.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Últimos atendimentos</h3>
+        <p>O ícone de relógio ao lado do responsável mostra os três últimos atendimentos lançados pelo usuário. Essa opção ajuda a acessar rapidamente fichas salvas recentemente.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Grupos e Palestras</h3>
+        <p>Em Workshop, Prosen e Palestras, o responsável abre o grupo, preenche os dados principais e pode cadastrar participantes manualmente ou gerar link para preenchimento individual de cada participante, por smartphone. Os participantes preenchidos pelo link aparecerão em uma lista temporária. O responsável deve conferir, validar essa lista e encerrar a atividade ao final.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Cancelar grupo</h3>
+        <p>Se um grupo for aberto por engano, ele pode ser cancelado antes do encerramento. Após cancelar, o responsável poderá iniciar uma nova atividade.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Relatório NAPS</h3>
+        <p>O Relatório NAPS mostra os principais dados da unidade no mês vigente, como atendimentos, faltas, altas, tipos de atendimento, hipóteses de diagnóstico e grupos.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Conferência dos dados</h3>
+        <p>Antes de salvar, confira principalmente R.E., CPF, tipo de atendimento, hipótese de diagnóstico e dados de contato. Essas informações ajudam na localização futura do cadastro e na geração correta dos relatórios.</p>
+      </section>
+
+      <section class="ajuda-item">
+        <h3>Durante o salvamento</h3>
+        <p>Após clicar em salvar, aguarde a mensagem de confirmação. Não feche a página e não inicie outro cadastro enquanto o sistema estiver processando.</p>
+      </section>
+
+      <section class="ajuda-item ajuda-avaliacao-chamada">
+        <h3>Avaliar Sistema</h3>
+        <p>Use este espaço para informar dificuldades, sugestões ou erros percebidos durante o uso do SAIC.</p>
+        <button type="button" class="btn-primary btn-ajuda-avaliar" onclick="abrirAvaliacaoSistema()">Avaliar Sistema</button>
+      </section>
+    </div>
+  </article>
+</div>
+
+<!-- Avaliacao do sistema: coleta retorno simples dos usuarios sem alterar o atendimento. -->
+<div id="avaliacaoOverlay" class="ajuda-overlay" role="dialog" aria-modal="true" aria-labelledby="avaliacaoTitulo" onclick="fecharAvaliacaoPorFora(event)">
+  <article class="ajuda-modal avaliacao-modal">
+    <div class="ajuda-cabecalho">
+      <div>
+        <span>Avaliação</span>
+        <h2 id="avaliacaoTitulo">Avaliar Sistema</h2>
+      </div>
+      <button type="button" class="ajuda-fechar" onclick="fecharAvaliacaoSistema()" aria-label="Fechar avaliação">&times;</button>
+    </div>
+
+    <div class="ajuda-conteudo">
+      <div class="avaliacao-form">
+        <div class="avaliacao-grid">
+          <div>
+            <label for="avaliacaoNotaGeral">Nota geral</label>
+            <select id="avaliacaoNotaGeral">
+              <option value="">Selecione</option>
+              <option value="5">5 - Muito bom</option>
+              <option value="4">4 - Bom</option>
+              <option value="3">3 - Regular</option>
+              <option value="2">2 - Ruim</option>
+              <option value="1">1 - Muito ruim</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="avaliacaoFacilidade">Foi fácil de usar?</label>
+            <select id="avaliacaoFacilidade">
+              <option value="">Selecione</option>
+              <option>Sim</option>
+              <option>Parcialmente</option>
+              <option>Não</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="avaliacaoVelocidade">A velocidade foi adequada?</label>
+            <select id="avaliacaoVelocidade">
+              <option value="">Selecione</option>
+              <option>Sim</option>
+              <option>Parcialmente</option>
+              <option>Não</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="avaliacaoConfiabilidade">As informações pareceram corretas?</label>
+            <select id="avaliacaoConfiabilidade">
+              <option value="">Selecione</option>
+              <option>Sim</option>
+              <option>Parcialmente</option>
+              <option>Não</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="avaliacaoCampoDificil">Qual parte teve mais dificuldade?</label>
+            <select id="avaliacaoCampoDificil">
+              <option value="">Selecione</option>
+              <option>Busca</option>
+              <option>Preenchimento do atendimento</option>
+              <option>Pessoa vinculada</option>
+              <option>Imprimir ficha</option>
+              <option>Grupos e Palestras</option>
+              <option>Relatório NAPS</option>
+              <option>Outro</option>
+            </select>
+          </div>
         </div>
-        <button type="button" class="ajuda-incidente-fechar" onclick="fecharAjudaIncidente()" aria-label="Fechar ajuda">&times;</button>
+
+        <div>
+          <label for="avaliacaoSugestao">O que poderia melhorar?</label>
+          <textarea id="avaliacaoSugestao" maxlength="1000" placeholder="Escreva sua sugestão, se houver"></textarea>
+        </div>
+
+        <div>
+          <label for="avaliacaoErroRelatado">Encontrou algum erro?</label>
+          <textarea id="avaliacaoErroRelatado" maxlength="1000" placeholder="Descreva o erro, se houver"></textarea>
+        </div>
+
+        <div class="avaliacao-acoes">
+          <button id="btnEnviarAvaliacao" type="button" class="btn-success" onclick="enviarAvaliacaoSistema()">Enviar avaliação</button>
+          <button type="button" class="btn-secondary" onclick="fecharAvaliacaoSistema()">Cancelar</button>
+          <span id="statusAvaliacaoSistema" class="avaliacao-status"></span>
+        </div>
       </div>
-      <div class="ajuda-incidente-conteudo">
-        <section class="ajuda-incidente-item">
-          <h3>Dados pessoais e funcionais</h3>
-          <p>Informe o R.E. completo e os dados funcionais do policial. Revise os dados recuperados antes de continuar o registro.</p>
-        </section>
-        <section class="ajuda-incidente-item">
-          <h3>Dados do incidente</h3>
-          <p>Preencha as datas, o local, o tipo do incidente e as demais informa&ccedil;&otilde;es solicitadas. Os campos obrigat&oacute;rios precisam estar completos para salvar.</p>
-        </section>
-        <section class="ajuda-incidente-item">
-          <h3>Equipe e atendimento</h3>
-          <p>Registre os profissionais envolvidos e as provid&ecirc;ncias adotadas. Confira o respons&aacute;vel antes de concluir.</p>
-        </section>
-        <section class="ajuda-incidente-item">
-          <h3>Salvamento e impress&atilde;o</h3>
-          <p>O incidente somente estar&aacute; registrado depois da mensagem de confirma&ccedil;&atilde;o. A ficha para impress&atilde;o permanece dispon&iacute;vel ap&oacute;s o salvamento.</p>
-        </section>
-      </div>
-    </article>
-  </div>
+    </div>
+  </article>
+</div>
 
   <div class="app-shell">
     <aside class="sidebar" aria-label="Incidente Critico">
@@ -1559,7 +1812,7 @@
             <div class="banner-institutional-logo logo-caps"><img src="data:image/jpeg;base64,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" alt="CAPS"></div>
           </div>
           <div class="banner-actions" aria-label="A&ccedil;&otilde;es da p&aacute;gina">
-            <button type="button" class="banner-help-button" onclick="abrirAjudaIncidente()" title="D&uacute;vidas" aria-label="Abrir ajuda">?</button>
+            <button type="button" class="banner-help-button" onclick="abrirAjuda()" title="D&uacute;vidas" aria-label="Abrir ajuda">?</button>
             <div class="banner-menu-wrapper">
               <button type="button" class="banner-menu-trigger" onclick="alternarMenuIncidente(event)" title="Op&ccedil;&otilde;es" aria-label="Abrir op&ccedil;&otilde;es">&#9776;</button>
               <div id="menuOpcoesIncidente" class="banner-menu-opcoes" onmouseleave="fecharMenuIncidente()">
@@ -2133,12 +2386,6 @@
       }
     });
 
-    document.addEventListener("keydown", function(evento) {
-      if (evento.key === "Escape") {
-        fecharAjudaIncidente();
-      }
-    });
-
     function usuarioAdministrador() {
       return usuarioLogado &&
         (usuarioLogado.administrador === true || usuarioLogado.perfil === "administrador");
@@ -2173,21 +2420,131 @@
       });
     }
 
-    function abrirAjudaIncidente() {
-      const overlay = document.getElementById("ajudaIncidenteOverlay");
+    function abrirAjuda() {
+      const overlay = document.getElementById("ajudaOverlay");
       if (overlay) overlay.classList.add("ativo");
     }
 
-    function fecharAjudaIncidente() {
-      const overlay = document.getElementById("ajudaIncidenteOverlay");
+    function fecharAjuda() {
+      const overlay = document.getElementById("ajudaOverlay");
       if (overlay) overlay.classList.remove("ativo");
     }
 
-    function fecharAjudaIncidentePorFora(evento) {
-      if (evento && evento.target && evento.target.id === "ajudaIncidenteOverlay") {
-        fecharAjudaIncidente();
+    function fecharAjudaPorFora(event) {
+      if (event && event.target && event.target.id === "ajudaOverlay") {
+        fecharAjuda();
       }
     }
+
+    function abrirAvaliacaoSistema() {
+      fecharAjuda();
+      limparStatusAvaliacaoSistema();
+
+      const overlay = document.getElementById("avaliacaoOverlay");
+      if (overlay) overlay.classList.add("ativo");
+    }
+
+    function fecharAvaliacaoSistema() {
+      const overlay = document.getElementById("avaliacaoOverlay");
+      if (overlay) overlay.classList.remove("ativo");
+    }
+
+    function fecharAvaliacaoPorFora(event) {
+      if (event && event.target && event.target.id === "avaliacaoOverlay") {
+        fecharAvaliacaoSistema();
+      }
+    }
+
+    function coletarAvaliacaoSistema() {
+      return {
+        notaGeral: document.getElementById("avaliacaoNotaGeral").value,
+        facilidade: document.getElementById("avaliacaoFacilidade").value,
+        velocidade: document.getElementById("avaliacaoVelocidade").value,
+        confiabilidade: document.getElementById("avaliacaoConfiabilidade").value,
+        campoMaisDificil: document.getElementById("avaliacaoCampoDificil").value,
+        sugestao: document.getElementById("avaliacaoSugestao").value,
+        erroRelatado: document.getElementById("avaliacaoErroRelatado").value
+      };
+    }
+
+    function validarAvaliacaoSistema(dados) {
+      if (!dados.notaGeral) return "Informe a nota geral.";
+      if (!dados.facilidade) return "Informe se o sistema foi fácil de usar.";
+      if (!dados.velocidade) return "Informe se a velocidade foi adequada.";
+      if (!dados.confiabilidade) return "Informe se as informações pareceram corretas.";
+      if (!dados.campoMaisDificil) return "Informe qual parte teve mais dificuldade.";
+
+      return "";
+    }
+
+    function enviarAvaliacaoSistema() {
+      const dados = coletarAvaliacaoSistema();
+      const erroValidacao = validarAvaliacaoSistema(dados);
+
+      if (erroValidacao) {
+        definirStatusAvaliacaoSistema(false, erroValidacao, "error");
+        return;
+      }
+
+      if (!tokenGoogle) {
+        definirStatusAvaliacaoSistema(false, "Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
+      definirStatusAvaliacaoSistema(true, "Enviando avaliação...");
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          definirStatusAvaliacaoSistema(false, resposta && resposta.mensagem ? resposta.mensagem : "Avaliação enviada.", "success");
+          limparCamposAvaliacaoSistema();
+        })
+        .withFailureHandler(function(erro) {
+          definirStatusAvaliacaoSistema(false, "Erro: " + (erro && erro.message ? erro.message : erro), "error");
+        })
+        .salvarAvaliacaoSistema(dados, tokenGoogle);
+    }
+
+    function definirStatusAvaliacaoSistema(enviando, texto, tipo) {
+      const botao = document.getElementById("btnEnviarAvaliacao");
+      const status = document.getElementById("statusAvaliacaoSistema");
+
+      if (botao) botao.disabled = !!enviando;
+      if (!status) return;
+
+      status.className = "avaliacao-status" + (tipo ? " " + tipo : "");
+
+      if (enviando) {
+        status.innerHTML = '<span class="mensagem-processando"><span class="spinner-mensagem"></span><span>' + escaparHtml(texto || "Enviando...") + '</span></span>';
+      } else {
+        status.textContent = texto || "";
+      }
+    }
+
+    function limparStatusAvaliacaoSistema() {
+      definirStatusAvaliacaoSistema(false, "", "");
+    }
+
+    function limparCamposAvaliacaoSistema() {
+      [
+        "avaliacaoNotaGeral",
+        "avaliacaoFacilidade",
+        "avaliacaoVelocidade",
+        "avaliacaoConfiabilidade",
+        "avaliacaoCampoDificil",
+        "avaliacaoSugestao",
+        "avaliacaoErroRelatado"
+      ].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo) campo.value = "";
+      });
+    }
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape") {
+        fecharAjuda();
+        fecharAvaliacaoSistema();
+      }
+    });
 
     function alternarMenuIncidente(evento) {
       if (evento) evento.stopPropagation();
@@ -2203,7 +2560,7 @@
 
     function abrirRelatorioNapsIncidente() {
       fecharMenuIncidente();
-      navegarModuloPrincipal("relatorio_naps");
+      abrirPaginaComTokenNovaAba("relatorio_naps");
     }
 
     function abrirPaginaAdministrativaIncidente(pagina) {
@@ -2214,7 +2571,45 @@
         return;
       }
 
-      navegarModuloPrincipal(pagina);
+      abrirPaginaComTokenNovaAba(pagina);
+    }
+
+    function abrirPaginaComTokenNovaAba(pagina) {
+      if (!tokenGoogle || !webAppUrl) {
+        mostrarStatus("Sessao expirada. Acesse novamente pelo formulario.", "error");
+        return;
+      }
+
+      if (navegacaoAlteracoesPendentes) {
+        abrirConfirmacaoNavegacao(function() {
+          abrirPaginaComTokenNovaAba(pagina);
+        });
+        return;
+      }
+
+      fecharMenuIncidente();
+
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = webAppUrl;
+      form.target = "_blank";
+      form.style.display = "none";
+
+      const campoToken = document.createElement("input");
+      campoToken.type = "hidden";
+      campoToken.name = "credential";
+      campoToken.value = tokenGoogle;
+
+      const campoDestino = document.createElement("input");
+      campoDestino.type = "hidden";
+      campoDestino.name = "state";
+      campoDestino.value = pagina;
+
+      form.appendChild(campoToken);
+      form.appendChild(campoDestino);
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
     }
 
     function navegarModuloPrincipal(pagina) {
