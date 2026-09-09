@@ -2559,7 +2559,6 @@ function coletarFiltros() {
           <h3>Relatório Individual</h3>
           ${montarResumoConsultaIndividual(dados, distancia)}
           ${dados.mensagemDistancia ? `<div class="empty-state" style="margin-top:12px;">${escaparHtml(dados.mensagemDistancia)}</div>` : ""}
-          ${montarObservacoesIndividuais(dados)}
         </section>
       `;
     }
