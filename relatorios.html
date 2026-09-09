@@ -2570,8 +2570,6 @@ function coletarFiltros() {
 
     function montarResumoConsultaIndividual(dados, distancia) {
       const nome = destacarRelatorio(formatarTexto(dados.nome));
-      const re = destacarRelatorio(dados.re || "-");
-      const cpf = destacarRelatorio(dados.cpf || "-");
       const unidade = destacarRelatorio(formatarTexto(dados.unidade, "opmAtual"));
       const naps = destacarRelatorio(formatarTexto(dados.naps, "naps"));
       const atendimentos = destacarQuantidadeRelatorio(dados.totalAtendimentos, "atendimento", "atendimentos");
@@ -2590,7 +2588,7 @@ function coletarFiltros() {
 
       return `
         <div class="individual-report">
-          <p>O paciente ${nome}, identificado com R.E. ${re} e CPF ${cpf}, pertencente à unidade ${unidade}, teve ${atendimentos} no período selecionado.</p>
+          <p>O paciente ${nome}, pertencente à unidade ${unidade}, teve ${atendimentos} no período selecionado.</p>
           <p>Teve ${faltas}, obteve ${altas} e registrou ${arquivamentos}.</p>
           <p>${textoDistancia}</p>
           ${ultimoAtendimento}
