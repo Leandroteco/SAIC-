@@ -1817,7 +1817,7 @@ h3,
         <div class="filters-grid">
           <div class="field">
             <label>Busca Individual</label>
-          <input id="buscaLivre" placeholder="CPF completo, R.E. ou nome da pessoa atendida" oninput="mascararBuscaIndividual(this)">
+          <input id="buscaLivre" placeholder="CPF completo ou R.E. completo" oninput="mascararBuscaIndividual(this)" autocomplete="off">
         </div>
 
         <div class="field">
@@ -2536,22 +2536,18 @@ function coletarFiltros() {
         return `
           <section class="table-box wide">
             <h3>Relatório Individual</h3>
-            <div class="empty-state">Use a Busca Individual para visualizar nome, R.E., CPF, unidade, NAPS, atendimentos, faltas, altas e distância aproximada do NAPS que foi atendido.</div>
+            <div class="empty-state">Informe o CPF completo ou o R.E. completo, incluindo o dígito.</div>
           </section>
         `;
       }
 
-      if (dados.status === "sem_resultado") {
+      if (dados.status !== "ok") {
         return `
           <section class="table-box wide">
             <h3>Relatório Individual</h3>
-            <div class="empty-state">${escaparHtml(dados.mensagem || "Nenhum cadastro localizado.")}</div>
+            <div class="empty-state">${escaparHtml(dados.mensagem || "Nenhum cadastro localizado para o CPF ou R.E. informado.")}</div>
           </section>
         `;
-      }
-
-      if (dados.status === "multiplos") {
-        return montarCandidatosBuscaIndividual(dados);
       }
 
       const distancia = dados.distanciaDisponivel
