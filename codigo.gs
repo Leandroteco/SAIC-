@@ -5937,11 +5937,46 @@ function normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelato
   };
 }
 
+function prepararBuscaIndividualRelatorio_(valor) {
+  const texto = String(valor || "").trim();
+
+  if (!texto) return { tipo: "", valor: "", valida: true };
+
+  try {
+    if (/^\d{6}-?[0-9A]$/i.test(texto)) {
+      return { tipo: "re", valor: normalizarReBuscaRapida_(texto), valida: true };
+    }
+
+    return { tipo: "cpf", valor: normalizarCpfBuscaRapida_(texto, false), valida: true };
+  } catch (erro) {
+    return { tipo: "invalida", valor: "", valida: false };
+  }
+}
+
+function registroCorrespondeBuscaIndividual_(registro, busca) {
+  if (!busca || !busca.tipo) return true;
+  if (!busca.valida || busca.tipo === "invalida") return false;
+
+  try {
+    if (busca.tipo === "cpf") {
+      return normalizarCpfBuscaRapida_(registro.cpf, true) === busca.valor;
+    }
+
+    if (busca.tipo === "re") {
+      return normalizarReBuscaRapida_(registro.re) === busca.valor;
+    }
+  } catch (erro) {
+    return false;
+  }
+
+  return false;
+}
+
 function prepararFiltrosRelatorio(filtros) {
   return {
     dataInicial: obterDataInicio(filtros.dataInicial),
     dataFinal: obterDataFim(filtros.dataFinal),
-    buscaLivre: normalizar(filtros.buscaLivre),
+    buscaIndividual: prepararBuscaIndividualRelatorio_(filtros.buscaLivre),
     tipoAtendimento: normalizar(filtros.tipoAtendimento),
     motivo: normalizar(filtros.motivo),
     naps: normalizar(filtros.naps),
@@ -5967,27 +6002,7 @@ function registroPassaFiltrosRelatorio(registro, filtros) {
     if (filtros.dataFinal && registro.dataCadastroData > filtros.dataFinal) return false;
   }
 
-  if (filtros.buscaLivre) {
-    const textoBusca = normalizar([
-      registro.nome,
-      registro.postoGraduacao,
-      registro.re,
-      registro.cpf,
-      registro.tipoAtendimento,
-      registro.motivo,
-      registro.naps,
-      registro.emailCadastro,
-      registro.opmAtual,
-      registro.cidade,
-      registro.bairro,
-      registro.estado,
-      registro.responsavel,
-      registro.situacaoStatus,
-      registro.cep
-    ].join(" "));
-
-    if (!textoBusca.includes(filtros.buscaLivre)) return false;
-  }
+  if (!registroCorrespondeBuscaIndividual_(registro, filtros.buscaIndividual)) return false;
 
   if (!campoIgualRelatorio(registro.tipoAtendimento, filtros.tipoAtendimento, "tipoAtendimento")) return false;
   if (!campoContemRelatorio(registro.motivo, filtros.motivo, "motivo")) return false;
@@ -6904,10 +6919,19 @@ function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss)
     };
   }
 
+  const buscaIndividual = prepararBuscaIndividualRelatorio_(termo);
+
+  if (!buscaIndividual.valida) {
+    return {
+      status: "busca_invalida",
+      mensagem: "Informe o CPF completo ou o R.E. completo, incluindo o digito."
+    };
+  }
+
   if (!filtrados || filtrados.length === 0) {
     return {
       status: "sem_resultado",
-      mensagem: "Nenhum cadastro localizado para a Busca Individual."
+      mensagem: "Nenhum cadastro localizado para o CPF ou R.E. informado."
     };
   }
 
@@ -6916,23 +6940,8 @@ function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss)
 
   if (chaves.length > 1) {
     return {
-      status: "multiplos",
-      mensagem: "Mais de uma pessoa foi localizada. Refine a busca por CPF completo ou R.E.",
-      candidatos: chaves.map(function(chave) {
-        const referencia = obterRegistroMaisRecente(grupos[chave]);
-        const totaisPessoa = contarResumoPessoa(grupos[chave], chave);
-
-        return {
-          nome: referencia.nome || "",
-          re: referencia.re || "",
-          cpf: referencia.cpf || "",
-          unidade: referencia.opmAtual || "",
-          totalAtendimentos: totaisPessoa.atendimentos,
-          totalFaltas: totaisPessoa.faltas,
-          totalAltas: totaisPessoa.altas,
-          totalArquivamentos: totaisPessoa.arquivamentos
-        };
-      }).slice(0, 10)
+      status: "conflito_identificacao",
+      mensagem: "O CPF ou R.E. informado esta associado a mais de uma pessoa. Verifique os cadastros."
     };
   }
 
