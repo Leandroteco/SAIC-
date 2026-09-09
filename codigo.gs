@@ -6707,6 +6707,7 @@ function montarResumoRelatorio(registros) {
   let totalArquivamentos = 0;
   let totalAtendimentos = 0;
   let totalAtendimentosIndividuais = 0;
+  let totalAtendimentosOnline = 0;
   let totalEventosColetivos = 0;
   let pessoasEventos = 0;
   let pessoasGrupos = 0;
@@ -6724,6 +6725,14 @@ function montarResumoRelatorio(registros) {
     }
 
     totalAtendimentos++;
+
+    const modalidadeRegistro = normalizar(
+      registro.modalidadeAtendimento || registro.modalidadeEvento
+    );
+
+    if (modalidadeRegistro === "online") {
+      totalAtendimentosOnline++;
+    }
 
     if (registro.eventoColetivo) {
       const quantidadePessoasEvento = Number(registro.quantidadePessoasEvento || 0);
@@ -6774,6 +6783,7 @@ function montarResumoRelatorio(registros) {
     totalRegistros: registros.length,
     totalAtendimentos: totalAtendimentos,
     totalAtendimentosIndividuais: totalAtendimentosIndividuais,
+    totalAtendimentosOnline: totalAtendimentosOnline,
     totalEventosColetivos: totalEventosColetivos,
     pessoasDistintas: Object.keys(pessoas).length,
     pessoasGrupos: pessoasGrupos,
