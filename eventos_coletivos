@@ -2650,19 +2650,9 @@
         "Workshop"
       ],
       palestra: [
-        "PrAP",
-        "Qualidade de Vida / Inatividade",
-        "Álcool e Outras Drogas",
-        "PPMS",
-        "PROSEN: Relacionamento Conjugal / Interpessoal",
-        "Inteligência Emocional",
-        "Fatores de Risco e de Proteção",
-        "Mudança de Identidade",
-        "CAPS na OPM",
-        "Funcionamento NAPS",
-        "Gestão das Emoções",
-        "Relacionamento Interno no Trabalho",
-        "Pós-Venção"
+        "Valorização da Vida",
+        "Educação financeira",
+        "Sistema de Saúde Mental"
       ]
     };
 
