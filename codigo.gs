@@ -32,6 +32,12 @@ const CABECALHOS_BUSCA_RAPIDA = [
 ];
 const ABA_USUARIOS = "usuarios_sistema";
 const ABA_CEPS_CACHE = "ceps_cache";
+const ABA_CEPS_PENDENTES_MAPA = "cep_pendentes_mapa";
+const MAPA_CEPS_TAMANHO_LOTE = 20;
+const MAPA_CEPS_MAX_TENTATIVAS = 3;
+const MAPA_CEPS_ATRASO_MS = 120000;
+const MAPA_CEPS_PROCESSAMENTO_EXPIRADO_MS = 900000;
+const MAPA_LEITURA_BLOCO_LINHAS = 5000;
 const ABA_RECADOS = "recados_sistema";
 const ABA_EVENTOS_COLETIVOS = "eventos_coletivos";
 const ABA_PARTICIPANTES_EVENTO = "participantes_evento";
@@ -109,6 +115,16 @@ const CABECALHOS_CEPS_CACHE = [
   "longitude",
   "endereco",
   "data_atualizacao"
+];
+
+const CABECALHOS_CEPS_PENDENTES_MAPA = [
+  "cep",
+  "status",
+  "tentativas",
+  "data_inclusao",
+  "data_ultima_tentativa",
+  "mensagem_erro",
+  "data_conclusao"
 ];
 
 const CABECALHOS_RECADOS = [
@@ -5240,6 +5256,57 @@ function formatarDataHoraRelatorioNaps(data) {
   }
 }
 
+function carregarRegistrosMapaCalorPorPeriodo(sheet, filtrosMapa, usuariosPorEmail) {
+  const ultimaLinha = sheet.getLastRow();
+
+  if (ultimaLinha < 2) return [];
+
+  const indices = obterIndicesCabecalhosPadrao(sheet, CABECALHOS_DADOS);
+  const indiceDataCadastro = indices[26];
+  const quantidadeLinhas = ultimaLinha - 1;
+  const datas = sheet.getRange(2, indiceDataCadastro + 1, quantidadeLinhas, 1).getValues();
+  const filtrosPreparados = prepararFiltrosRelatorio(filtrosMapa);
+  const linhasSelecionadas = {};
+  const blocos = {};
+
+  datas.forEach(function(linha, indice) {
+    const dataCadastro = obterData(linha[0]);
+
+    if (!dataCadastro) return;
+    if (filtrosPreparados.dataInicial && dataCadastro < filtrosPreparados.dataInicial) return;
+    if (filtrosPreparados.dataFinal && dataCadastro > filtrosPreparados.dataFinal) return;
+
+    const numeroLinha = indice + 2;
+    const inicioBloco = 2 + Math.floor((numeroLinha - 2) / MAPA_LEITURA_BLOCO_LINHAS) * MAPA_LEITURA_BLOCO_LINHAS;
+    linhasSelecionadas[numeroLinha] = true;
+    blocos[inicioBloco] = true;
+  });
+
+  const quantidadeColunas = Math.max(sheet.getLastColumn(), CABECALHOS_DADOS.length);
+  const registros = [];
+
+  Object.keys(blocos).map(Number).sort(function(a, b) {
+    return a - b;
+  }).forEach(function(inicioBloco) {
+    const quantidade = Math.min(MAPA_LEITURA_BLOCO_LINHAS, ultimaLinha - inicioBloco + 1);
+    const valores = sheet.getRange(inicioBloco, 1, quantidade, quantidadeColunas).getValues();
+
+    valores.forEach(function(linhaAtual, indice) {
+      const numeroLinha = inicioBloco + indice;
+      if (!linhasSelecionadas[numeroLinha]) return;
+
+      const linhaPadrao = normalizarLinhaParaCabecalhoPadrao(linhaAtual, indices);
+      const registro = montarRegistroRelatorio(linhaPadrao, {}, usuariosPorEmail);
+
+      if (registroPassaFiltrosRelatorio(registro, filtrosPreparados)) {
+        registros.push(registro);
+      }
+    });
+  });
+
+  return registros;
+}
+
 function obterDadosMapaCalor(filtros, idToken) {
   validarAdministradorPorToken(idToken);
 
@@ -5247,18 +5314,12 @@ function obterDadosMapaCalor(filtros, idToken) {
   const estrutura = configurarEstruturaPlanilha();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = estrutura.sheetDados;
-  const dados = lerDadosPadrao(sheet, CABECALHOS_DADOS, 1);
   const usuariosPorEmail = carregarUsuariosSistemaPorEmail(ss);
-  const registros = [];
-
-  for (let i = 1; i < dados.length; i++) {
-    registros.push(montarRegistroRelatorio(dados[i], {}, usuariosPorEmail));
-  }
-
-  const filtrosPreparados = prepararFiltrosRelatorio(filtrosMapa);
-  const filtrados = registros.filter(function(registro) {
-    return registroPassaFiltrosRelatorio(registro, filtrosPreparados);
-  });
+  const filtrados = carregarRegistrosMapaCalorPorPeriodo(
+    sheet,
+    filtrosMapa,
+    usuariosPorEmail
+  );
   const faltasFiltradas = filtrados.filter(function(registro) {
     return ehRegistroFalta(registro);
   });
@@ -5382,7 +5443,7 @@ function obterDadosMapaCalor(filtros, idToken) {
     );
   });
 
-  salvarNovasCoordenadasMapa(contextoCoordenadas);
+  const cacheCoordenadas = salvarNovasCoordenadasMapa(contextoCoordenadas);
 
   const regioes = montarRegioesMapaCalor(gruposRegiao, filtrosMapa);
   const residencias = montarResidenciasMapaCalor(gruposResidencia);
@@ -5403,11 +5464,25 @@ function obterDadosMapaCalor(filtros, idToken) {
     cepsGeocodificadosAgora: contextoCoordenadas.geocodificadosAgora,
     limiteGeocodificacaoAtingido: contextoCoordenadas.limiteAtingido
   });
+  const atendimentosMapeados = Math.max(
+    0,
+    atendimentosFiltrados.length - cepsSemCadastro - cepsSemCoordenada
+  );
+
+  resumo.atendimentosMapeados = atendimentosMapeados;
+  resumo.percentualCoberturaMapa = atendimentosFiltrados.length > 0
+    ? (atendimentosMapeados / atendimentosFiltrados.length) * 100
+    : 0;
+  resumo.cepsPendentesUnicos = Object.keys(contextoCoordenadas.cepsPendentesPeriodo).length;
+  resumo.cepsPendentesFila = Number(cacheCoordenadas.totalProcessaveis || 0);
+  resumo.cepsComFalha = Number(cacheCoordenadas.totalComFalha || 0);
+  resumo.cacheCepsEmProcessamento = !!cacheCoordenadas.gatilhoAtivo;
 
   return {
     filtrosAplicados: filtrosMapa,
     periodo: montarPeriodoDashboard(filtrosMapa),
     resumo: resumo,
+    cacheCoordenadas: cacheCoordenadas,
     mapa: {
       centro: { latitude: -22.25, longitude: -48.55, zoom: 7 },
       calor: regioes.slice(0, 120),
@@ -5511,15 +5586,33 @@ function adicionarNapsReferenciaMapa(mapa, nomeNaps, cepNaps, coordenadas) {
   }
 }
 
-function criarContextoCoordenadasMapa(ss) {
-  const sheet = obterOuCriarAba(ss || SpreadsheetApp.getActiveSpreadsheet(), ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
-  const dados = lerDadosPadrao(sheet, CABECALHOS_CEPS_CACHE, 1);
-  const mapa = {};
+function configurarEstruturaCepsMapa(ss) {
+  const planilha = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const sheetCache = obterOuCriarAba(planilha, ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+  const sheetPendentes = obterOuCriarAba(
+    planilha,
+    ABA_CEPS_PENDENTES_MAPA,
+    CABECALHOS_CEPS_PENDENTES_MAPA
+  );
 
-  for (let i = 1; i < dados.length; i++) {
-    const cep = somenteNumeros(dados[i][0]);
-    const latitude = Number(String(dados[i][1] || "").replace(",", "."));
-    const longitude = Number(String(dados[i][2] || "").replace(",", "."));
+  CABECALHOS_CEPS_PENDENTES_MAPA.forEach(function(cabecalho) {
+    garantirCabecalhoFinal(sheetPendentes, cabecalho);
+  });
+
+  return {
+    sheetCache: sheetCache,
+    sheetPendentes: sheetPendentes
+  };
+}
+
+function carregarMapaCepsCache(sheetCache) {
+  const mapa = {};
+  const linhas = lerDadosPadrao(sheetCache, CABECALHOS_CEPS_CACHE, 2);
+
+  linhas.forEach(function(linha) {
+    const cep = somenteNumeros(linha[0]);
+    const latitude = Number(String(linha[1] || "").replace(",", "."));
+    const longitude = Number(String(linha[2] || "").replace(",", "."));
 
     if (cep.length === 8 && !isNaN(latitude) && !isNaN(longitude)) {
       mapa[cep] = {
@@ -5527,46 +5620,303 @@ function criarContextoCoordenadasMapa(ss) {
         longitude: longitude
       };
     }
-  }
+  });
+
+  return mapa;
+}
+
+function carregarMapaCepsPendentes(sheetPendentes) {
+  const mapa = {};
+  const linhas = lerDadosPadrao(sheetPendentes, CABECALHOS_CEPS_PENDENTES_MAPA, 2);
+
+  linhas.forEach(function(linha, indice) {
+    const cep = somenteNumeros(linha[0]);
+
+    if (cep.length === 8) {
+      mapa[cep] = {
+        numeroLinha: indice + 2,
+        linha: linha
+      };
+    }
+  });
+
+  return mapa;
+}
+
+function enfileirarCepPendenteMapa(cep, contexto) {
+  if (!contexto) return;
+
+  const cepNormalizado = somenteNumeros(cep);
+  if (cepNormalizado.length !== 8) return;
+
+  contexto.cepsPendentesPeriodo[cepNormalizado] = true;
+
+  if (contexto.pendentesConhecidos[cepNormalizado]) return;
+
+  contexto.pendentesConhecidos[cepNormalizado] = true;
+  contexto.novosPendentes.push([
+    formatarCEP(cepNormalizado),
+    "pendente",
+    0,
+    new Date(),
+    "",
+    "",
+    ""
+  ]);
+}
+
+function obterResumoFilaCepsMapa(sheetPendentes) {
+  const linhas = lerDadosPadrao(sheetPendentes, CABECALHOS_CEPS_PENDENTES_MAPA, 2);
+  let totalProcessaveis = 0;
+  let totalComFalha = 0;
+  let totalConcluidos = 0;
+
+  linhas.forEach(function(linha) {
+    const cep = somenteNumeros(linha[0]);
+    const status = normalizar(linha[1]) || "pendente";
+    const tentativas = Number(linha[2] || 0);
+
+    if (cep.length !== 8) return;
+
+    if (status === "concluido") {
+      totalConcluidos++;
+    } else if (status === "erro" && tentativas >= MAPA_CEPS_MAX_TENTATIVAS) {
+      totalComFalha++;
+    } else {
+      totalProcessaveis++;
+    }
+  });
 
   return {
-    sheet: sheet,
-    mapa: mapa,
-    novasLinhas: [],
-    geocodificadosAgora: 0,
-    limiteGeocodificacao: 120,
-    limiteAtingido: false
+    totalProcessaveis: totalProcessaveis,
+    totalComFalha: totalComFalha,
+    totalConcluidos: totalConcluidos,
+    gatilhoAtivo: existeGatilhoFilaCepsMapa()
   };
 }
 
+function existeGatilhoFilaCepsMapa() {
+  try {
+    return ScriptApp.getProjectTriggers().some(function(gatilho) {
+      return gatilho.getHandlerFunction() === "processarFilaCepsMapa";
+    });
+  } catch (erro) {
+    return false;
+  }
+}
+
+function garantirGatilhoFilaCepsMapa() {
+  try {
+    if (existeGatilhoFilaCepsMapa()) return true;
+
+    ScriptApp.newTrigger("processarFilaCepsMapa")
+      .timeBased()
+      .after(MAPA_CEPS_ATRASO_MS)
+      .create();
+
+    return true;
+  } catch (erro) {
+    console.error("Nao foi possivel agendar a fila de CEPs do mapa: " + erro.message);
+    return false;
+  }
+}
+
+function removerGatilhosFilaCepsMapa() {
+  try {
+    ScriptApp.getProjectTriggers().forEach(function(gatilho) {
+      if (gatilho.getHandlerFunction() === "processarFilaCepsMapa") {
+        ScriptApp.deleteTrigger(gatilho);
+      }
+    });
+  } catch (erro) {
+    console.error("Nao foi possivel limpar os gatilhos da fila de CEPs: " + erro.message);
+  }
+}
+
+function cepPendentePodeSerProcessadoMapa(linha, agora) {
+  const status = normalizar(linha[1]) || "pendente";
+  const tentativas = Number(linha[2] || 0);
+
+  if (status === "concluido") return false;
+  if (status === "erro" && tentativas >= MAPA_CEPS_MAX_TENTATIVAS) return false;
+  if (status !== "processando") return true;
+
+  const ultimaTentativa = obterData(linha[4]);
+  return !ultimaTentativa ||
+    agora.getTime() - ultimaTentativa.getTime() >= MAPA_CEPS_PROCESSAMENTO_EXPIRADO_MS;
+}
+
+function processarFilaCepsMapa() {
+  removerGatilhosFilaCepsMapa();
+
+  const estrutura = configurarEstruturaCepsMapa();
+  const sheetCache = estrutura.sheetCache;
+  const sheetPendentes = estrutura.sheetPendentes;
+  const lock = LockService.getScriptLock();
+  const selecionados = [];
+  let lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const agora = new Date();
+    const pendentes = carregarMapaCepsPendentes(sheetPendentes);
+
+    Object.keys(pendentes).some(function(cep) {
+      if (selecionados.length >= MAPA_CEPS_TAMANHO_LOTE) return true;
+
+      const item = pendentes[cep];
+      const linha = item.linha.slice();
+
+      if (!cepPendentePodeSerProcessadoMapa(linha, agora)) return false;
+
+      linha[1] = "processando";
+      linha[2] = Number(linha[2] || 0) + 1;
+      linha[4] = agora;
+      linha[5] = "";
+      atualizarLinhaPadrao(
+        sheetPendentes,
+        item.numeroLinha,
+        linha,
+        CABECALHOS_CEPS_PENDENTES_MAPA
+      );
+
+      selecionados.push({
+        cep: cep,
+        numeroLinha: item.numeroLinha,
+        tentativas: linha[2]
+      });
+
+      return false;
+    });
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+
+  if (selecionados.length < 1) {
+    return obterResumoFilaCepsMapa(sheetPendentes);
+  }
+
+  const resultados = selecionados.map(function(item, indice) {
+    let coordenadas = null;
+    let mensagemErro = "";
+
+    try {
+      coordenadas = geocodificarCEPMapa(item.cep);
+      if (!coordenadas) mensagemErro = "Coordenadas nao localizadas.";
+    } catch (erro) {
+      mensagemErro = erro && erro.message ? erro.message : "Falha ao consultar o CEP.";
+    }
+
+    if (indice < selecionados.length - 1) Utilities.sleep(200);
+
+    return {
+      cep: item.cep,
+      numeroLinha: item.numeroLinha,
+      tentativas: item.tentativas,
+      coordenadas: coordenadas,
+      mensagemErro: mensagemErro
+    };
+  });
+
+  lockObtido = false;
+
+  try {
+    lock.waitLock(30000);
+    lockObtido = true;
+
+    const cacheExistente = carregarMapaCepsCache(sheetCache);
+    const novasLinhasCache = [];
+
+    resultados.forEach(function(resultado) {
+      const linhaPendente = lerLinhaPadrao(
+        sheetPendentes,
+        resultado.numeroLinha,
+        CABECALHOS_CEPS_PENDENTES_MAPA
+      );
+
+      if (resultado.coordenadas) {
+        if (!cacheExistente[resultado.cep]) {
+          novasLinhasCache.push([
+            formatarCEP(resultado.cep),
+            resultado.coordenadas.latitude,
+            resultado.coordenadas.longitude,
+            resultado.coordenadas.endereco || formatarCEP(resultado.cep) + ", Brasil",
+            new Date()
+          ]);
+          cacheExistente[resultado.cep] = true;
+        }
+
+        linhaPendente[1] = "concluido";
+        linhaPendente[5] = "";
+        linhaPendente[6] = new Date();
+      } else {
+        linhaPendente[1] = resultado.tentativas >= MAPA_CEPS_MAX_TENTATIVAS
+          ? "erro"
+          : "pendente";
+        linhaPendente[5] = String(resultado.mensagemErro || "Falha ao consultar o CEP.").substring(0, 500);
+      }
+
+      atualizarLinhaPadrao(
+        sheetPendentes,
+        resultado.numeroLinha,
+        linhaPendente,
+        CABECALHOS_CEPS_PENDENTES_MAPA
+      );
+    });
+
+    if (novasLinhasCache.length > 0) {
+      gravarLinhasPadraoAbaixo(sheetCache, novasLinhasCache, CABECALHOS_CEPS_CACHE);
+    }
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+
+  const resumo = obterResumoFilaCepsMapa(sheetPendentes);
+
+  if (resumo.totalProcessaveis > 0) {
+    resumo.gatilhoAtivo = garantirGatilhoFilaCepsMapa();
+  }
+
+  resumo.processadosNoLote = resultados.length;
+  resumo.mensagem = resumo.totalProcessaveis > 0
+    ? "Lote de CEPs processado. A fila continuara em segundo plano."
+    : "Fila de coordenadas concluida.";
+
+  return resumo;
+}
+
+function criarContextoCoordenadasMapa(ss) {
+  const estrutura = configurarEstruturaCepsMapa(ss);
+  const mapa = carregarMapaCepsCache(estrutura.sheetCache);
+  const pendentes = carregarMapaCepsPendentes(estrutura.sheetPendentes);
+  const pendentesConhecidos = {};
+
+  Object.keys(pendentes).forEach(function(cep) {
+    pendentesConhecidos[cep] = true;
+  });
+
+  return {
+    sheet: estrutura.sheetCache,
+    sheetPendentes: estrutura.sheetPendentes,
+    mapa: mapa,
+    pendentesConhecidos: pendentesConhecidos,
+    novosPendentes: [],
+    cepsPendentesPeriodo: {},
+    geocodificadosAgora: 0,
+    limiteAtingido: false
+  };
+}
 function obterCoordenadasCEPMapa(cep, contexto) {
   const cepNormalizado = somenteNumeros(cep);
 
   if (cepNormalizado.length !== 8) return null;
   if (contexto.mapa[cepNormalizado]) return contexto.mapa[cepNormalizado];
 
-  if (contexto.geocodificadosAgora >= contexto.limiteGeocodificacao) {
-    contexto.limiteAtingido = true;
-    return null;
-  }
-
-  const coordenadas = geocodificarCEPMapa(cepNormalizado);
-
-  if (!coordenadas) return null;
-
-  contexto.mapa[cepNormalizado] = coordenadas;
-  contexto.geocodificadosAgora++;
-  contexto.novasLinhas.push([
-    formatarCEP(cepNormalizado),
-    coordenadas.latitude,
-    coordenadas.longitude,
-    coordenadas.endereco || formatarCEP(cepNormalizado) + ", Brasil",
-    new Date()
-  ]);
-
-  return coordenadas;
+  enfileirarCepPendenteMapa(cepNormalizado, contexto);
+  return null;
 }
-
 function geocodificarCEPMapa(cepNormalizado) {
   const endereco = formatarCEP(cepNormalizado) + ", Brasil";
   const resposta = Maps.newGeocoder()
@@ -5594,11 +5944,54 @@ function geocodificarCEPMapa(cepNormalizado) {
 }
 
 function salvarNovasCoordenadasMapa(contexto) {
-  if (!contexto || !contexto.novasLinhas || contexto.novasLinhas.length === 0) return;
+  if (!contexto || !contexto.sheetPendentes) {
+    return {
+      totalProcessaveis: 0,
+      totalComFalha: 0,
+      totalConcluidos: 0,
+      gatilhoAtivo: false
+    };
+  }
 
-  gravarLinhasPadraoAbaixo(contexto.sheet, contexto.novasLinhas, CABECALHOS_CEPS_CACHE);
+  const lock = LockService.getScriptLock();
+  let lockObtido = false;
+
+  try {
+    if (contexto.novosPendentes.length > 0) {
+      lock.waitLock(30000);
+      lockObtido = true;
+
+      const existentes = carregarMapaCepsPendentes(contexto.sheetPendentes);
+      const novasLinhas = contexto.novosPendentes.filter(function(linha) {
+        const cep = somenteNumeros(linha[0]);
+
+        if (!cep || existentes[cep]) return false;
+        existentes[cep] = true;
+        return true;
+      });
+
+      if (novasLinhas.length > 0) {
+        gravarLinhasPadraoAbaixo(
+          contexto.sheetPendentes,
+          novasLinhas,
+          CABECALHOS_CEPS_PENDENTES_MAPA
+        );
+      }
+    }
+  } finally {
+    if (lockObtido) lock.releaseLock();
+  }
+
+  contexto.novosPendentes = [];
+
+  const resumo = obterResumoFilaCepsMapa(contexto.sheetPendentes);
+
+  if (resumo.totalProcessaveis > 0) {
+    resumo.gatilhoAtivo = garantirGatilhoFilaCepsMapa();
+  }
+
+  return resumo;
 }
-
 function criarGrupoRegiaoMapa(chave, cepBase, bairro, cidade, estado) {
   return {
     chave: chave,
