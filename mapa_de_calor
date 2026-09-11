@@ -1841,7 +1841,6 @@ body.mapa-tema-escuro .btn-map-theme:hover {
               </div>
               <div class="filter-actions">
                 <button id="btnAtualizarMapa" type="button" class="btn-primary" onclick="carregarMapaCalor()">Atualizar</button>
-                <button id="btnSincronizarCeps" type="button" class="btn-cache" onclick="sincronizarCepsMapa()">Sincronizar coordenadas</button>
               </div>
             </div>
 
@@ -2164,42 +2163,6 @@ body.mapa-tema-escuro .btn-map-theme:hover {
         .obterDadosMapaCalor(coletarFiltrosMapa(), tokenGoogle);
     }
 
-    function sincronizarCepsMapa() {
-      const botao = document.getElementById("btnSincronizarCeps");
-      const status = document.getElementById("statusCoberturaMapa");
-
-      botao.disabled = true;
-      status.className = "status-line cache-processing";
-      status.innerText = "Processando um lote de coordenadas e preparando a continuidade automática...";
-
-      if (!window.google || !google.script || !google.script.run) {
-        botao.disabled = false;
-        status.className = "status-line error";
-        status.innerText = "Abra esta página pelo Apps Script para sincronizar as coordenadas.";
-        return;
-      }
-
-      google.script.run
-        .withSuccessHandler(function(resposta) {
-          const resultado = resposta || {};
-
-          botao.disabled = false;
-          status.className = resultado.totalPendente > 0
-            ? "status-line cache-processing"
-            : "status-line cache-complete";
-          status.innerText = resultado.mensagem || "Sincronização de coordenadas atualizada.";
-
-          carregarMapaCalor();
-        })
-        .withFailureHandler(function(erro) {
-          botao.disabled = false;
-          status.className = "status-line error";
-          status.innerText = "Erro ao iniciar a sincronização: " +
-            (erro && erro.message ? erro.message : erro);
-        })
-        .iniciarAtualizacaoCacheCepsMapa(tokenGoogle);
-    }
-
     function renderizarMapaCalor(dados) {
       const resumo = dados.resumo || {};
       const mapa = dados.mapa || {};
@@ -2217,7 +2180,6 @@ body.mapa-tema-escuro .btn-map-theme:hover {
 
     function atualizarCoberturaMapa(resumo, cache) {
       const alvo = document.getElementById("statusCoberturaMapa");
-      const botao = document.getElementById("btnSincronizarCeps");
       const totalPeriodo = Number(resumo.totalAtendimentos || 0);
       const total = Number(
         resumo.totalAtendimentosAmostra !== undefined
@@ -2292,15 +2254,6 @@ body.mapa-tema-escuro .btn-map-theme:hover {
         ? "status-line cache-processing"
         : "status-line cache-complete";
       alvo.innerText = partes.join(" ");
-
-      const haPendencias = pendentesFila > 0 || pendentesPeriodo > 0;
-
-      botao.disabled = !haPendencias;
-      botao.innerText = processando && pendentesFila > 0
-        ? "Processar próximo lote"
-        : haPendencias
-          ? "Sincronizar coordenadas"
-          : "Coordenadas atualizadas";
     }
 
     function atualizarMetricasMapa(resumo, mapa) {
