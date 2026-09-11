@@ -139,7 +139,10 @@ const CABECALHOS_EVENTOS_COLETIVOS = [
   "data_criacao",
   "data_fechamento",
   "observacoes",
-  "modalidade"
+  "modalidade",
+  "id_turma_prosen",
+  "turma_prosen_numero",
+  "turma_prosen_ano"
 ];
 
 const CABECALHOS_PARTICIPANTES_EVENTO = [
@@ -332,6 +335,9 @@ function configurarEstruturaPlanilha() {
   const sheetRecados = obterOuCriarAba(ss, ABA_RECADOS, CABECALHOS_RECADOS);
   const sheetEventosColetivos = obterOuCriarAba(ss, ABA_EVENTOS_COLETIVOS, CABECALHOS_EVENTOS_COLETIVOS);
   garantirCabecalhoFinal(sheetEventosColetivos, "modalidade");
+  garantirCabecalhoFinal(sheetEventosColetivos, "id_turma_prosen");
+  garantirCabecalhoFinal(sheetEventosColetivos, "turma_prosen_numero");
+  garantirCabecalhoFinal(sheetEventosColetivos, "turma_prosen_ano");
   const sheetParticipantesEvento = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO, CABECALHOS_PARTICIPANTES_EVENTO);
   const sheetParticipantesEventoIndice = obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO_INDICE, CABECALHOS_PARTICIPANTES_EVENTO_INDICE);
   const sheetIncidenteCritico = obterOuCriarAba(ss, ABA_INCIDENTE_CRITICO, CABECALHOS_INCIDENTE_CRITICO);
@@ -372,6 +378,9 @@ function configurarEstruturaEventosColetivos(incluirIndiceParticipantes) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetEventosColetivos = obterOuCriarAba(ss, ABA_EVENTOS_COLETIVOS, CABECALHOS_EVENTOS_COLETIVOS);
   garantirCabecalhoFinal(sheetEventosColetivos, "modalidade");
+  garantirCabecalhoFinal(sheetEventosColetivos, "id_turma_prosen");
+  garantirCabecalhoFinal(sheetEventosColetivos, "turma_prosen_numero");
+  garantirCabecalhoFinal(sheetEventosColetivos, "turma_prosen_ano");
   const estrutura = {
     sheetEventosColetivos: sheetEventosColetivos,
     sheetParticipantesEvento: obterOuCriarAba(ss, ABA_PARTICIPANTES_EVENTO, CABECALHOS_PARTICIPANTES_EVENTO)
@@ -2527,6 +2536,314 @@ function criarMedidorDesempenhoSAIC(nomeOperacao) {
   };
 }
 
+function listarTurmasProsen(ano, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const anoProsen = Number(ano);
+
+  if (!Number.isInteger(anoProsen) || anoProsen < 1900 || anoProsen > 9999) {
+    throw new Error("Informe um ano valido para consultar as turmas PROSEN.");
+  }
+
+  const napsUsuario = String(usuario.naps || "").trim().toUpperCase();
+
+  if (!napsUsuario) {
+    throw new Error("NAPS do usuario nao localizado.");
+  }
+
+  const estrutura = configurarEstruturaEventosColetivos(false);
+  const sheetEventos = estrutura.sheetEventosColetivos;
+  const sheetParticipantes = estrutura.sheetParticipantesEvento;
+  const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2);
+  const turmasPorId = {};
+  const numerosOcupados = {};
+
+  linhas.forEach(function(linha) {
+    if (!linhaEhProsenDoNaps(linha, napsUsuario)) return;
+    if (normalizar(linha[10]) === "cancelado") return;
+
+    const numero = Number(linha[17]);
+    const anoLinha = Number(linha[18]);
+
+    if (Number.isInteger(numero) && numero >= 1 && numero <= 10 && anoLinha === anoProsen) {
+      numerosOcupados[numero] = true;
+    }
+
+    if (normalizar(linha[10]) !== "salvo") return;
+
+    const turma = montarTurmaProsenDaLinha(linha);
+    if (!turma || turma.ano !== anoProsen) return;
+
+    if (!turmasPorId[turma.id]) {
+      turmasPorId[turma.id] = {
+        id: turma.id,
+        numero: turma.numero,
+        ano: turma.ano,
+        rotulo: turma.rotulo,
+        ultimaData: "",
+        participantes: 0,
+        encontros: 0,
+        idUltimoEvento: "",
+        ordemUltimoEvento: -1
+      };
+    }
+
+    const resumo = turmasPorId[turma.id];
+    const data = obterData(linha[2]);
+    const ordem = data ? data.getTime() : 0;
+    resumo.encontros++;
+
+    if (ordem >= resumo.ordemUltimoEvento) {
+      resumo.ultimaData = formatarDataIsoProsen(linha[2]);
+      resumo.idUltimoEvento = String(linha[0] || "").trim();
+      resumo.ordemUltimoEvento = ordem;
+    }
+  });
+
+  const turmas = Object.keys(turmasPorId).map(function(idTurma) {
+    const resumo = turmasPorId[idTurma];
+    resumo.participantes = resumo.idUltimoEvento
+      ? listarParticipantesEventoPorId(sheetParticipantes, resumo.idUltimoEvento).length
+      : 0;
+
+    return {
+      id: resumo.id,
+      numero: resumo.numero,
+      ano: resumo.ano,
+      rotulo: resumo.rotulo,
+      ultimaData: resumo.ultimaData,
+      participantes: resumo.participantes,
+      encontros: resumo.encontros
+    };
+  }).sort(function(a, b) {
+    return a.numero - b.numero;
+  });
+
+  let proximoNumero = null;
+
+  for (let numero = 1; numero <= 10; numero++) {
+    if (!numerosOcupados[numero]) {
+      proximoNumero = numero;
+      break;
+    }
+  }
+
+  return {
+    sucesso: true,
+    turmas: turmas,
+    proximoNumero: proximoNumero
+  };
+}
+
+function obterTurmaProsen(idTurma, idToken) {
+  const usuario = validarUsuarioPorToken(idToken);
+  const id = String(idTurma || "").trim();
+
+  if (!id) {
+    throw new Error("Turma PROSEN nao informada.");
+  }
+
+  const napsUsuario = String(usuario.naps || "").trim().toUpperCase();
+  const estrutura = configurarEstruturaEventosColetivos(false);
+  const sheetEventos = estrutura.sheetEventosColetivos;
+  const sheetParticipantes = estrutura.sheetParticipantesEvento;
+  const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2);
+  const encontros = linhas.filter(function(linha) {
+    const turma = montarTurmaProsenDaLinha(linha);
+
+    return turma &&
+      turma.id === id &&
+      linhaEhProsenDoNaps(linha, napsUsuario) &&
+      normalizar(linha[10]) === "salvo";
+  });
+
+  if (encontros.length < 1) {
+    throw new Error("Turma PROSEN nao localizada neste NAPS.");
+  }
+
+  let linhaMaisRecente = encontros[0];
+  let ordemMaisRecente = obterData(linhaMaisRecente[2]);
+  ordemMaisRecente = ordemMaisRecente ? ordemMaisRecente.getTime() : 0;
+
+  encontros.forEach(function(linha) {
+    const data = obterData(linha[2]);
+    const ordem = data ? data.getTime() : 0;
+
+    if (ordem >= ordemMaisRecente) {
+      linhaMaisRecente = linha;
+      ordemMaisRecente = ordem;
+    }
+  });
+
+  const turma = montarTurmaProsenDaLinha(linhaMaisRecente);
+  const participantes = listarParticipantesEventoPorId(
+    sheetParticipantes,
+    String(linhaMaisRecente[0] || "").trim()
+  );
+
+  return {
+    sucesso: true,
+    turma: {
+      id: turma.id,
+      numero: turma.numero,
+      ano: turma.ano,
+      rotulo: turma.rotulo,
+      ultimaData: formatarDataIsoProsen(linhaMaisRecente[2]),
+      participantes: participantes.length,
+      encontros: encontros.length
+    },
+    participantes: participantes
+  };
+}
+
+function linhaEhProsenDoNaps(linha, naps) {
+  return normalizarTipoEventoColetivo(linha[1]) === "grupo" &&
+    normalizar(linha[6]) === "prosen" &&
+    normalizar(linha[3]) === normalizar(naps);
+}
+
+function prepararTurmaProsenEvento(dados, tipoEvento, tema) {
+  if (tipoEvento !== "grupo" || normalizar(tema) !== "prosen") return null;
+
+  const informada = dados && dados.turmaProsen;
+
+  if (!informada) {
+    throw new Error("Selecione uma turma PROSEN.");
+  }
+
+  const numero = Number(informada.numero);
+  const ano = Number(informada.ano);
+  const id = String(informada.id || "").trim();
+  let modo = normalizar(informada.modo);
+
+  if (modo !== "nova" && modo !== "existente") {
+    modo = id ? "existente" : "nova";
+  }
+
+  if (!Number.isInteger(numero) || numero < 1 || numero > 10) {
+    throw new Error("Numero da turma PROSEN invalido.");
+  }
+
+  if (!Number.isInteger(ano) || ano < 1900 || ano > 9999) {
+    throw new Error("Ano da turma PROSEN invalido.");
+  }
+
+  if (modo === "existente" && !id) {
+    throw new Error("Turma PROSEN existente nao identificada.");
+  }
+
+  return {
+    modo: modo,
+    id: id,
+    numero: numero,
+    ano: ano,
+    rotulo: numero + "/" + ano
+  };
+}
+
+function validarEVincularTurmaProsenEvento(sheetEventos, evento, idEventoAtual) {
+  if (!evento.turmaProsen) return;
+
+  const turmaInformada = evento.turmaProsen;
+  const idEvento = String(idEventoAtual || "").trim();
+  const naps = evento.napsAtendimento;
+  const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2).filter(function(linha) {
+    return linhaEhProsenDoNaps(linha, naps) && normalizar(linha[10]) !== "cancelado";
+  });
+  let turmaAtual = null;
+  let referenciaId = null;
+  let referenciaSalva = null;
+
+  linhas.forEach(function(linha) {
+    const turmaLinha = montarTurmaProsenDaLinha(linha);
+    if (!turmaLinha) return;
+
+    if (idEvento && String(linha[0] || "").trim() === idEvento) {
+      turmaAtual = turmaLinha;
+    }
+
+    if (turmaInformada.id && turmaLinha.id === turmaInformada.id) {
+      referenciaId = turmaLinha;
+      if (normalizar(linha[10]) === "salvo") referenciaSalva = turmaLinha;
+    }
+  });
+
+  if (turmaAtual) {
+    if ((turmaInformada.id && turmaInformada.id !== turmaAtual.id) ||
+        turmaInformada.numero !== turmaAtual.numero ||
+        turmaInformada.ano !== turmaAtual.ano) {
+      throw new Error("A turma PROSEN do evento em aberto nao pode ser alterada.");
+    }
+
+    evento.turmaProsen = turmaAtual;
+    return;
+  }
+
+  if (turmaInformada.modo === "existente") {
+    if (!referenciaSalva) {
+      throw new Error("Turma PROSEN existente nao localizada neste NAPS.");
+    }
+
+    if (turmaInformada.numero !== referenciaSalva.numero || turmaInformada.ano !== referenciaSalva.ano) {
+      throw new Error("Os dados da turma PROSEN nao conferem.");
+    }
+
+    evento.turmaProsen = referenciaSalva;
+    return;
+  }
+
+  if (referenciaId) {
+    throw new Error("Esta turma PROSEN ja existe. Selecione a turma existente.");
+  }
+
+  const conflito = linhas.some(function(linha) {
+    const turmaLinha = montarTurmaProsenDaLinha(linha);
+    return turmaLinha &&
+      turmaLinha.numero === turmaInformada.numero &&
+      turmaLinha.ano === turmaInformada.ano;
+  });
+
+  if (conflito) {
+    throw new Error("A turma PROSEN " + turmaInformada.rotulo + " ja esta registrada ou reservada neste NAPS.");
+  }
+
+  evento.turmaProsen = {
+    modo: "existente",
+    id: turmaInformada.id || gerarIdSeguro("TPR"),
+    numero: turmaInformada.numero,
+    ano: turmaInformada.ano,
+    rotulo: turmaInformada.rotulo
+  };
+}
+
+function montarTurmaProsenDaLinha(linhaEvento) {
+  const id = String(linhaEvento[16] || "").trim();
+  const numero = Number(linhaEvento[17]);
+  const ano = Number(linhaEvento[18]);
+
+  if (!id || !Number.isInteger(numero) || numero < 1 || numero > 10 ||
+      !Number.isInteger(ano) || ano < 1900 || ano > 9999) {
+    return null;
+  }
+
+  return {
+    modo: "existente",
+    id: id,
+    numero: numero,
+    ano: ano,
+    rotulo: numero + "/" + ano
+  };
+}
+
+function formatarDataIsoProsen(valor) {
+  const data = obterData(valor);
+
+  if (!data) return "";
+
+  return String(data.getFullYear()).padStart(4, "0") + "-" +
+    String(data.getMonth() + 1).padStart(2, "0") + "-" +
+    String(data.getDate()).padStart(2, "0");
+}
+
 function criarRascunhoEventoColetivo(dados, idToken) {
   const usuario = validarUsuarioPorToken(idToken);
   const lock = LockService.getScriptLock();
@@ -2575,6 +2892,8 @@ function criarRascunhoEventoColetivo(dados, idToken) {
       throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
     }
 
+    validarEVincularTurmaProsenEvento(sheetEventos, evento, idEvento);
+
     if (existente) {
       if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
         throw new Error("Voce nao tem permissao para alterar este evento.");
@@ -2622,6 +2941,7 @@ function criarRascunhoEventoColetivo(dados, idToken) {
       idEvento: idEvento,
       tokenEvento: tokenEvento,
       linkParticipante: montarLinkParticipanteEvento(tokenEvento),
+      turmaProsen: evento.turmaProsen,
       mensagem: "Link do evento preparado com sucesso."
     };
   } finally {
@@ -2685,6 +3005,8 @@ function salvarEventoColetivo(dados, participantesManuais, idToken) {
     if (existente && rascunhoAberto && String(existente.linha[0] || "").trim() !== String(rascunhoAberto.linha[0] || "").trim()) {
       throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
     }
+
+    validarEVincularTurmaProsenEvento(sheetEventos, evento, idEvento);
 
     if (existente) {
       if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
@@ -2814,7 +3136,8 @@ function salvarEventoColetivo(dados, participantesManuais, idToken) {
       idEvento: idEvento,
       mensagem: obterRotuloTipoEventoColetivo(evento.tipoEvento) + " salvo com sucesso.",
       quantidadeValidada: quantidadeValidada,
-      participantesValidadosDoLink: participantesValidadosDoLink
+      participantesValidadosDoLink: participantesValidadosDoLink,
+      turmaProsen: evento.turmaProsen
     };
   } finally {
     if (lockObtido) {
@@ -2937,6 +3260,8 @@ function salvarRascunhoParticipantesManuais(dadosEvento, participantesManuais, i
       throw new Error("Voce ja possui outro evento em aberto. Finalize-o antes de iniciar outro.");
     }
 
+    validarEVincularTurmaProsenEvento(sheetEventos, evento, idEvento);
+
     if (existente) {
       if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
         throw new Error("Voce nao tem permissao para alterar este evento.");
@@ -3053,6 +3378,7 @@ function salvarRascunhoParticipantesManuais(dadosEvento, participantesManuais, i
       idEvento: idEvento,
       tokenEvento: tokenEvento,
       linkParticipante: tokenEvento ? montarLinkParticipanteEvento(tokenEvento) : "",
+      turmaProsen: evento.turmaProsen,
       participantesAdicionados: participantesValidos.linhas.map(function(linha) {
         return montarParticipanteEventoRetorno(linha);
       }),
@@ -3116,6 +3442,8 @@ function registrarParticipanteEventoManual(dadosEvento, participante, idToken) {
     if (existente && rascunhoAberto && String(existente.linha[0] || "").trim() !== String(rascunhoAberto.linha[0] || "").trim()) {
       throw new Error("Voce ja possui um evento em aberto. Salve o evento atual antes de iniciar outro.");
     }
+
+    validarEVincularTurmaProsenEvento(sheetEventos, evento, idEvento);
 
     if (existente) {
       if (!usuarioPodeAcessarEventoColetivo(usuario, existente.linha)) {
@@ -3266,7 +3594,8 @@ function cancelarEventoColetivo(dadosEvento, idToken) {
       motivo: existente.linha[7],
       quantidadeInformada: existente.linha[8],
       observacoes: observacoes,
-      modalidade: existente.linha[15] || ""
+      modalidade: existente.linha[15] || "",
+      turmaProsen: montarTurmaProsenDaLinha(existente.linha)
     };
     const participantesCancelados = cancelarParticipantesEvento(
       sheetParticipantes,
@@ -3553,11 +3882,13 @@ function prepararDadosEventoColetivo(dados, usuario) {
     motivo: normalizar(dados.motivo),
     quantidadeInformada: quantidadeInformada || "",
     observacoes: normalizar(dados.observacoes),
-    modalidade: tipoEvento === "palestra" ? modalidade : ""
+    modalidade: tipoEvento === "palestra" ? modalidade : "",
+    turmaProsen: prepararTurmaProsenEvento(dados, tipoEvento, tema)
   };
 }
-
 function montarLinhaEventoColetivo(idEvento, evento, quantidadeValidada, status, tokenEvento, dataCriacao, dataFechamento) {
+  const turmaProsen = evento.turmaProsen || null;
+
   return [
     idEvento,
     evento.tipoEvento,
@@ -3574,10 +3905,12 @@ function montarLinhaEventoColetivo(idEvento, evento, quantidadeValidada, status,
     dataCriacao,
     dataFechamento,
     evento.observacoes,
-    evento.modalidade || ""
+    evento.modalidade || "",
+    turmaProsen ? turmaProsen.id : "",
+    turmaProsen ? turmaProsen.numero : "",
+    turmaProsen ? turmaProsen.ano : ""
   ];
 }
-
 function prepararParticipantesManuaisEvento(participantesManuais, idEvento, tipoEvento, usuario) {
   const participantes = [];
   const linhas = [];
@@ -3938,6 +4271,7 @@ function montarRascunhoEventoColetivoRetorno(linhaEvento, sheetParticipantes) {
     dataCriacao: formatarDataHoraBrasil(linhaEvento[12]),
     observacoes: linhaEvento[14] || "",
     modalidade: linhaEvento[15] || "",
+    turmaProsen: montarTurmaProsenDaLinha(linhaEvento),
     participantes: sheetParticipantes ? listarParticipantesEventoPorId(sheetParticipantes, idEvento) : []
   };
 }
