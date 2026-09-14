@@ -471,7 +471,7 @@
     .grid-atendimento-complementar {
       display: grid;
       gap: 16px;
-      grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+      grid-template-columns: minmax(230px, 1.15fr) minmax(190px, 0.8fr) minmax(260px, 1.05fr);
       margin-top: 16px;
     }
 
@@ -3567,6 +3567,19 @@ body {
         </button>
       </div>
     </div>
+
+    <div>
+      <label>Relação com violência doméstica</label>
+      <input id="relacaoViolenciaDomestica" type="hidden" required>
+      <div id="grupoRelacaoViolenciaDomestica" class="modalidade-segmentada" role="group" aria-label="Relação com violência doméstica">
+        <button type="button" class="modalidade-botao" data-relacao-violencia="sim" onclick="selecionarRelacaoViolenciaDomestica('sim')">
+          Sim
+        </button>
+        <button type="button" class="modalidade-botao" data-relacao-violencia="nao" onclick="selecionarRelacaoViolenciaDomestica('nao')">
+          Não
+        </button>
+      </div>
+    </div>
   </div>
 
   <label>Observações</label>
@@ -4732,7 +4745,7 @@ function definirModalidadeAtendimento(valor, registrarAlteracao) {
 
   if (campo) campo.value = modalidade;
 
-  document.querySelectorAll(".modalidade-botao").forEach(function(botao) {
+  document.querySelectorAll("#grupoModalidadeAtendimento .modalidade-botao").forEach(function(botao) {
     botao.classList.toggle("ativo", botao.dataset.modalidade === modalidade);
   });
 
@@ -4746,6 +4759,33 @@ function definirModalidadeAtendimento(valor, registrarAlteracao) {
 
 function selecionarModalidadeAtendimento(valor) {
   definirModalidadeAtendimento(valor, true);
+}
+
+function definirRelacaoViolenciaDomestica(valor, registrarAlteracao) {
+  const campo = document.getElementById("relacaoViolenciaDomestica");
+  const grupo = document.getElementById("grupoRelacaoViolenciaDomestica");
+  const relacao = String(valor || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  if (campo) campo.value = relacao;
+
+  document.querySelectorAll("#grupoRelacaoViolenciaDomestica .modalidade-botao").forEach(function(botao) {
+    botao.classList.toggle("ativo", botao.dataset.relacaoViolencia === relacao);
+  });
+
+  if (grupo) limparErroVisualCampo(grupo);
+
+  if (registrarAlteracao) {
+    marcarAlteracaoPendenteAtendimento();
+    definirAtendimentoImpressao("");
+  }
+}
+
+function selecionarRelacaoViolenciaDomestica(valor) {
+  definirRelacaoViolenciaDomestica(valor, true);
 }
 
 // Impede datas com ano invalido ou acima de 4 digitos.
@@ -4879,6 +4919,8 @@ function salvar() {
   const campoFormaApresentacao = document.getElementById("formaApresentacao");
   const campoModalidadeAtendimento = document.getElementById("modalidadeAtendimento");
   const grupoModalidadeAtendimento = document.getElementById("grupoModalidadeAtendimento");
+  const campoRelacaoViolenciaDomestica = document.getElementById("relacaoViolenciaDomestica");
+  const grupoRelacaoViolenciaDomestica = document.getElementById("grupoRelacaoViolenciaDomestica");
   const campoEmail = document.getElementById("email");
   const campoObservacoes = document.getElementById("observacoes");
   const campoResponsavel = document.getElementById("responsavel");
@@ -4894,6 +4936,7 @@ function salvar() {
   limparErroCampo(campoMotivoOutros);
   limparErroCampo(campoFormaApresentacao);
   limparErroVisualCampo(grupoModalidadeAtendimento);
+  limparErroVisualCampo(grupoRelacaoViolenciaDomestica);
   limparErroCampo(campoEmail);
   limparErroCampo(campoObservacoes);
   limparErroCampo(campoResponsavel);
@@ -4944,6 +4987,14 @@ function salvar() {
       ? grupoModalidadeAtendimento.querySelector("button")
       : null;
     camposComErro.push(primeiroBotaoModalidade || campoModalidadeAtendimento);
+  }
+
+  if (campoRelacaoViolenciaDomestica.value.trim() === "") {
+    marcarCampoObrigatorio(grupoRelacaoViolenciaDomestica);
+    const primeiroBotaoRelacao = grupoRelacaoViolenciaDomestica
+      ? grupoRelacaoViolenciaDomestica.querySelector("button")
+      : null;
+    camposComErro.push(primeiroBotaoRelacao || campoRelacaoViolenciaDomestica);
   }
 
   const campoOPM = document.getElementById("opmAtual");
@@ -5002,6 +5053,7 @@ function salvar() {
     motivo: document.getElementById("motivo").value,
     formaApresentacao: document.getElementById("formaApresentacao").value,
     modalidadeAtendimento: document.getElementById("modalidadeAtendimento").value,
+    relacaoViolenciaDomestica: document.getElementById("relacaoViolenciaDomestica").value,
     re: document.getElementById("re").value,
     postoGraduacao: document.getElementById("postoGraduacao").value,
     nome: document.getElementById("nome").value,
@@ -5070,6 +5122,7 @@ function limparFormulario(opcoes) {
   document.getElementById("listaVinculados").innerHTML = "";
   document.getElementById("areaVinculados").style.display = "none";
   definirModalidadeAtendimento("", false);
+  definirRelacaoViolenciaDomestica("", false);
   atualizarCampoDataInatividade();
   atualizarObrigatoriedadeEmail();
   aplicarEstiloTipoAtendimento();
@@ -5469,6 +5522,7 @@ function preencherFormulario(r) {
   document.getElementById("dataInatividade").value = "";
   document.getElementById("formaApresentacao").value = "";
   definirModalidadeAtendimento("", false);
+  definirRelacaoViolenciaDomestica("", false);
   document.getElementById("cep").value = "";
   document.getElementById("rua").value = capitalizarTexto(r.rua);
   document.getElementById("numero").value = "";
