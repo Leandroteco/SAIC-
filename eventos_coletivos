@@ -2018,9 +2018,9 @@
       <nav class="side-nav">
         <button type="button" onclick="navegarModuloPrincipal('atendimento')"><span class="nav-dot"></span>Atendimento</button>
         <div class="side-nav-module">
-          <button type="button" class="active" onclick="navegarModuloPrincipal('eventos_coletivos')"><span class="nav-dot"></span>Grupos e Palestras</button>
+          <button type="button" class="active" onclick="navegarModuloPrincipal('eventos_coletivos')"><span class="nav-dot"></span>Grupos Reflexivos e Palestras</button>
           <div class="side-nav-submenu" aria-label="Tipos de eventos coletivos">
-            <button id="nav-grupo" type="button" class="nav-subitem active" onclick="selecionarEvento('grupo')">Grupos</button>
+            <button id="nav-grupo" type="button" class="nav-subitem active" onclick="selecionarEvento('grupo')">Grupos Reflexivos</button>
             <button id="nav-palestra" type="button" class="nav-subitem" onclick="selecionarEvento('palestra')">Palestras</button>
           </div>
         </div>
@@ -2037,8 +2037,8 @@
       <header class="page-banner">
         <div class="banner-content">
           <div>
-            <p class="eyebrow">Grupos e Palestras</p>
-            <h1 id="tituloPagina">Grupos</h1>
+            <p class="eyebrow">Grupos Reflexivos e Palestras</p>
+            <h1 id="tituloPagina">Grupos Reflexivos</h1>
             <span>Sistema de Gest&atilde;o dos Atendimentos do SiSMen</span>
           </div>
           <div class="banner-institutional-logos" aria-label="Institui&ccedil;&otilde;es">
@@ -2070,7 +2070,7 @@
         <div class="grid-3 event-grid">
           <div>
             <label for="tipoEvento">Tipo de evento</label>
-            <input id="tipoEvento" type="text" value="Grupo" readonly>
+            <input id="tipoEvento" type="text" value="Grupos Reflexivos" readonly>
           </div>
 
           <div>
@@ -2627,12 +2627,12 @@
     let acaoConfirmadaNavegacao = null;
 
     const rotulosEvento = {
-      grupo: "Grupo",
+      grupo: "Grupos Reflexivos",
       palestra: "Palestra"
     };
 
     const titulosEvento = {
-      grupo: "Grupos",
+      grupo: "Grupos Reflexivos",
       palestra: "Palestras"
     };
 
