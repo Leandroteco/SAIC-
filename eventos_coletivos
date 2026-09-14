@@ -462,6 +462,10 @@
       grid-column: span 2;
     }
 
+    .tema-outro-panel {
+      margin-top: 12px;
+    }
+
     .event-grid,
     .participant-form-grid {
       gap: 12px;
@@ -2089,6 +2093,10 @@
             <select id="tema" required>
               <option value="">Selecione</option>
             </select>
+            <div id="temaOutroPanel" class="tema-outro-panel" hidden>
+              <label for="temaOutro">Especifique o tema *</label>
+              <input id="temaOutro" type="text" maxlength="200" placeholder="Digite o tema">
+            </div>
           </div>
 
           <div id="modalidadePanel" class="quantity-panel">
@@ -2637,23 +2645,8 @@
     };
 
     const temasPorTipoEvento = {
-      grupo: [
-        "PPAD",
-        "PROSEN",
-        "Grupo de Conflitos Internos",
-        "Grupo PrAP",
-        "Grupo de Família",
-        "Grupo de Mulheres",
-        "Estresse",
-        "Intervenção Focal APMBB",
-        "Conflitos Profissionais",
-        "Workshop"
-      ],
-      palestra: [
-        "Valorização da Vida",
-        "Educação financeira",
-        "Sistema de Saúde Mental"
-      ]
+      grupo: ["PROSEN", "OUTROS"],
+      palestra: ["PROSEN", "OUTROS"]
     };
 
     window.addEventListener("load", function() {
@@ -2870,7 +2863,10 @@
       return true;
     }
 
-    document.getElementById("tema").addEventListener("change", alterarTemaProsen);
+    document.getElementById("tema").addEventListener("change", function() {
+      alterarTemaProsen();
+      atualizarCampoTemaOutro();
+    });
     document.getElementById("dataEvento").addEventListener("change", function() {
       if (ehProsenTela() && modoTurmaProsen() === "nova" && !(idEventoAtual && turmaProsenAtual && turmaProsenAtual.id)) {
         document.getElementById("prosenAno").value = anoEventoProsen();
@@ -2912,7 +2908,7 @@
       atualizarNavegacaoEvento();
       atualizarOpcoesTemaEvento(
         tipoEventoAtual,
-        preservarEstado === true ? document.getElementById("tema").value : ""
+        preservarEstado === true ? obterTemaEvento() : ""
       );
 
       document.getElementById("tituloPagina").innerText = titulo;
@@ -2953,7 +2949,12 @@
     function atualizarOpcoesTemaEvento(tipo, valorSelecionado) {
       const campoTema = document.getElementById("tema");
       const temas = temasPorTipoEvento[tipo] || [];
-      const valorAtual = valorSelecionado !== undefined ? valorSelecionado : campoTema.value;
+      const valorAtual = String(
+        valorSelecionado !== undefined ? valorSelecionado : obterTemaEvento()
+      ).trim();
+      const temaEhOpcao = temas.indexOf(valorAtual) !== -1;
+      const temaSelecionado = valorAtual && !temaEhOpcao ? "OUTROS" : valorAtual;
+      const temaOutro = temaSelecionado === "OUTROS" && valorAtual !== "OUTROS" ? valorAtual : "";
 
       campoTema.innerHTML = '<option value="">Selecione</option>';
 
@@ -2964,14 +2965,27 @@
         campoTema.appendChild(option);
       });
 
-      if (valorAtual && temas.indexOf(valorAtual) === -1) {
-        const optionAtual = document.createElement("option");
-        optionAtual.value = valorAtual;
-        optionAtual.textContent = valorAtual;
-        campoTema.appendChild(optionAtual);
-      }
+      campoTema.value = temaSelecionado || "";
+      atualizarCampoTemaOutro(temaOutro);
+    }
 
-      campoTema.value = valorAtual || "";
+    function atualizarCampoTemaOutro(valor) {
+      const campoTema = document.getElementById("tema");
+      const painel = document.getElementById("temaOutroPanel");
+      const campoOutro = document.getElementById("temaOutro");
+      const exibir = campoTema.value === "OUTROS";
+
+      painel.hidden = !exibir;
+      campoOutro.required = exibir;
+
+      if (valor !== undefined) campoOutro.value = exibir ? String(valor || "") : "";
+      if (!exibir) campoOutro.value = "";
+    }
+
+    function obterTemaEvento() {
+      return document.getElementById("tema").value === "OUTROS"
+        ? valorCampo("temaOutro")
+        : valorCampo("tema");
     }
 
     function mostrarCarregamentoNavegacao(texto) {
@@ -3362,6 +3376,8 @@
     function limparIdentificacaoEvento() {
       document.getElementById("dataEvento").value = formatarDataBrasilInput(new Date());
       document.getElementById("tema").value = "";
+      document.getElementById("temaOutro").value = "";
+      atualizarCampoTemaOutro();
       limparTurmaProsen();
       document.getElementById("observacoes").value = "";
       document.getElementById("quantidadeInformada").value = "";
@@ -3416,7 +3432,7 @@
         napsAtendimento: document.getElementById("napsAtendimento").value,
         responsavelNome: usuarioLogado ? usuarioLogado.nome : "",
         responsavelEmail: usuarioLogado ? usuarioLogado.email : "",
-        tema: document.getElementById("tema").value,
+        tema: obterTemaEvento(),
         motivo: "",
         quantidadeInformada: document.getElementById("quantidadeInformada").value,
         modalidadeEvento: document.getElementById("modalidadeEvento").value,
@@ -4431,17 +4447,28 @@
     });
 
     function validarTemaEvento(mensagem) {
-      if (valorCampo("tema")) return validarTurmaProsenTela();
+      const temaSelecionado = valorCampo("tema");
 
-      mostrarStatus(mensagem || "Informe o tema.", "error");
-      document.getElementById("tema").focus();
-      return false;
+      if (!temaSelecionado) {
+        mostrarStatus(mensagem || "Informe o tema.", "error");
+        document.getElementById("tema").focus();
+        return false;
+      }
+
+      if (temaSelecionado === "OUTROS" && !valorCampo("temaOutro")) {
+        mostrarStatus("Especifique o tema antes de continuar.", "error");
+        document.getElementById("temaOutro").focus();
+        return false;
+      }
+
+      return validarTurmaProsenTela();
     }
 
     function setCarregando(carregando, mensagem) {
       operacaoEventoProsen = carregando;
       atualizarControlesProsen();
       document.getElementById("tema").disabled = carregando;
+      document.getElementById("temaOutro").disabled = carregando;
       document.getElementById("dataEvento").disabled = carregando;
       document.getElementById("btnAbrirCadastroParticipante").disabled = carregando;
       document.getElementById("btnGerarLink").disabled = carregando;
