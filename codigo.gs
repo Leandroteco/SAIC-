@@ -3876,6 +3876,8 @@ function prepararDadosEventoColetivo(dados, usuario) {
     throw new Error("Informe o tema do evento.");
   }
 
+  validarTemaPalestraEvento(tipoEvento, tema, usuario);
+
   if (tipoEvento === "palestra" && quantidadeInformada < 1) {
     throw new Error("Informe a quantidade de participantes da palestra.");
   }
@@ -3902,6 +3904,32 @@ function prepararDadosEventoColetivo(dados, usuario) {
     turmaProsen: prepararTurmaProsenEvento(dados, tipoEvento, tema)
   };
 }
+function validarTemaPalestraEvento(tipoEvento, tema, usuario) {
+  if (tipoEvento !== "palestra") return;
+
+  const temaNormalizado = normalizar(tema);
+  const temasPermitidos = [
+    "valorizacao da vida",
+    "educacao financeira",
+    "sistema de saude mental",
+    "violencia domestica",
+    "pos vencao"
+  ];
+
+  if (temasPermitidos.indexOf(temaNormalizado) === -1) {
+    throw new Error("Tema de palestra invalido.");
+  }
+
+  if (temaNormalizado === "pos vencao" && !usuarioPertenceNapsCapsEvento(usuario)) {
+    throw new Error("O tema Pos Vencao e exclusivo do NAPS/CAPS.");
+  }
+}
+
+function usuarioPertenceNapsCapsEvento(usuario) {
+  const chaveNaps = normalizar(usuario && usuario.naps).replace(/[^a-z0-9]/g, "");
+  return chaveNaps === "napscaps" || chaveNaps === "capsnaps";
+}
+
 function montarLinhaEventoColetivo(idEvento, evento, quantidadeValidada, status, tokenEvento, dataCriacao, dataFechamento) {
   const turmaProsen = evento.turmaProsen || null;
 
