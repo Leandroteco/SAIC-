@@ -52,20 +52,56 @@
     }
 
     .login-box {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff 0%, #f5f7f7 100%);
+      border: 1px solid #d9dddc;
+      border-radius: 0 0 10px 10px;
       box-shadow: var(--shadow);
-      margin: 60px auto;
-      max-width: 480px;
-      padding: 28px;
+      margin: 10vh auto 0;
+      max-width: 450px;
+      overflow: hidden;
+      padding: 38px 36px 34px;
+      position: relative;
       text-align: center;
+      width: min(450px, calc(100% - 32px));
+    }
+
+    .login-box::before,
+    .login-box::after {
+      content: "";
+      left: 0;
+      pointer-events: none;
+      position: absolute;
+      width: 100%;
+    }
+
+    .login-box::before {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary) 62%, transparent 100%);
+      clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+      height: 9px;
+      top: 0;
+    }
+
+    .login-box::after {
+      background: linear-gradient(90deg, transparent 0%, #555d60 42%, #555d60 100%);
+      bottom: 0;
+      clip-path: polygon(0 78%, 100% 0, 100% 100%, 0 100%);
+      height: 9px;
+    }
+
+    .login-logo {
+      border: 3px solid var(--primary);
+      border-radius: 999px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      height: 82px;
+      object-fit: cover;
+      width: 82px;
     }
 
     .login-box h2 {
       border: 0;
-      color: var(--primary);
-      margin: 0 0 10px;
+      color: #1f2933;
+      font-size: 28px;
+      margin: 14px 0 4px;
       padding: 0;
     }
 
@@ -2583,8 +2619,8 @@ body {
 <body>
 <!-- Tela de login: aparece quando o Apps Script ainda nao recebeu um token valido do Google. -->
 <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
-  <h2>SiSMen</h2>
-  <p>Entre com sua Conta Google para acessar o sistema.</p>
+  <img id="loginLogoSismen" class="login-logo" alt="SiSMen">
+  <h2>SAIC</h2>
   <div id="g_id_onload"
      data-client_id="<?= googleClientId ?>"
      data-login_uri="<?= webAppUrl ?>"
@@ -2719,7 +2755,7 @@ body {
               <button type="button" class="home-module-card" onclick="abrirEventosColetivos()">
                 <div class="home-module-icon">G</div>
                 <div>
-                  <h3 class="home-module-title">Grupos e Palestras</h3>
+                  <h3 class="home-module-title">Grupos Reflexivos e Palestras</h3>
                 </div>
                 <p class="home-module-text">Registro dos participantes, link para preenchimento individual, valida&ccedil;&atilde;o e encerramento.</p>
               </button>
@@ -3609,10 +3645,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
   document.getElementById("telaLogin").style.display = autorizado ? "none" : "block";
   document.getElementById("conteudoSistema").style.display = autorizado ? "block" : "none";
+  sincronizarLogosTelaInicial();
 
   if (autorizado) {
     configurarMenuPorPerfil();
-    sincronizarLogosTelaInicial();
     atualizarContextoTelaInicial();
     if (deveAbrirAtendimentoInicial()) {
       mostrarTelaAtendimento();
@@ -3693,6 +3729,7 @@ function marcarNavegacaoAtiva(modulo) {
 }
 
 function sincronizarLogosTelaInicial() {
+  copiarImagemTelaInicial(".brand-mark.preview-brand-logo img", "loginLogoSismen");
   copiarImagemTelaInicial(".brand-mark.preview-brand-logo img", "homeLogoSismen");
   copiarImagemTelaInicial(".preview-logo-card.logo-ssp img", "homeLogoSSP");
   copiarImagemTelaInicial(".preview-logo-card.logo-pm img", "homeLogoPM");
