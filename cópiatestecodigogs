@@ -1039,9 +1039,7 @@ function renderizarPaginaParticipanteEvento(tokenEvento) {
 
 function validarLoginGoogle(idToken) {
   const usuario = validarUsuarioPorToken(idToken);
-if (modoSemLoginTesteAtivo() && idToken === TOKEN_USUARIO_TESTE) {
-  return obterUsuarioTeste();
-}
+
   return {
     autorizado: true,
     email: usuario.email,
@@ -6228,8 +6226,2425 @@ function montarRegioesMapaCalor(gruposRegiao, filtros) {
   return regioes;
 }
 
-function montarResid[Truncated]
+function montarResidenciasMapaCalor(gruposResidencia) {
+  return Object.keys(gruposResidencia)
+    .map(function(chave) {
+      const item = gruposResidencia[chave];
 
+      return {
+        cep: item.cep,
+        regiao: item.cep,
+        bairro: item.bairro,
+        cidade: item.cidade,
+        estado: item.estado,
+        latitude: arredondarCoordenadaMapa(item.latitude),
+        longitude: arredondarCoordenadaMapa(item.longitude),
+        atendimentos: item.atendimentos,
+        pessoasDistintas: Object.keys(item.pessoas).length,
+        napsMaisProximo: obterNomeMaisFrequenteMapa(item.napsMaisProximoContagem),
+        distanciaNapsMaisProximoKm: mediaArredondadaMapa(
+          item.somaDistanciaNapsMaisProximo,
+          item.totalDistanciaNapsMaisProximo
+        )
+      };
+    })
+    .sort(function(a, b) {
+      if (b.atendimentos !== a.atendimentos) return b.atendimentos - a.atendimentos;
+      return normalizar(a.cep).localeCompare(normalizar(b.cep));
+    });
+}
+
+function obterNomeMaisFrequenteMapa(contagem) {
+  let melhorNome = "";
+  let melhorTotal = 0;
+
+  Object.keys(contagem || {}).forEach(function(nome) {
+    const total = Number(contagem[nome] || 0);
+
+    if (total > melhorTotal || (total === melhorTotal && normalizar(nome).localeCompare(normalizar(melhorNome)) < 0)) {
+      melhorNome = nome;
+      melhorTotal = total;
+    }
+  });
+
+  return melhorNome;
+}
+
+function montarNapsMapaCalor(cargaNaps) {
+  return Object.keys(cargaNaps)
+    .map(function(chave) {
+      const item = cargaNaps[chave];
+
+      return {
+        naps: item.naps,
+        cepNaps: item.cepNaps,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        atendimentos: item.atendimentos,
+        pessoasDistintas: Object.keys(item.pessoas).length,
+        distanciaMediaKm: mediaArredondadaMapa(item.somaDistancia, item.totalComDistancia),
+        atendimentosDistantes: item.distantes
+      };
+    })
+    .sort(function(a, b) {
+      if (b.atendimentos !== a.atendimentos) return b.atendimentos - a.atendimentos;
+      if (b.distanciaMediaKm !== a.distanciaMediaKm) return b.distanciaMediaKm - a.distanciaMediaKm;
+      return normalizar(a.naps).localeCompare(normalizar(b.naps));
+    });
+}
+
+function montarResumoMapaCalor(base) {
+  return {
+    totalAtendimentos: base.totalAtendimentos || 0,
+    totalFaltas: base.totalFaltas || 0,
+    pessoasDistintas: base.pessoasDistintas || 0,
+    regioesMapeadas: base.regioesMapeadas || 0,
+    distanciaMediaAtualKm: base.distanciaMediaAtualKm || 0,
+    distanciaMediaNapsMaisProximoKm: base.distanciaMediaNapsMaisProximoKm || 0,
+    maiorDistanciaNapsKm: base.maiorDistanciaNapsKm || 0,
+    melhorGanhoMedioKm: base.melhorGanhoMedioKm || 0,
+    totalNaps: base.totalNaps || 0,
+    cepsSemCadastro: base.cepsSemCadastro || 0,
+    cepsSemCoordenada: base.cepsSemCoordenada || 0,
+    registrosSemNaps: base.registrosSemNaps || 0,
+    cepsGeocodificadosAgora: base.cepsGeocodificadosAgora || 0,
+    limiteGeocodificacaoAtingido: !!base.limiteGeocodificacaoAtingido
+  };
+}
+
+function montarAvisosMapaCalor(resumo) {
+  const avisos = [];
+
+  if (resumo.cepsGeocodificadosAgora > 0) {
+    avisos.push("Foram adicionados " + resumo.cepsGeocodificadosAgora + " CEPs ao cache de coordenadas.");
+  }
+
+  if (resumo.limiteGeocodificacaoAtingido) {
+    avisos.push("Ha muitos CEPs novos. Atualize novamente para completar o cache sem travar a execucao.");
+  }
+
+  if (resumo.cepsSemCadastro > 0) {
+    avisos.push(resumo.cepsSemCadastro + " atendimento(s) sem CEP de residencia no periodo.");
+  }
+
+  if (resumo.cepsSemCoordenada > 0) {
+    avisos.push(resumo.cepsSemCoordenada + " atendimento(s) ainda sem coordenada calculada para o CEP.");
+  }
+
+  if (resumo.registrosSemNaps > 0) {
+    avisos.push(resumo.registrosSemNaps + " atendimento(s) sem CEP do NAPS para calcular distancia atual.");
+  }
+
+  return avisos;
+}
+
+function mediaArredondadaMapa(soma, total) {
+  if (!total) return 0;
+
+  return arredondarUmaCasa(soma / total);
+}
+
+function arredondarCoordenadaMapa(valor) {
+  return Math.round(Number(valor || 0) * 1000000) / 1000000;
+}
+
+function montarPeriodoDashboard(filtros) {
+  return {
+    dataInicial: filtros.dataInicial,
+    dataFinal: filtros.dataFinal,
+    rotulo: formatarDataBrasil(filtros.dataInicial) + " a " + formatarDataBrasil(filtros.dataFinal)
+  };
+}
+
+function montarResumoDashboard(registros, filtros) {
+  const resumoRelatorio = montarResumoRelatorio(registros);
+  const opms = {};
+  const diasComAtendimento = {};
+  let atendimentosEmergenciais = 0;
+  let atendimentosIndividuais = 0;
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+    if (ehRegistroArquivamento(registro)) return;
+
+    const tipo = normalizar(registro.tipoAtendimento);
+    const opm = String(registro.opmAtual || "").trim();
+    const dataIso = registro.dataCadastroIso || "";
+
+    if (tipo.includes("emergencial")) atendimentosEmergenciais++;
+    if (tipo.includes("individual")) atendimentosIndividuais++;
+    if (opm) opms[opm] = true;
+    if (dataIso) diasComAtendimento[dataIso] = true;
+  });
+
+  const diasPeriodo = calcularDiasPeriodoDashboard(filtros);
+  const mediaDiaria = diasPeriodo > 0
+    ? Math.round((resumoRelatorio.totalAtendimentos / diasPeriodo) * 10) / 10
+    : 0;
+
+  return {
+    totalAtendimentos: resumoRelatorio.totalAtendimentos,
+    totalAtendimentosIndividuais: resumoRelatorio.totalAtendimentosIndividuais,
+    totalEventosColetivos: resumoRelatorio.totalEventosColetivos,
+    pessoasDistintas: resumoRelatorio.pessoasDistintas,
+    pessoasGrupos: resumoRelatorio.pessoasGrupos,
+    pessoasPalestras: resumoRelatorio.pessoasPalestras,
+    pessoasEventos: resumoRelatorio.pessoasEventos,
+    pessoasTotalGeral: resumoRelatorio.pessoasTotalGeral,
+    totalFaltas: resumoRelatorio.totalFaltas,
+    totalAltas: resumoRelatorio.totalAltas,
+    totalArquivamentos: resumoRelatorio.totalArquivamentos,
+    atendimentosEmergenciais: atendimentosEmergenciais,
+    atendimentosIndividuais: atendimentosIndividuais,
+    atendimentosFamiliaresOuGrupo: resumoRelatorio.atendimentosFamiliaresOuGrupo,
+    atendimentosComVinculos: resumoRelatorio.atendimentosComVinculos,
+    totalVinculos: resumoRelatorio.totalVinculos,
+    retornos: resumoRelatorio.retornos,
+    opmsDistintas: Object.keys(opms).length,
+    diasComAtendimento: Object.keys(diasComAtendimento).length,
+    mediaDiaria: mediaDiaria
+  };
+}
+
+function calcularDiasPeriodoDashboard(filtros) {
+  const inicio = obterDataInicio(filtros.dataInicial);
+  const fim = obterDataFim(filtros.dataFinal);
+
+  if (!inicio || !fim || fim < inicio) return 0;
+
+  return Math.floor((fim.getTime() - inicio.getTime()) / 86400000) + 1;
+}
+
+function montarGraficosDashboard(registros, filtros) {
+  return {
+    porTipo: topDistribuicaoDashboard(contarPorCampo(registros, "tipoAtendimento"), 8),
+    porMotivo: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 10),
+    porOPM: topDistribuicaoDashboard(contarPorCampo(registros, "opmAtual"), 10),
+    porNAPS: topDistribuicaoDashboard(contarPorCampo(registros, "naps"), 60),
+    comparativoNAPS: montarComparativoNapsDashboard(registros),
+    porNAPSAtendimentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "atendimentos"), 60),
+    porNAPSFaltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "faltas"), 60),
+    porNAPSAltas: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "altas"), 60),
+    porNAPSArquivamentos: topDistribuicaoDashboard(contarPorNapsDashboard(registros, "arquivamentos"), 60),
+    porSituacao: topDistribuicaoDashboard(contarPorCampo(registros, "situacaoStatus"), 8),
+    porSexo: topDistribuicaoDashboard(contarPorCampo(registros, "sexo"), 8),
+    porFaixaEtaria: ordenarFaixaEtariaDashboard(contarPorCampo(registros, "faixaEtaria")),
+    evolucao: montarEvolucaoDashboard(registros, filtros)
+  };
+}
+
+function montarComparativoNapsDashboard(registros) {
+  const mapa = {};
+
+  registros.forEach(function(registro) {
+    const naps = String(registro.naps || "nao informado").trim() || "nao informado";
+
+    if (!mapa[naps]) {
+      mapa[naps] = {
+        rotulo: naps,
+        atendimentos: 0,
+        faltas: 0,
+        altas: 0,
+        arquivamentos: 0,
+        total: 0
+      };
+    }
+
+    if (ehRegistroFalta(registro)) {
+      mapa[naps].faltas++;
+    } else if (ehRegistroArquivamento(registro)) {
+      mapa[naps].arquivamentos++;
+    } else {
+      mapa[naps].atendimentos++;
+    }
+
+    if (ehRegistroAlta(registro)) {
+      mapa[naps].altas++;
+    }
+
+    mapa[naps].total++;
+  });
+
+  return Object.keys(mapa)
+    .map(function(chave) {
+      return mapa[chave];
+    })
+    .sort(function(a, b) {
+      if (b.total !== a.total) return b.total - a.total;
+      return normalizar(a.rotulo).localeCompare(normalizar(b.rotulo));
+    });
+}
+
+function contarPorNapsDashboard(registros, tipoContagem) {
+  const contagem = {};
+
+  registros.forEach(function(registro) {
+    const falta = ehRegistroFalta(registro);
+    const alta = ehRegistroAlta(registro);
+    const arquivamento = ehRegistroArquivamento(registro);
+
+    if (tipoContagem === "atendimentos" && (falta || arquivamento)) return;
+    if (tipoContagem === "faltas" && !falta) return;
+    if (tipoContagem === "altas" && !alta) return;
+    if (tipoContagem === "arquivamentos" && !arquivamento) return;
+
+    const naps = String(registro.naps || "nao informado").trim() || "nao informado";
+    contagem[naps] = (contagem[naps] || 0) + 1;
+  });
+
+  return contagem;
+}
+
+function montarRankingsDashboard(registros) {
+  return {
+    motivos: topDistribuicaoDashboard(contarPorCampo(registros, "motivo"), 10),
+    opms: topDistribuicaoDashboard(contarPorCampo(registros, "opmAtual"), 10),
+    responsaveis: topDistribuicaoDashboard(contarPorCampo(registros, "responsavel"), 10)
+  };
+}
+
+function topDistribuicaoDashboard(contagem, limite) {
+  return Object.keys(contagem)
+    .map(function(chave) {
+      return {
+        rotulo: chave || "nao informado",
+        valor: contagem[chave]
+      };
+    })
+    .sort(function(a, b) {
+      if (b.valor !== a.valor) return b.valor - a.valor;
+      return normalizar(a.rotulo).localeCompare(normalizar(b.rotulo));
+    })
+    .slice(0, limite);
+}
+
+function ordenarFaixaEtariaDashboard(contagem) {
+  const ordem = [
+    "ate 17 anos",
+    "18 a 25 anos",
+    "26 a 30 anos",
+    "31 a 35 anos",
+    "36 a 40 anos",
+    "41 a 45 anos",
+    "46 a 50 anos",
+    "51 a 55 anos",
+    "56 a 60 anos",
+    "mais de 60 anos",
+    "nao informado"
+  ];
+
+  return ordem
+    .filter(function(faixa) {
+      return contagem[faixa];
+    })
+    .map(function(faixa) {
+      return {
+        rotulo: faixa,
+        valor: contagem[faixa]
+      };
+    });
+}
+
+function montarEvolucaoDashboard(registros, filtros) {
+  const inicio = obterDataInicio(filtros.dataInicial);
+  const fim = obterDataFim(filtros.dataFinal);
+  const contagem = {};
+  const contagemPorNaps = {};
+  const totaisPorNaps = {};
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+    if (ehRegistroArquivamento(registro)) return;
+
+    const data = registro.dataCadastroData;
+    if (!data) return;
+
+    const chave = obterMesAno(data);
+    const naps = String(registro.naps || "nao informado").trim() || "nao informado";
+
+    contagem[chave] = (contagem[chave] || 0) + 1;
+    if (!contagemPorNaps[chave]) contagemPorNaps[chave] = {};
+    contagemPorNaps[chave][naps] = (contagemPorNaps[chave][naps] || 0) + 1;
+    totaisPorNaps[naps] = (totaisPorNaps[naps] || 0) + 1;
+  });
+
+  if (!inicio || !fim || fim < inicio) {
+    return {
+      titulo: "Evolução mensal dos NAPS",
+      agrupamento: "mes_naps",
+      labels: [],
+      series: [],
+      pontos: []
+    };
+  }
+
+  const meses = montarChavesMensaisDashboard(inicio, fim);
+
+  return {
+    titulo: "Evolução mensal dos NAPS",
+    agrupamento: "mes_naps",
+    labels: meses.map(function(chave) {
+      return formatarMesAnoDashboard(new Date(Number(chave.slice(0, 4)), Number(chave.slice(5, 7)) - 1, 1));
+    }),
+    series: montarSeriesMensaisNapsDashboard(meses, contagemPorNaps, totaisPorNaps),
+    pontos: montarPontosMensaisDashboard(inicio, fim, contagem)
+  };
+}
+
+function montarChavesMensaisDashboard(inicio, fim) {
+  const chaves = [];
+  const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  const limite = new Date(fim.getFullYear(), fim.getMonth(), 1);
+
+  while (cursor <= limite) {
+    chaves.push(obterMesAno(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return chaves;
+}
+
+function montarSeriesMensaisNapsDashboard(meses, contagemPorNaps, totaisPorNaps) {
+  const todosNaps = Object.keys(totaisPorNaps).sort(function(a, b) {
+    if (totaisPorNaps[b] !== totaisPorNaps[a]) return totaisPorNaps[b] - totaisPorNaps[a];
+    return normalizar(a).localeCompare(normalizar(b));
+  });
+
+  return todosNaps.map(function(naps) {
+    return {
+      rotulo: naps,
+      valores: meses.map(function(mes) {
+        return Number((contagemPorNaps[mes] && contagemPorNaps[mes][naps]) || 0);
+      })
+    };
+  });
+}
+
+function montarPontosDiariosDashboard(inicio, fim, contagem) {
+  const pontos = [];
+  const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
+  const limite = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+
+  while (cursor <= limite) {
+    const chave = formatarDataParaInput(cursor);
+
+    pontos.push({
+      rotulo: formatarDiaMesDashboard(cursor),
+      chave: chave,
+      valor: contagem[chave] || 0
+    });
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return pontos;
+}
+
+function montarPontosMensaisDashboard(inicio, fim, contagem) {
+  const pontos = [];
+  const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  const limite = new Date(fim.getFullYear(), fim.getMonth(), 1);
+
+  while (cursor <= limite) {
+    const chave = obterMesAno(cursor);
+
+    pontos.push({
+      rotulo: formatarMesAnoDashboard(cursor),
+      chave: chave,
+      valor: contagem[chave] || 0
+    });
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return pontos;
+}
+
+function formatarDiaMesDashboard(data) {
+  return String(data.getDate()).padStart(2, "0") + "/" +
+    String(data.getMonth() + 1).padStart(2, "0");
+}
+
+function formatarMesAnoDashboard(data) {
+  return String(data.getMonth() + 1).padStart(2, "0") + "/" + data.getFullYear();
+}
+
+function normalizarFiltrosRelatorio(filtrosOuDataInicial, dataFinal, tiposRelatorio) {
+  if (filtrosOuDataInicial && typeof filtrosOuDataInicial === "object" && !Array.isArray(filtrosOuDataInicial)) {
+    return filtrosOuDataInicial;
+  }
+
+  return {
+    dataInicial: filtrosOuDataInicial || "",
+    dataFinal: dataFinal || "",
+    secoes: tiposRelatorio || []
+  };
+}
+
+function prepararBuscaIndividualRelatorio_(valor) {
+  const texto = String(valor || "").trim();
+
+  if (!texto) return { tipo: "", valor: "", valida: true };
+
+  try {
+    if (/^\d{6}-?[0-9A]$/i.test(texto)) {
+      return { tipo: "re", valor: normalizarReBuscaRapida_(texto), valida: true };
+    }
+
+    return { tipo: "cpf", valor: normalizarCpfBuscaRapida_(texto, false), valida: true };
+  } catch (erro) {
+    return { tipo: "invalida", valor: "", valida: false };
+  }
+}
+
+function registroCorrespondeBuscaIndividual_(registro, busca) {
+  if (!busca || !busca.tipo) return true;
+  if (!busca.valida || busca.tipo === "invalida") return false;
+
+  try {
+    if (busca.tipo === "cpf") {
+      return normalizarCpfBuscaRapida_(registro.cpf, true) === busca.valor;
+    }
+
+    if (busca.tipo === "re") {
+      return normalizarReBuscaRapida_(registro.re) === busca.valor;
+    }
+  } catch (erro) {
+    return false;
+  }
+
+  return false;
+}
+
+function prepararFiltrosRelatorio(filtros) {
+  return {
+    dataInicial: obterDataInicio(filtros.dataInicial),
+    dataFinal: obterDataFim(filtros.dataFinal),
+    buscaIndividual: prepararBuscaIndividualRelatorio_(filtros.buscaLivre),
+    tipoAtendimento: normalizar(filtros.tipoAtendimento),
+    motivo: normalizar(filtros.motivo),
+    naps: normalizar(filtros.naps),
+    opmAtual: normalizar(filtros.opmAtual),
+    cidade: normalizar(filtros.cidade),
+    bairro: normalizar(filtros.bairro),
+    estado: normalizar(filtros.estado),
+    responsavel: normalizar(filtros.responsavel),
+    situacaoStatus: normalizar(filtros.situacaoStatus),
+    sexo: normalizar(filtros.sexo),
+    estadoCivil: normalizar(filtros.estadoCivil),
+    faixaEtaria: normalizar(filtros.faixaEtaria),
+    tempoServico: normalizar(filtros.tempoServico),
+    vinculos: normalizar(filtros.vinculos),
+    parentesco: normalizar(filtros.parentesco)
+  };
+}
+
+function registroPassaFiltrosRelatorio(registro, filtros) {
+  if (filtros.dataInicial || filtros.dataFinal) {
+    if (!registro.dataCadastroData) return false;
+    if (filtros.dataInicial && registro.dataCadastroData < filtros.dataInicial) return false;
+    if (filtros.dataFinal && registro.dataCadastroData > filtros.dataFinal) return false;
+  }
+
+  if (!registroCorrespondeBuscaIndividual_(registro, filtros.buscaIndividual)) return false;
+
+  if (!campoIgualRelatorio(registro.tipoAtendimento, filtros.tipoAtendimento, "tipoAtendimento")) return false;
+  if (!campoContemRelatorio(registro.motivo, filtros.motivo, "motivo")) return false;
+  if (!campoIgualRelatorio(registro.naps, filtros.naps, "naps")) return false;
+  if (!campoIgualRelatorio(registro.opmAtual, filtros.opmAtual, "opmAtual")) return false;
+  if (!campoIgualRelatorio(registro.cidade, filtros.cidade, "cidade")) return false;
+  if (!campoIgualRelatorio(registro.bairro, filtros.bairro, "bairro")) return false;
+  if (!campoIgualRelatorio(registro.estado, filtros.estado, "estado")) return false;
+  if (!campoIgualRelatorio(registro.responsavel, filtros.responsavel, "responsavel")) return false;
+  if (!campoIgualRelatorio(registro.situacaoStatus, filtros.situacaoStatus, "situacaoStatus")) return false;
+  if (!campoIgualRelatorio(registro.sexo, filtros.sexo, "sexo")) return false;
+  if (!campoIgualRelatorio(registro.estadoCivil, filtros.estadoCivil, "estadoCivil")) return false;
+  if (!campoIgualRelatorio(registro.faixaEtaria, filtros.faixaEtaria, "faixaEtaria")) return false;
+  if (!campoIgualRelatorio(registro.tempoServico, filtros.tempoServico, "tempoServico")) return false;
+
+  if (filtros.vinculos === "com" && registro.quantidadeVinculos === 0) return false;
+  if (filtros.vinculos === "sem" && registro.quantidadeVinculos > 0) return false;
+
+  if (filtros.parentesco && !registro.vinculos.some(function(vinculo) {
+    return normalizar(vinculo.parentesco) === filtros.parentesco;
+  })) {
+    return false;
+  }
+
+  return true;
+}
+
+function campoIgualRelatorio(valor, filtro, campo) {
+  if (!filtro) return true;
+  return normalizar(valor) === filtro ||
+    normalizarChaveAgrupamentoRelatorio(valor, campo) === filtro;
+}
+
+function campoContemRelatorio(valor, filtro, campo) {
+  if (!filtro) return true;
+  return normalizar(valor).includes(filtro) ||
+    normalizarChaveAgrupamentoRelatorio(valor, campo).includes(filtro);
+}
+
+function carregarVinculosPorAtendimento(ss) {
+  const sheet = ss.getSheetByName(ABA_VINCULOS);
+  const mapa = {};
+
+  if (!sheet) return mapa;
+
+  const dados = lerDadosPadrao(sheet, CABECALHOS_VINCULOS, 1);
+
+  for (let i = 1; i < dados.length; i++) {
+    const linha = dados[i];
+    const idAtendimento = String(linha[1] || "");
+
+    if (!idAtendimento) continue;
+
+    if (!mapa[idAtendimento]) mapa[idAtendimento] = [];
+
+    mapa[idAtendimento].push({
+      id: linha[0] || "",
+      idAtendimento: idAtendimento,
+      nome: linha[2] || "",
+      cpf: linha[3] || "",
+      tipoVinculo: linha[4] || "",
+      parentesco: linha[5] || "",
+      observacoes: linha[6] || ""
+    });
+  }
+
+  return mapa;
+}
+
+function carregarUsuariosSistemaPorEmail(ss) {
+  const sheet = obterOuCriarAba(ss || SpreadsheetApp.getActiveSpreadsheet(), ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesUsuariosSistema(sheet);
+  const mapa = {};
+
+  for (let i = 1; i < dados.length; i++) {
+    const usuario = lerDadosUsuarioSistema(dados[i], indices);
+
+    if (usuario.email) {
+      mapa[usuario.email] = usuario;
+    }
+  }
+
+  return mapa;
+}
+
+function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail) {
+  const id = linha[0] || "";
+  const emailCadastro = String(linha[1] || "").toLowerCase().trim();
+  const napsAtendimento = String(linha[28] || "").trim();
+  const napsRegistro = formatarNapsRelatorio(napsAtendimento || "nao informado");
+  const dataCadastroData = obterData(linha[26]);
+  const dataNascimentoData = obterData(linha[10]);
+  const dataIngressoData = obterData(linha[9]);
+  const idade = calcularAnosAteHoje(dataNascimentoData);
+  const tempoServicoAnos = calcularAnosAteHoje(dataIngressoData);
+  const vinculos = vinculosPorAtendimento[String(id)] || [];
+  const responsavelFormatado = formatarResponsavelRelatorio(linha[25]);
+
+  return {
+    id: id,
+    emailCadastro: linha[1] || "",
+    naps: napsRegistro,
+    napsAtendimento: formatarNapsRelatorio(napsAtendimento),
+    tipoAtendimento: linha[2] || "",
+    motivo: linha[3] || "",
+    re: linha[4] || "",
+    nome: linha[5] || "",
+    postoGraduacao: linha[27] || "",
+    cpf: linha[6] || "",
+    telefone: linha[7] || "",
+    email: linha[8] || "",
+    dataIngresso: formatarDataBrasil(linha[9]),
+    dataNascimento: formatarDataBrasil(linha[10]),
+    idade: idade,
+    faixaEtaria: obterFaixaEtaria(idade),
+    sexo: formatarSexoRelatorio(linha[11]),
+    opmAtual: formatarCampoMaiusculoRelatorio(linha[12]),
+    situacaoStatus: formatarSituacaoStatusRelatorio(linha[13]),
+    dataInatividade: formatarDataBrasil(linha[14]),
+    estadoCivil: formatarEstadoCivilRelatorio(linha[15]),
+    numeroFilhos: linha[16] || "",
+    cep: linha[17] || "",
+    rua: linha[18] || "",
+    bairro: formatarLocalidadeRelatorio(linha[19]),
+    cidade: formatarLocalidadeRelatorio(linha[20]),
+    estado: formatarCampoMaiusculoRelatorio(linha[21]),
+    numero: linha[22] || "",
+    complemento: linha[23] || "",
+    observacoes: linha[24] || "",
+    responsavel: responsavelFormatado,
+    responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavelFormatado, napsRegistro),
+    formaApresentacao: linha[29] || "",
+    modalidadeAtendimento: linha[30] || "",
+    dataCadastro: formatarDataBrasil(linha[26]),
+    dataCadastroIso: formatarDataParaInput(linha[26]),
+    dataCadastroData: dataCadastroData,
+    dataCadastroTimestamp: dataCadastroData ? dataCadastroData.getTime() : 0,
+    mesCadastro: obterMesAno(dataCadastroData),
+    tempoServico: obterFaixaTempoServico(tempoServicoAnos),
+    endereco: montarEnderecoRelatorio(linha),
+    vinculos: vinculos,
+    quantidadeVinculos: vinculos.length
+  };
+}
+
+
+function montarRegistrosModulosGerenciais(estrutura) {
+  return {
+    ppms: montarRegistrosPPMSRelatorio(estrutura.sheetPpms),
+    incidentesCriticos: montarRegistrosIncidenteCriticoRelatorio(estrutura.sheetIncidenteCritico)
+  };
+}
+
+function filtrarRegistrosModulosGerenciais(modulos, filtros) {
+  return {
+    ppms: (modulos.ppms || []).filter(function(registro) {
+      return registroPassaFiltrosRelatorio(registro, filtros);
+    }),
+    incidentesCriticos: (modulos.incidentesCriticos || []).filter(function(registro) {
+      return registroPassaFiltrosRelatorio(registro, filtros);
+    })
+  };
+}
+
+function montarRegistrosPPMSRelatorio(sheetPpms) {
+  if (!sheetPpms || sheetPpms.getLastRow() < 2) return [];
+
+  const linhas = lerDadosPadrao(sheetPpms, CABECALHOS_PPMS, 2);
+
+  return linhas
+    .filter(function(linha) {
+      return obterData(linha[0]) || String(linha[35] || "").trim();
+    })
+    .map(function(linha) {
+      const dataFato = obterData(linha[0]);
+      const dataNascimento = obterData(linha[17]);
+      const dataIngresso = obterData(linha[7]);
+      const idade = calcularAnosAteHoje(dataNascimento);
+      const tempoServicoAnos = calcularAnosAteHoje(dataIngresso);
+      const naps = formatarNapsRelatorio(linha[29] || "nao informado");
+      const responsavel = formatarResponsavelRelatorio(linha[27]);
+
+      return {
+        origem: "ppms",
+        ppms: true,
+        id: linha[35] || "",
+        emailCadastro: "",
+        naps: naps,
+        napsAtendimento: naps,
+        tipoAtendimento: "PPMS",
+        motivo: "",
+        re: linha[31] || "",
+        nome: formatarLocalidadeRelatorio(linha[32]),
+        postoGraduacao: linha[3] || "",
+        cpf: "",
+        telefone: "",
+        email: "",
+        dataIngresso: formatarDataBrasil(linha[7]),
+        dataNascimento: formatarDataBrasil(linha[17]),
+        idade: idade,
+        faixaEtaria: obterFaixaEtaria(idade),
+        sexo: formatarSexoRelatorio(linha[19]),
+        opmAtual: formatarCampoMaiusculoRelatorio(linha[4]),
+        situacaoStatus: formatarSituacaoStatusRelatorio(linha[5]),
+        dataInatividade: formatarDataBrasil(linha[8]),
+        estadoCivil: formatarEstadoCivilRelatorio(linha[18]),
+        numeroFilhos: linha[16] || "",
+        cep: linha[20] || "",
+        rua: formatarLocalidadeRelatorio(linha[21]),
+        bairro: formatarLocalidadeRelatorio(linha[22]),
+        cidade: formatarLocalidadeRelatorio(linha[23]),
+        estado: formatarCampoMaiusculoRelatorio(linha[24]),
+        numero: linha[25] || "",
+        complemento: linha[26] || "",
+        observacoes: "",
+        responsavel: responsavel,
+        responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavel, naps),
+        dataFato: formatarDataBrasil(linha[0]),
+        dataCadastro: formatarDataBrasil(linha[28]),
+        dataCadastroIso: formatarDataParaInput(linha[0]),
+        dataCadastroData: dataFato,
+        dataCadastroTimestamp: dataFato ? dataFato.getTime() : 0,
+        mesCadastro: obterMesAno(dataFato),
+        tempoServico: obterFaixaTempoServico(tempoServicoAnos),
+        endereco: "",
+        vinculos: [],
+        quantidadeVinculos: 0,
+        natureza: linha[33] || "",
+        fatorPrecipitante: linha[10] || "",
+        respostaInicial: linha[34] || "",
+        servico: linha[6] || ""
+      };
+    });
+}
+
+function montarRegistrosIncidenteCriticoRelatorio(sheetIncidenteCritico) {
+  if (!sheetIncidenteCritico || sheetIncidenteCritico.getLastRow() < 2) return [];
+
+  const linhas = lerDadosPadrao(sheetIncidenteCritico, CABECALHOS_INCIDENTE_CRITICO, 2);
+
+  return linhas
+    .filter(function(linha) {
+      return obterData(linha[1]) || String(linha[0] || "").trim();
+    })
+    .map(function(linha) {
+      const dataFato = obterData(linha[1]);
+      const naps = formatarNapsRelatorio(linha[18] || "nao informado");
+      const responsavel = formatarResponsavelRelatorio(linha[16]);
+
+      return {
+        origem: "incidente_critico",
+        incidenteCritico: true,
+        id: linha[0] || "",
+        emailCadastro: linha[17] || "",
+        naps: naps,
+        napsAtendimento: naps,
+        tipoAtendimento: "Incidente Crítico",
+        motivo: "",
+        re: linha[4] || "",
+        nome: formatarLocalidadeRelatorio(linha[5]),
+        postoGraduacao: linha[3] || "",
+        cpf: "",
+        telefone: "",
+        email: "",
+        dataIngresso: "",
+        dataNascimento: "",
+        idade: null,
+        faixaEtaria: "",
+        sexo: formatarSexoRelatorio(linha[13]),
+        opmAtual: formatarCampoMaiusculoRelatorio(linha[6]),
+        situacaoStatus: formatarSituacaoStatusRelatorio(linha[7]),
+        dataInatividade: "",
+        estadoCivil: "",
+        numeroFilhos: "",
+        cep: "",
+        rua: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        numero: "",
+        complemento: "",
+        observacoes: "",
+        responsavel: responsavel,
+        responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavel, naps),
+        dataFato: formatarDataBrasil(linha[1]),
+        dataCadastro: formatarDataBrasil(linha[15]),
+        dataCadastroIso: formatarDataParaInput(linha[1]),
+        dataCadastroData: dataFato,
+        dataCadastroTimestamp: dataFato ? dataFato.getTime() : 0,
+        mesCadastro: obterMesAno(dataFato),
+        tempoServico: "",
+        endereco: "",
+        vinculos: [],
+        quantidadeVinculos: 0,
+        modalidade: linha[14] || "",
+        vitima: linha[12] || "",
+        servico: linha[19] || ""
+      };
+    });
+}
+
+function montarResumoModulosGerenciais(modulos) {
+  return {
+    totalPpms: (modulos.ppms || []).length,
+    totalIncidentesCriticos: (modulos.incidentesCriticos || []).length
+  };
+}
+
+function montarDistribuicoesModulosGerenciais(modulos) {
+  const ppms = modulos.ppms || [];
+  const incidentesCriticos = modulos.incidentesCriticos || [];
+
+  return {
+    ppms: {
+      total: ppms.length,
+      porMes: contarPorCampo(ppms, "mesCadastro"),
+      porNatureza: contarPorCampo(ppms, "natureza"),
+      porFatorPrecipitante: contarPorCampo(ppms, "fatorPrecipitante"),
+      porRespostaInicial: contarPorCampo(ppms, "respostaInicial")
+    },
+    incidenteCritico: {
+      total: incidentesCriticos.length,
+      porMes: contarPorCampo(incidentesCriticos, "mesCadastro"),
+      porModalidade: contarPorCampo(incidentesCriticos, "modalidade"),
+      porVitima: contarPorCampo(incidentesCriticos, "vitima"),
+      porServico: contarPorCampo(incidentesCriticos, "servico")
+    }
+  };
+}
+
+function montarGraficosModulosDashboard(modulos) {
+  const ppms = modulos.ppms || [];
+  const incidentesCriticos = modulos.incidentesCriticos || [];
+
+  return {
+    ppms: {
+      porNatureza: topDistribuicaoDashboard(contarPorCampo(ppms, "natureza"), 20),
+      porFatorPrecipitante: topDistribuicaoDashboard(contarPorCampo(ppms, "fatorPrecipitante"), 20),
+      porRespostaInicial: topDistribuicaoDashboard(contarPorCampo(ppms, "respostaInicial"), 20)
+    },
+    incidenteCritico: {
+      porModalidade: topDistribuicaoDashboard(contarPorCampo(incidentesCriticos, "modalidade"), 20),
+      porVitima: topDistribuicaoDashboard(contarPorCampo(incidentesCriticos, "vitima"), 20),
+      porServico: topDistribuicaoDashboard(contarPorCampo(incidentesCriticos, "servico"), 20)
+    }
+  };
+}
+
+function montarRegistrosRelatorioComEventos(estrutura, vinculosPorAtendimento, usuariosPorEmail) {
+  const dados = lerDadosPadrao(estrutura.sheetDados, CABECALHOS_DADOS, 1);
+  const registros = [];
+
+  for (let i = 1; i < dados.length; i++) {
+    registros.push(montarRegistroRelatorio(dados[i], vinculosPorAtendimento, usuariosPorEmail));
+  }
+
+  Array.prototype.push.apply(registros, montarRegistrosEventosColetivosRelatorio(estrutura));
+
+  return registros;
+}
+
+function montarRegistrosEventosColetivosRelatorio(estrutura) {
+  const sheetEventos = estrutura.sheetEventosColetivos;
+
+  if (!sheetEventos || sheetEventos.getLastRow() < 2) return [];
+
+  const participantesPorEvento = contarParticipantesValidadosPorEventoRelatorio(estrutura.sheetParticipantesEvento);
+  const linhas = lerDadosPadrao(sheetEventos, CABECALHOS_EVENTOS_COLETIVOS, 2);
+
+  return linhas
+    .filter(function(linha) {
+      return normalizar(linha[10]) === "salvo";
+    })
+    .map(function(linha) {
+      return montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento);
+    })
+    .filter(function(registro) {
+      return registro !== null;
+    });
+}
+
+function contarParticipantesValidadosPorEventoRelatorio(sheetParticipantes) {
+  const contagem = {};
+
+  if (!sheetParticipantes || sheetParticipantes.getLastRow() < 2) return contagem;
+
+  const linhas = lerDadosPadrao(sheetParticipantes, CABECALHOS_PARTICIPANTES_EVENTO, 2);
+
+  linhas.forEach(function(linha) {
+    const idEvento = String(linha[1] || "").trim();
+
+    if (!idEvento) return;
+    if (normalizar(linha[24]) !== "validado") return;
+
+    contagem[idEvento] = (contagem[idEvento] || 0) + 1;
+  });
+
+  return contagem;
+}
+
+function montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento) {
+  const idEvento = String(linha[0] || "").trim();
+  const tipoEvento = normalizarTipoEventoColetivo(linha[1]);
+  const dataEvento = obterData(linha[2]);
+
+  if (!idEvento || !tipoEvento || !dataEvento) return null;
+
+  const rotuloTipo = obterRotuloTipoEventoColetivo(tipoEvento);
+  const napsRegistro = formatarNapsRelatorio(linha[3] || "nao informado");
+  const responsavelFormatado = formatarResponsavelRelatorio(linha[4]);
+  const tema = limparEspacosRelatorio(linha[6]);
+  const motivo = limparEspacosRelatorio(linha[7]) || tema || rotuloTipo;
+  const quantidadeValidada = obterQuantidadePessoasEventoRelatorio(linha, participantesPorEvento);
+  const modalidade = normalizar(linha[15]);
+  const prefixoRegistro = tipoEvento === "palestra" ? "Palestra: " : "Grupo: ";
+
+  return {
+    id: idEvento,
+    origem: "evento_coletivo",
+    eventoColetivo: true,
+    tipoEventoColetivo: tipoEvento,
+    emailCadastro: linha[5] || "",
+    naps: napsRegistro,
+    napsAtendimento: napsRegistro,
+    tipoAtendimento: rotuloTipo,
+    motivo: motivo,
+    re: "",
+    nome: tema ? prefixoRegistro + formatarLocalidadeRelatorio(tema) : rotuloTipo,
+    postoGraduacao: "",
+    cpf: "",
+    telefone: "",
+    email: linha[5] || "",
+    dataIngresso: "",
+    dataNascimento: "",
+    idade: null,
+    faixaEtaria: "",
+    sexo: "",
+    opmAtual: "",
+    situacaoStatus: "",
+    dataInatividade: "",
+    estadoCivil: "",
+    numeroFilhos: "",
+    cep: "",
+    rua: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+    numero: "",
+    complemento: "",
+    observacoes: linha[14] || "",
+    responsavel: responsavelFormatado,
+    responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavelFormatado, napsRegistro),
+    dataCadastro: formatarDataBrasil(linha[2]),
+    dataCadastroIso: formatarDataParaInput(linha[2]),
+    dataCadastroData: dataEvento,
+    dataCadastroTimestamp: dataEvento ? dataEvento.getTime() : 0,
+    mesCadastro: obterMesAno(dataEvento),
+    tempoServico: "",
+    endereco: "",
+    vinculos: [],
+    quantidadeVinculos: 0,
+    quantidadePessoasEvento: quantidadeValidada,
+    modalidadeEvento: modalidade
+  };
+}
+
+function obterQuantidadePessoasEventoRelatorio(linhaEvento, participantesPorEvento) {
+  const idEvento = String(linhaEvento[0] || "").trim();
+  const tipoEvento = normalizarTipoEventoColetivo(linhaEvento[1]);
+  const quantidadeValidada = Number(linhaEvento[9] || 0);
+  const quantidadeInformada = Number(linhaEvento[8] || 0);
+
+  if (quantidadeValidada > 0) return quantidadeValidada;
+  if (tipoEventoUsaParticipantes(tipoEvento)) return Number(participantesPorEvento[idEvento] || 0);
+
+  return quantidadeInformada > 0 ? quantidadeInformada : 0;
+}
+
+function montarRotuloResponsavelNapsRelatorio(responsavel, naps) {
+  const nomeResponsavel = String(responsavel || "").trim() || "nao informado";
+  const nomeNaps = formatarNapsRelatorio(naps);
+
+  if (!nomeNaps || normalizar(nomeNaps) === "nao informado") {
+    return nomeResponsavel + ", NAPS nao informado";
+  }
+
+  return nomeResponsavel + ", " + nomeNaps;
+}
+
+function formatarNapsRelatorio(valor) {
+  const texto = String(valor || "").trim();
+
+  if (!texto || normalizar(texto) === "nao informado") {
+    return texto ? "nao informado" : "";
+  }
+
+  return texto.toUpperCase();
+}
+
+function formatarSexoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto);
+
+  if (!texto) return "";
+  if (chave === "feminino" || chave === "fem" || chave === "f") return "Feminino";
+  if (chave === "masculino" || chave === "masc" || chave === "m") return "Masculino";
+
+  return texto;
+}
+
+function formatarSituacaoStatusRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto);
+
+  if (!texto) return "";
+  if (chave === "ativo operacional") return "Ativo Operacional";
+  if (chave === "ativo administrativo") return "Ativo Administrativo";
+  if (chave === "agregado" || chave === "agregado(a)") return "Agregado(a)";
+  if (chave === "exonerado" || chave === "exonerado(a)") return "Exonerado(a)";
+  if (chave === "inativo falecido") return "Inativo Falecido";
+  if (chave === "inativo") return "Inativo";
+
+  return formatarLocalidadeRelatorio(texto);
+}
+
+function formatarEstadoCivilRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto);
+
+  if (!texto) return "";
+  if (chave === "solteiro" || chave === "solteira" || chave === "solteiro(a)") return "Solteiro(a)";
+  if (chave === "casado" || chave === "casada" || chave === "casado(a)") return "Casado(a)";
+  if (chave === "divorciado" || chave === "divorciada" || chave === "divorciado(a)") return "Divorciado(a)";
+  if (chave === "separado" || chave === "separada" || chave === "separado(a)") return "Separado(a)";
+  if (chave === "viuvo" || chave === "viuva" || chave === "viuvo(a)") return "Vi\u00favo(a)";
+  if (chave === "uniao estavel" || chave === "uniao estavel(a)") return "Uni\u00e3o Est\u00e1vel";
+  if (chave === "outro" || chave === "outros") return "Outros";
+
+  return formatarLocalidadeRelatorio(texto);
+}
+
+function formatarCampoMaiusculoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  return texto ? texto.toUpperCase() : "";
+}
+
+function formatarResponsavelRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+
+  if (!texto) return "";
+
+  return formatarLocalidadeRelatorio(texto)
+    .replace(/\bPm\b/g, "PM")
+    .replace(/\bCpam\b/g, "CPAM")
+    .replace(/\bCaps\b/g, "CAPS")
+    .replace(/\bNaps\b/g, "NAPS")
+    .replace(/\bNAPS\/[A-Z0-9-]+/gi, function(trecho) {
+      return trecho.toUpperCase();
+    });
+}
+
+function formatarLocalidadeRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto).replace(/\s+/g, " ");
+  const traducoes = {
+    "sao paulo": "S\u00e3o Paulo",
+    "sao jose dos campos": "S\u00e3o Jos\u00e9 dos Campos",
+    "sao jose do rio preto": "S\u00e3o Jos\u00e9 do Rio Preto",
+    "sao bernardo do campo": "S\u00e3o Bernardo do Campo",
+    "sao caetano do sul": "S\u00e3o Caetano do Sul",
+    "sao vicente": "S\u00e3o Vicente",
+    "ribeirao preto": "Ribeir\u00e3o Preto",
+    "maua": "Mau\u00e1",
+    "se": "S\u00e9",
+    "butanta": "Butant\u00e3",
+    "itapecerica da serra": "Itapecerica da Serra"
+  };
+
+  if (!texto) return "";
+  if (traducoes[chave]) return traducoes[chave];
+
+  return texto
+    .toLowerCase()
+    .split(" ")
+    .map(function(parte) {
+      if (!parte) return "";
+      return parte.charAt(0).toUpperCase() + parte.slice(1);
+    })
+    .join(" ");
+}
+
+function limparEspacosRelatorio(valor) {
+  return String(valor || "").trim().replace(/\s+/g, " ");
+}
+
+function formatarValorAgrupamentoRelatorio(valor, campo) {
+  const texto = limparEspacosRelatorio(valor);
+
+  if (!texto) return "nao informado";
+
+  if (campo === "naps") return formatarNapsRelatorio(texto) || "nao informado";
+  if (campo === "opmAtual" || campo === "estado") return formatarCampoMaiusculoRelatorio(texto) || "nao informado";
+  if (campo === "sexo") return formatarSexoRelatorio(texto) || "nao informado";
+  if (campo === "situacaoStatus") return formatarSituacaoStatusRelatorio(texto) || "nao informado";
+  if (campo === "estadoCivil") return formatarEstadoCivilRelatorio(texto) || "nao informado";
+  if (campo === "responsavel" || campo === "responsavelNaps" || campo === "postoGraduacao") return formatarResponsavelRelatorio(texto) || "nao informado";
+  if (campo === "cidade" || campo === "bairro" || campo === "parentesco") return formatarLocalidadeRelatorio(texto) || "nao informado";
+  if (campo === "tipoAtendimento") return formatarTipoAtendimentoRelatorio(texto);
+  if (campo === "motivo") return formatarHipoteseDiagnosticoRelatorio(texto);
+
+  return texto;
+}
+
+function normalizarChaveAgrupamentoRelatorio(valor, campo) {
+  const rotulo = formatarValorAgrupamentoRelatorio(valor, campo);
+  const chave = normalizar(rotulo).replace(/\s+/g, " ").trim();
+
+  return chave || "nao informado";
+}
+
+function formatarTipoAtendimentoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto).replace(/\s+/g, " ");
+  const mapa = {
+    "alta": "Atendimento de ALTA",
+    "atendimento de alta": "Atendimento de ALTA",
+    "falta": "Registrar como FALTA",
+    "registrar falta": "Registrar como FALTA",
+    "registrar como falta": "Registrar como FALTA",
+    "arquivamento": "Arquivamento",
+    "plantao psicologico": "Plant\u00e3o Psicol\u00f3gico",
+    "psicoterapia - individual": "Psicoterapia - Individual",
+    "psicoterapia individual": "Psicoterapia - Individual",
+    "psicoterapia - casal": "Psicoterapia - Casal",
+    "psicoterapia casal": "Psicoterapia - Casal",
+    "avaliacao de porte armas de inativo": "Avalia\u00e7\u00e3o de Porte Armas de Inativo",
+    "entrevista de saida": "Entrevista de Sa\u00edda",
+    "visita externa": "Visita Externa",
+    "follow-up": "Follow-Up",
+    "follow up": "Follow-Up",
+    "entrevista motivacional - ppad": "Entrevista Motivacional - PPAD",
+    "entrevista motivacional ppad": "Entrevista Motivacional - PPAD",
+    "entrevista motivacional - ppms": "Entrevista Motivacional - PPMS",
+    "entrevista motivacional ppms": "Entrevista Motivacional - PPMS",
+    "avaliacao psicologica - ppms": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PPMS",
+    "avaliacao psicologica ppms": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PPMS",
+    "avaliacao psicologica - prosen": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PROSEN",
+    "avaliacao psicologica prosen": "Avalia\u00e7\u00e3o Psicol\u00f3gica - PROSEN",
+    "avaliacao de inclusao no copom": "Avalia\u00e7\u00e3o de Inclus\u00e3o no Copom",
+    "entrevista ctc (pmrg)": "Entrevista CTC (PMRG)",
+    "entrevista ctc pmrg": "Entrevista CTC (PMRG)",
+    "triagem de chegada (pmrg)": "Triagem de Chegada (PMRG)",
+    "triagem de chegada pmrg": "Triagem de Chegada (PMRG)",
+    "exame criminologico (pmrg)": "Exame Criminol\u00f3gico (PMRG)",
+    "exame criminologico pmrg": "Exame Criminol\u00f3gico (PMRG)"
+  };
+
+  return mapa[chave] || formatarTextoComSiglasRelatorio(texto);
+}
+
+function formatarHipoteseDiagnosticoRelatorio(valor) {
+  const texto = limparEspacosRelatorio(valor);
+  const chave = normalizar(texto).replace(/\s+/g, " ");
+  const chaveSemCodigo = chave.replace(/\s+-\s+[a-z0-9.]+$/i, "");
+  const mapa = {
+    "conflito existencial": "Conflito Existencial - 6B43",
+    "conflito profissional": "Conflito Profissional - QD83.Z",
+    "conflito conjugal": "Conflito Conjugal - QE51.0",
+    "conflito familiar": "Conflito Familiar - QE51.0",
+    "uso abusivo de alcool e droga": "Uso Abusivo de \u00c1lcool e Droga - 6C40.2Z",
+    "luto": "Luto - QE62.0",
+    "transtorno de luto prolongado": "Transtorno de Luto Prolongado - 6B42",
+    "ideacao suicida": "Idea\u00e7\u00e3o Suicida - MB26.A",
+    "tentativa de suicidio": "Tentativa de Suic\u00eddio - MB23.R",
+    "disforia de genero": "Disforia de G\u00eanero - HA60",
+    "transtorno parafilico": "Transtorno Paraf\u00edlico - 6D3Z",
+    "ansiedade": "Ansiedade - MB24.3",
+    "depressao": "Depress\u00e3o - 6A7Z",
+    "transtorno obsessivo compulsivo": "Transtorno Obsessivo Compulsivo - 6B20",
+    "dependencia afetiva": "Depend\u00eancia Afetiva - MB24",
+    "transtorno misto ansioso e depressivo": "Transtorno Misto Ansioso e Depressivo - 6A73",
+    "transtorno do jogo ou ludopatia": "Transtorno do Jogo ou Ludopatia - 6C50.Z"
+  };
+
+  if (chave === "outros") return "Outros";
+
+  return mapa[chaveSemCodigo] || formatarTextoComSiglasRelatorio(texto);
+}
+
+function formatarTextoComSiglasRelatorio(valor) {
+  return formatarLocalidadeRelatorio(valor)
+    .replace(/\bPm\b/g, "PM")
+    .replace(/\bCaps\b/g, "CAPS")
+    .replace(/\bNaps\b/g, "NAPS")
+    .replace(/\bPpad\b/g, "PPAD")
+    .replace(/\bPpms\b/g, "PPMS")
+    .replace(/\bProsen\b/g, "PROSEN")
+    .replace(/\bCopom\b/g, "Copom")
+    .replace(/\bPmrg\b/g, "PMRG")
+    .replace(/\b([A-Za-z]{1,3}\d+[A-Za-z0-9.]*)\b/g, function(trecho) {
+      return trecho.toUpperCase();
+    })
+    .replace(/\b(\d+[A-Za-z][A-Za-z0-9.]*)\b/g, function(trecho) {
+      return trecho.toUpperCase();
+    });
+}
+
+function montarResumoRelatorio(registros) {
+  const pessoas = {};
+  const atendimentosPorPessoa = {};
+  let totalVinculos = 0;
+  let atendimentosComVinculos = 0;
+  let atendimentosFamiliaresOuGrupo = 0;
+  let totalFaltas = 0;
+  let totalAltas = 0;
+  let totalArquivamentos = 0;
+  let totalAtendimentos = 0;
+  let totalAtendimentosIndividuais = 0;
+  let totalAtendimentosOnline = 0;
+  let totalEventosColetivos = 0;
+  let pessoasEventos = 0;
+  let pessoasGrupos = 0;
+  let pessoasPalestras = 0;
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) {
+      totalFaltas++;
+      return;
+    }
+
+    if (ehRegistroArquivamento(registro)) {
+      totalArquivamentos++;
+      return;
+    }
+
+    totalAtendimentos++;
+
+    const modalidadeRegistro = normalizar(
+      registro.modalidadeAtendimento || registro.modalidadeEvento
+    );
+
+    if (modalidadeRegistro === "online") {
+      totalAtendimentosOnline++;
+    }
+
+    if (registro.eventoColetivo) {
+      const quantidadePessoasEvento = Number(registro.quantidadePessoasEvento || 0);
+      const tipoEventoColetivo = normalizarTipoEventoColetivo(registro.tipoEventoColetivo || registro.tipoAtendimento);
+
+      totalEventosColetivos++;
+      pessoasEventos += quantidadePessoasEvento;
+
+      if (tipoEventoColetivo === "palestra") {
+        pessoasPalestras += quantidadePessoasEvento;
+      } else {
+        pessoasGrupos += quantidadePessoasEvento;
+      }
+
+      return;
+    }
+
+    totalAtendimentosIndividuais++;
+
+    if (ehRegistroAlta(registro)) {
+      totalAltas++;
+    }
+
+    const chave = obterChavePessoa(registro);
+    pessoas[chave] = true;
+    atendimentosPorPessoa[chave] = (atendimentosPorPessoa[chave] || 0) + 1;
+
+    totalVinculos += registro.quantidadeVinculos;
+    if (registro.quantidadeVinculos > 0) atendimentosComVinculos++;
+
+    const tipo = normalizar(registro.tipoAtendimento);
+    if (tipo.includes("familiar") || tipo.includes("grupo")) {
+      atendimentosFamiliaresOuGrupo++;
+    }
+  });
+
+  let retornos = 0;
+  let pessoasComRetorno = 0;
+
+  Object.keys(atendimentosPorPessoa).forEach(function(chave) {
+    if (atendimentosPorPessoa[chave] > 1) {
+      retornos += atendimentosPorPessoa[chave] - 1;
+      pessoasComRetorno++;
+    }
+  });
+
+  return {
+    totalRegistros: registros.length,
+    totalAtendimentos: totalAtendimentos,
+    totalAtendimentosIndividuais: totalAtendimentosIndividuais,
+    totalAtendimentosOnline: totalAtendimentosOnline,
+    totalEventosColetivos: totalEventosColetivos,
+    pessoasDistintas: Object.keys(pessoas).length,
+    pessoasGrupos: pessoasGrupos,
+    pessoasPalestras: pessoasPalestras,
+    pessoasEventos: pessoasEventos,
+    pessoasTotalGeral: Object.keys(pessoas).length + pessoasEventos,
+    totalFaltas: totalFaltas,
+    totalAltas: totalAltas,
+    totalArquivamentos: totalArquivamentos,
+    retornos: retornos,
+    pessoasComRetorno: pessoasComRetorno,
+    atendimentosComVinculos: atendimentosComVinculos,
+    totalVinculos: totalVinculos,
+    atendimentosFamiliaresOuGrupo: atendimentosFamiliaresOuGrupo
+  };
+}
+
+function montarDistribuicoesRelatorio(registros) {
+  return {
+    porMes: contarPorCampo(registros, "mesCadastro"),
+    porMesNaps: contarPorMesNapsRelatorio(registros),
+    porNAPS: contarPorCampo(registros, "naps"),
+    porTipo: contarPorCampo(registros, "tipoAtendimento"),
+    porPostoGraduacao: contarPorCampo(registros, "postoGraduacao"),
+    porMotivo: contarPorCampo(registros, "motivo"),
+    porOPM: contarPorCampo(registros, "opmAtual"),
+    porCidade: contarPorCampo(registros, "cidade"),
+    porBairro: contarPorCampo(registros, "bairro"),
+    porResponsavel: contarPorCampo(registros, "responsavel"),
+    porResponsavelNaps: contarPorCampo(registros, "responsavelNaps"),
+    porSituacao: contarPorCampo(registros, "situacaoStatus"),
+    porSexo: contarPorCampo(registros, "sexo"),
+    porEstadoCivil: contarPorCampo(registros, "estadoCivil"),
+    porFaixaEtaria: contarPorCampo(registros, "faixaEtaria"),
+    porTempoServico: contarPorCampo(registros, "tempoServico"),
+    porParentesco: contarPorVinculo(registros, "parentesco"),
+    porTipoMotivoPrincipal: montarTipoMotivoPrincipalRelatorio(registros)
+  };
+}
+
+function montarTipoMotivoPrincipalRelatorio(registros) {
+  const grupos = {};
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+
+    const tipo = registro.tipoAtendimento || "nao informado";
+    const motivo = registro.motivo || "nao informado";
+    const tipoChave = normalizar(tipo) || "nao informado";
+    const motivoChave = normalizar(motivo) || "nao informado";
+
+    if (!grupos[tipoChave]) {
+      grupos[tipoChave] = {
+        tipo: tipo,
+        total: 0,
+        motivos: {}
+      };
+    }
+
+    grupos[tipoChave].total++;
+
+    if (!grupos[tipoChave].motivos[motivoChave]) {
+      grupos[tipoChave].motivos[motivoChave] = {
+        motivo: motivo,
+        total: 0
+      };
+    }
+
+    grupos[tipoChave].motivos[motivoChave].total++;
+  });
+
+  return Object.keys(grupos).map(function(chave) {
+    const grupo = grupos[chave];
+    const motivoPrincipal = Object.keys(grupo.motivos)
+      .map(function(motivoChave) {
+        return grupo.motivos[motivoChave];
+      })
+      .sort(function(a, b) {
+        return b.total - a.total || normalizar(a.motivo).localeCompare(normalizar(b.motivo));
+      })[0] || { motivo: "nao informado", total: 0 };
+
+    return {
+      tipo: grupo.tipo,
+      motivo: motivoPrincipal.motivo,
+      quantidade: motivoPrincipal.total,
+      totalTipo: grupo.total,
+      percentual: grupo.total > 0 ? (motivoPrincipal.total / grupo.total) * 100 : 0
+    };
+  }).sort(function(a, b) {
+    return b.totalTipo - a.totalTipo || normalizar(a.tipo).localeCompare(normalizar(b.tipo));
+  });
+}
+
+function contarPorMesNapsRelatorio(registros) {
+  const contagem = {};
+
+  registros.forEach(function(registro) {
+    if (ehRegistroFalta(registro)) return;
+    if (ehRegistroArquivamento(registro)) return;
+
+    const mes = registro.mesCadastro || "sem data";
+    const naps = registro.naps || "nao informado";
+    const chave = mes + "|" + naps;
+
+    contagem[chave] = (contagem[chave] || 0) + 1;
+  });
+
+  return contagem;
+}
+
+function montarDadosIndividuaisRelatorio(filtros, filtrados, todosRegistros, ss) {
+  const termo = String(filtros.buscaLivre || "").trim();
+
+  if (!termo) {
+    return {
+      status: "sem_busca",
+      mensagem: "Use a Busca Individual para visualizar estes dados."
+    };
+  }
+
+  const buscaIndividual = prepararBuscaIndividualRelatorio_(termo);
+
+  if (!buscaIndividual.valida) {
+    return {
+      status: "busca_invalida",
+      mensagem: "Informe o CPF completo ou o R.E. completo, incluindo o digito."
+    };
+  }
+
+  if (!filtrados || filtrados.length === 0) {
+    return {
+      status: "sem_resultado",
+      mensagem: "Nenhum cadastro localizado para o CPF ou R.E. informado."
+    };
+  }
+
+  const grupos = agruparRegistrosPorPessoa(filtrados);
+  const chaves = Object.keys(grupos);
+
+  if (chaves.length > 1) {
+    return {
+      status: "conflito_identificacao",
+      mensagem: "O CPF ou R.E. informado esta associado a mais de uma pessoa. Verifique os cadastros."
+    };
+  }
+
+  const chavePessoa = chaves[0];
+  const registrosPessoa = grupos[chavePessoa];
+  const referencia = obterRegistroMaisRecente(registrosPessoa);
+  const usuarioNaps = obterDadosUsuarioSistemaParaRelatorio(referencia.emailCadastro);
+  const distancia = calcularDistanciaResidenciaNaps(referencia.cep, usuarioNaps.cepNaps, ss);
+  const totaisPessoa = contarResumoPessoa(registrosPessoa, chavePessoa);
+
+  return {
+    status: "ok",
+    nome: referencia.nome || "",
+    re: referencia.re || "",
+    cpf: referencia.cpf || "",
+    unidade: referencia.opmAtual || "",
+    naps: formatarNapsRelatorio(usuarioNaps.naps || "nao informado"),
+    totalAtendimentos: totaisPessoa.atendimentos,
+    totalFaltas: totaisPessoa.faltas,
+    totalAltas: totaisPessoa.altas,
+    totalArquivamentos: totaisPessoa.arquivamentos,
+    distanciaKm: distancia.distanciaKm,
+    distanciaTexto: distancia.texto,
+    distanciaDisponivel: distancia.disponivel,
+    dataReferencia: referencia.dataCadastro || "",
+    motivoReferencia: referencia.motivo || "",
+    responsavelReferencia: referencia.responsavel || "",
+    mensagemDistancia: distancia.mensagem || "",
+    observacoesHistorico: montarObservacoesHistoricoIndividual(registrosPessoa)
+  };
+}
+
+function montarObservacoesHistoricoIndividual(registros) {
+  return registros
+    .slice()
+    .sort(function(a, b) {
+      return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
+    })
+    .map(function(registro) {
+      const observacaoAtendimento = String(registro.observacoes || "").trim();
+      const observacoesVinculos = (registro.vinculos || [])
+        .filter(function(vinculo) {
+          return String(vinculo.observacoes || "").trim() !== "";
+        })
+        .map(function(vinculo) {
+          return {
+            nome: vinculo.nome || "",
+            parentesco: vinculo.parentesco || vinculo.tipoVinculo || "",
+            observacoes: vinculo.observacoes || ""
+          };
+        });
+
+      if (!observacaoAtendimento && observacoesVinculos.length === 0) return null;
+
+      return {
+        idAtendimento: registro.id || "",
+        dataAtendimento: registro.dataCadastro || "",
+        responsavel: registro.responsavel || "",
+        tipoAtendimento: registro.tipoAtendimento || "",
+        motivo: registro.motivo || "",
+        observacoes: observacaoAtendimento,
+        observacoesVinculos: observacoesVinculos
+      };
+    })
+    .filter(function(item) {
+      return item !== null;
+    });
+}
+
+function agruparRegistrosPorPessoa(registros) {
+  const grupos = {};
+
+  registros.forEach(function(registro) {
+    const chave = obterChavePessoa(registro);
+
+    if (!grupos[chave]) grupos[chave] = [];
+    grupos[chave].push(registro);
+  });
+
+  return grupos;
+}
+
+function obterRegistroMaisRecente(registros) {
+  return registros.slice().sort(function(a, b) {
+    return b.dataCadastroTimestamp - a.dataCadastroTimestamp;
+  })[0];
+}
+
+function contarAtendimentosPessoa(registros, chavePessoa) {
+  return contarResumoPessoa(registros, chavePessoa).atendimentos;
+}
+
+function contarResumoPessoa(registros, chavePessoa) {
+  const resumo = {
+    atendimentos: 0,
+    faltas: 0,
+    altas: 0,
+    arquivamentos: 0
+  };
+
+  registros.forEach(function(registro) {
+    if (obterChavePessoa(registro) !== chavePessoa) return;
+
+    if (ehRegistroFalta(registro)) {
+      resumo.faltas++;
+      return;
+    }
+
+    if (ehRegistroArquivamento(registro)) {
+      resumo.arquivamentos++;
+      return;
+    }
+
+    resumo.atendimentos++;
+
+    if (ehRegistroAlta(registro)) {
+      resumo.altas++;
+    }
+  });
+
+  return resumo;
+}
+
+function ehRegistroFalta(registro) {
+  const tipo = normalizar(registro && registro.tipoAtendimento);
+
+  return tipo === "falta" ||
+    tipo === "registrar falta" ||
+    tipo === "registrar como falta" ||
+    tipo.includes("no show");
+}
+
+function ehRegistroAlta(registro) {
+  const tipo = normalizar(registro && registro.tipoAtendimento);
+
+  return tipo === "alta" || tipo === "atendimento de alta";
+}
+
+function ehRegistroArquivamento(registro) {
+  const tipo = normalizar(registro && registro.tipoAtendimento);
+
+  return tipo === "arquivamento";
+}
+
+function obterDadosUsuarioSistemaParaRelatorio(email) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
+  const emailNormalizado = String(email || "").toLowerCase().trim();
+
+  if (!emailNormalizado) {
+    return {
+      email: "",
+      nome: "",
+      naps: "",
+      cepNaps: ""
+    };
+  }
+
+  const dados = sheet.getDataRange().getValues();
+  const indices = obterIndicesUsuariosSistema(sheet);
+
+  for (let i = 1; i < dados.length; i++) {
+    const usuarioLinha = lerDadosUsuarioSistema(dados[i], indices);
+
+    if (usuarioLinha.email === emailNormalizado) {
+      return {
+        email: emailNormalizado,
+        nome: usuarioLinha.nome,
+        naps: usuarioLinha.naps,
+        cepNaps: usuarioLinha.cepNaps
+      };
+    }
+  }
+
+  return {
+    email: emailNormalizado,
+    nome: "",
+    naps: "",
+    cepNaps: ""
+  };
+}
+
+function calcularDistanciaResidenciaNaps(cepResidencia, cepNaps, ss) {
+  const cepOrigem = somenteNumeros(cepResidencia);
+  const cepDestino = somenteNumeros(cepNaps);
+
+  if (cepOrigem.length !== 8 && cepDestino.length !== 8) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: "CEP da residencia e CEP do NAPS nao informados."
+    };
+  }
+
+  if (cepOrigem.length !== 8) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: "CEP da residencia nao informado."
+    };
+  }
+
+  if (cepDestino.length !== 8) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: "CEP do NAPS nao informado."
+    };
+  }
+
+  if (cepOrigem === cepDestino) {
+    return {
+      disponivel: true,
+      distanciaKm: 0,
+      texto: "0 km",
+      mensagem: ""
+    };
+  }
+
+  try {
+    const origem = obterCoordenadasPorCEP(cepOrigem, ss);
+    const destino = obterCoordenadasPorCEP(cepDestino, ss);
+
+    if (!origem || !destino) {
+      return {
+        disponivel: false,
+        distanciaKm: null,
+        texto: "nao disponivel",
+        mensagem: "Nao foi possivel localizar coordenadas para um dos CEPs."
+      };
+    }
+
+    const distanciaKm = arredondarUmaCasa(calcularDistanciaHaversineKm(
+      origem.latitude,
+      origem.longitude,
+      destino.latitude,
+      destino.longitude
+    ));
+
+    return {
+      disponivel: true,
+      distanciaKm: distanciaKm,
+      texto: String(distanciaKm).replace(".", ",") + " km",
+      mensagem: ""
+    };
+  } catch (erro) {
+    return {
+      disponivel: false,
+      distanciaKm: null,
+      texto: "nao disponivel",
+      mensagem: erro.message || "Erro ao calcular distancia."
+    };
+  }
+}
+
+function obterCoordenadasPorCEP(cep, ss) {
+  const cepNormalizado = somenteNumeros(cep);
+
+  if (cepNormalizado.length !== 8) return null;
+
+  const sheet = obterOuCriarAba(ss || SpreadsheetApp.getActiveSpreadsheet(), ABA_CEPS_CACHE, CABECALHOS_CEPS_CACHE);
+  const dados = lerDadosPadrao(sheet, CABECALHOS_CEPS_CACHE, 1);
+
+  for (let i = 1; i < dados.length; i++) {
+    const cepCache = somenteNumeros(dados[i][0]);
+
+    if (cepCache === cepNormalizado) {
+      const latitude = Number(String(dados[i][1] || "").replace(",", "."));
+      const longitude = Number(String(dados[i][2] || "").replace(",", "."));
+
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        return {
+          latitude: latitude,
+          longitude: longitude
+        };
+      }
+    }
+  }
+
+  const endereco = formatarCEP(cepNormalizado) + ", Brasil";
+  const resposta = Maps.newGeocoder()
+    .setRegion("br")
+    .geocode(endereco);
+
+  if (!resposta || resposta.status !== "OK" || !resposta.results || resposta.results.length === 0) {
+    return null;
+  }
+
+  const localizacao = resposta.results[0].geometry && resposta.results[0].geometry.location;
+
+  if (!localizacao) return null;
+
+  const coordenadas = {
+    latitude: Number(localizacao.lat),
+    longitude: Number(localizacao.lng)
+  };
+
+  if (isNaN(coordenadas.latitude) || isNaN(coordenadas.longitude)) {
+    return null;
+  }
+
+  gravarLinhasPadraoAbaixo(sheet, [[
+    formatarCEP(cepNormalizado),
+    coordenadas.latitude,
+    coordenadas.longitude,
+    resposta.results[0].formatted_address || endereco,
+    new Date()
+  ]], CABECALHOS_CEPS_CACHE);
+
+  return coordenadas;
+}
+
+function calcularDistanciaHaversineKm(lat1, lon1, lat2, lon2) {
+  const raioTerraKm = 6371;
+  const dLat = grausParaRadianos(lat2 - lat1);
+  const dLon = grausParaRadianos(lon2 - lon1);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(grausParaRadianos(lat1)) *
+    Math.cos(grausParaRadianos(lat2)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return raioTerraKm * c;
+}
+
+function grausParaRadianos(graus) {
+  return graus * Math.PI / 180;
+}
+
+function arredondarUmaCasa(valor) {
+  return Math.round(Number(valor || 0) * 10) / 10;
+}
+
+function montarOpcoesRelatorio(registros, vinculosPorAtendimento) {
+  const todosVinculos = [];
+
+  Object.keys(vinculosPorAtendimento).forEach(function(idAtendimento) {
+    vinculosPorAtendimento[idAtendimento].forEach(function(vinculo) {
+      todosVinculos.push(vinculo);
+    });
+  });
+
+  return {
+    tipoAtendimento: listarUnicosRelatorio(registros, "tipoAtendimento"),
+    naps: listarUnicosRelatorio(registros, "naps"),
+    opmAtual: listarUnicosRelatorio(registros, "opmAtual"),
+    cidade: listarUnicosRelatorio(registros, "cidade"),
+    bairro: listarUnicosRelatorio(registros, "bairro"),
+    estado: listarUnicosRelatorio(registros, "estado"),
+    responsavel: listarUnicosRelatorio(registros, "responsavel"),
+    situacaoStatus: listarUnicosRelatorio(registros, "situacaoStatus"),
+    sexo: listarUnicosRelatorio(registros, "sexo"),
+    estadoCivil: listarUnicosRelatorio(registros, "estadoCivil"),
+    parentesco: listarUnicosRelatorio(todosVinculos, "parentesco")
+  };
+}
+
+function contarPorCampo(registros, campo) {
+  const agrupamento = criarAgrupamentoContagemRelatorio();
+
+  registros.forEach(function(registro) {
+    if (registro.eventoColetivo && campoEhPerfilIndividualRelatorio(campo)) return;
+
+    adicionarContagemRelatorio(agrupamento, registro[campo], campo);
+  });
+
+  return finalizarAgrupamentoContagemRelatorio(agrupamento);
+}
+
+function campoEhPerfilIndividualRelatorio(campo) {
+  return [
+    "postoGraduacao",
+    "opmAtual",
+    "cidade",
+    "bairro",
+    "situacaoStatus",
+    "sexo",
+    "estadoCivil",
+    "faixaEtaria",
+    "tempoServico"
+  ].indexOf(campo) >= 0;
+}
+
+function contarPorVinculo(registros, campo) {
+  const agrupamento = criarAgrupamentoContagemRelatorio();
+
+  registros.forEach(function(registro) {
+    registro.vinculos.forEach(function(vinculo) {
+      adicionarContagemRelatorio(agrupamento, vinculo[campo], campo);
+    });
+  });
+
+  return finalizarAgrupamentoContagemRelatorio(agrupamento);
+}
+
+function criarAgrupamentoContagemRelatorio() {
+  return {
+    contagem: {},
+    rotulos: {}
+  };
+}
+
+function adicionarContagemRelatorio(agrupamento, valor, campo) {
+  const rotulo = formatarValorAgrupamentoRelatorio(valor, campo);
+  const chave = normalizarChaveAgrupamentoRelatorio(rotulo, campo);
+
+  if (!agrupamento.rotulos[chave]) {
+    agrupamento.rotulos[chave] = rotulo;
+  }
+
+  agrupamento.contagem[chave] = (agrupamento.contagem[chave] || 0) + 1;
+}
+
+function finalizarAgrupamentoContagemRelatorio(agrupamento) {
+  const contagem = {};
+
+  Object.keys(agrupamento.contagem).forEach(function(chave) {
+    const rotulo = agrupamento.rotulos[chave] || "nao informado";
+    contagem[rotulo] = agrupamento.contagem[chave];
+  });
+
+  return contagem;
+}
+
+function listarUnicosRelatorio(lista, campo) {
+  const mapa = {};
+
+  lista.forEach(function(item) {
+    const valor = item[campo];
+    if (valor !== "" && valor !== null && valor !== undefined) {
+      const rotulo = formatarValorAgrupamentoRelatorio(valor, campo);
+      const chave = normalizarChaveAgrupamentoRelatorio(rotulo, campo);
+
+      if (rotulo && normalizar(rotulo) !== "nao informado") {
+        mapa[chave] = rotulo;
+      }
+    }
+  });
+
+  return Object.keys(mapa).map(function(chave) {
+    return mapa[chave];
+  }).sort(function(a, b) {
+    return normalizar(a).localeCompare(normalizar(b));
+  });
+}
+
+function obterChavePessoa(registro) {
+  return somenteNumeros(registro.cpf) ||
+    normalizar(registro.re) ||
+    normalizar(registro.nome) ||
+    "id-" + registro.id;
+}
+
+function montarEnderecoRelatorio(linha) {
+  const partes = [
+    linha[18],
+    linha[22],
+    linha[19],
+    linha[20],
+    linha[21],
+    linha[17]
+  ].filter(function(parte) {
+    return parte !== "" && parte !== null && parte !== undefined;
+  });
+
+  return partes.join(", ");
+}
+
+function obterFaixaEtaria(idade) {
+  if (idade === null || idade === undefined || idade < 0) return "nao informado";
+  if (idade <= 17) return "ate 17 anos";
+  if (idade <= 25) return "18 a 25 anos";
+  if (idade <= 30) return "26 a 30 anos";
+  if (idade <= 35) return "31 a 35 anos";
+  if (idade <= 40) return "36 a 40 anos";
+  if (idade <= 45) return "41 a 45 anos";
+  if (idade <= 50) return "46 a 50 anos";
+  if (idade <= 55) return "51 a 55 anos";
+  if (idade <= 60) return "56 a 60 anos";
+  return "mais de 60 anos";
+}
+
+function obterFaixaTempoServico(anos) {
+  if (anos === null || anos === undefined || anos < 0) return "nao informado";
+  if (anos <= 5) return "ate 5 anos";
+  if (anos <= 10) return "6 a 10 anos";
+  if (anos <= 15) return "11 a 15 anos";
+  if (anos <= 20) return "16 a 20 anos";
+  if (anos <= 25) return "21 a 25 anos";
+  if (anos <= 30) return "26 a 30 anos";
+  if (anos <= 35) return "31 a 35 anos";
+  return "mais de 35 anos";
+}
+
+function calcularAnosAteHoje(data) {
+  if (!data) return null;
+
+  const hoje = new Date();
+  let anos = hoje.getFullYear() - data.getFullYear();
+  const mes = hoje.getMonth() - data.getMonth();
+
+  if (mes < 0 || (mes === 0 && hoje.getDate() < data.getDate())) {
+    anos--;
+  }
+
+  return anos;
+}
+
+function obterMesAno(data) {
+  if (!data) return "sem data";
+
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+
+  return ano + "-" + mes;
+}
+
+function obterDataInicio(valor) {
+  const data = obterData(valor);
+
+  if (!data) return null;
+
+  data.setHours(0, 0, 0, 0);
+  return data;
+}
+
+function obterDataFim(valor) {
+  const data = obterData(valor);
+
+  if (!data) return null;
+
+  data.setHours(23, 59, 59, 999);
+  return data;
+}
+
+function obterData(valor) {
+  if (!valor) return null;
+
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor.getTime())) {
+    return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate(), valor.getHours(), valor.getMinutes(), valor.getSeconds());
+  }
+
+  const texto = String(valor).trim();
+  let partes;
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(texto)) {
+    partes = texto.substring(0, 10).split("-");
+    return new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(texto)) {
+    partes = texto.substring(0, 10).split("/");
+    return new Date(Number(partes[2]), Number(partes[1]) - 1, Number(partes[0]));
+  }
+
+  return null;
+}
+
+// UTILITARIOS GERAIS E AUTORIZACAO
+function obterUrlApp() {
+  return ScriptApp.getService().getUrl();
+}
+
+function formatarDataBrasil(valor) {
+  const data = obterData(valor);
+
+  if (!data) return valor ? String(valor) : "";
+
+  const dia = String(data.getDate()).padStart(2, "0");
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const ano = data.getFullYear();
+
+  return dia + "/" + mes + "/" + ano;
+}
+
+function formatarHoraBrasil(valor) {
+  const data = obterData(valor);
+
+  if (!data) return "";
+
+  const hora = String(data.getHours()).padStart(2, "0");
+  const minuto = String(data.getMinutes()).padStart(2, "0");
+
+  return hora + ":" + minuto;
+}
+
+function formatarDataHoraBrasil(valor) {
+  const data = obterData(valor);
+
+  if (!data) return valor ? String(valor) : "";
+
+  return formatarDataBrasil(data) + " " + formatarHoraBrasil(data);
+}
+
+function formatarTelefoneBrasil(valor) {
+  const numeros = somenteNumeros(valor);
+
+  if (numeros.length === 10) {
+    return numeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  if (numeros.length === 11) {
+    return numeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  }
+
+  return valor ? String(valor) : "";
+}
+
+function autorizarServicosSAIC() {
+  UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo?id_token=teste", {
+    muteHttpExceptions: true
+  });
+
+  SpreadsheetApp.getActiveSpreadsheet().getName();
+}
+
+// BUSCA RAPIDA: IDENTIFICACAO EXATA E RECONSTRUCAO EM LOTES
+function chaveEstadoBuscaRapida_(ss) {
+  return "SAIC_BUSCA_RAPIDA_V1_" + ss.getId();
+}
+
+function lerEstadoBuscaRapida_(ss) {
+  const texto = PropertiesService.getScriptProperties().getProperty(chaveEstadoBuscaRapida_(ss));
+  return texto ? JSON.parse(texto) : null;
+}
+
+function gravarEstadoBuscaRapida_(ss, estado) {
+  PropertiesService.getScriptProperties().setProperty(chaveEstadoBuscaRapida_(ss), JSON.stringify(estado));
+}
+
+function validarCabecalhosBuscaRapida_(sheet) {
+  const chave = String(sheet.getSheetId());
+  if (CACHE_CABECALHOS_BUSCA_RAPIDA_EXECUCAO[chave]) return;
+  const atuais = sheet.getRange(1, 1, 1, CABECALHOS_BUSCA_RAPIDA.length).getValues()[0];
+  if (atuais.some(function(valor, i) { return valor !== CABECALHOS_BUSCA_RAPIDA[i]; })) {
+    throw new Error("Estrutura da busca rapida desatualizada. Execute reconstruirBuscaRapidaCadastros().");
+  }
+  CACHE_CABECALHOS_BUSCA_RAPIDA_EXECUCAO[chave] = true;
+}
+
+function obterContextoBuscaRapida_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const estado = lerEstadoBuscaRapida_(ss);
+  const sheetDados = ss.getSheetByName(ABA_DADOS);
+  const sheetBuscaRapida = ss.getSheetByName(ABA_BUSCA_RAPIDA);
+  if (!estado || estado.versao !== BUSCA_RAPIDA_VERSAO || estado.fase !== "pronta" ||
+      !sheetDados || !sheetBuscaRapida || estado.planilhaId !== ss.getId() ||
+      estado.dadosId !== sheetDados.getSheetId() || estado.buscaId !== sheetBuscaRapida.getSheetId()) {
+    throw new Error("Busca rapida indisponivel ou em reconstrucao. Execute reconstruirBuscaRapidaCadastros() no Apps Script ate concluir.");
+  }
+  if (sheetDados.getLastRow() !== estado.ultimaLinhaDados) {
+    throw new Error("A base de atendimentos mudou. Reconstrua a busca rapida antes de pesquisar ou salvar.");
+  }
+  validarCabecalhosBuscaRapida_(sheetBuscaRapida);
+  return { ss: ss, estado: estado, sheetDados: sheetDados, sheetBuscaRapida: sheetBuscaRapida };
+}
+
+function normalizarCpfBuscaRapida_(valor, aceitarNumeroLegado) {
+  if (valor === "" || valor === null || valor === undefined) return "";
+  if (aceitarNumeroLegado && typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor < 100000000000) {
+    return String(valor).padStart(11, "0");
+  }
+  const texto = String(valor).trim();
+  if (!texto) return "";
+  const numeros = texto.replace(/[.\-\s]/g, "");
+  if (!/^\d{11}$/.test(numeros)) throw new Error("Informe o CPF completo, com 11 digitos, preservando os zeros iniciais.");
+  return numeros;
+}
+
+function normalizarReBuscaRapida_(valor) {
+  const texto = String(valor === null || valor === undefined ? "" : valor).trim().toUpperCase();
+  if (!texto) return "";
+  if (!/^\d{6}-?[0-9A]$/.test(texto)) throw new Error("Informe o R.E. completo, incluindo o digito: 123456-7 ou 123456-A.");
+  const compacto = texto.replace("-", "");
+  return compacto.slice(0, 6) + "-" + compacto.slice(6);
+}
+
+function prepararIdentificacaoBuscaRapida_(dados, aceitarNumeroLegado) {
+  const cpf = normalizarCpfBuscaRapida_(dados && dados.cpf, aceitarNumeroLegado);
+  const re = normalizarReBuscaRapida_(dados && dados.re);
+  if (!cpf && !re) throw new Error("Informe o CPF completo ou o R.E. completo.");
+  return { cpf: cpf, re: re };
+}
+
+function localizarChaveBuscaRapida_(sheet, coluna, chave) {
+  if (!chave || sheet.getLastRow() < 2) return null;
+  const celula = sheet.getRange(2, coluna, sheet.getLastRow() - 1, 1)
+    .createTextFinder(chave).matchCase(true).matchEntireCell(true).useRegularExpression(false).findNext();
+  if (!celula) return null;
+  const numeroLinha = celula.getRow();
+  return { numeroLinha: numeroLinha, linha: sheet.getRange(numeroLinha, 1, 1, CABECALHOS_BUSCA_RAPIDA.length).getValues()[0] };
+}
+
+function consultarIdentificacaoBuscaRapida_(sheet, identificacao) {
+  const porCpf = identificacao.cpf ? localizarChaveBuscaRapida_(sheet, 1, "cpf:" + identificacao.cpf) : null;
+  let porRe = null;
+  // A tabela consolidada garante um unico par CPF/RE. Reutilize o par ja encontrado.
+  if (identificacao.re) {
+    porRe = porCpf && porCpf.linha[1] === "re:" + identificacao.re
+      ? porCpf : localizarChaveBuscaRapida_(sheet, 2, "re:" + identificacao.re);
+  }
+  let divergente = null;
+  let tipo = "";
+  if (porCpf && identificacao.re && porCpf.linha[6] && porCpf.linha[6] !== identificacao.re) {
+    divergente = porCpf; tipo = "cpf";
+  } else if (porRe && identificacao.cpf && porRe.linha[0] && porRe.linha[0] !== "cpf:" + identificacao.cpf) {
+    divergente = porRe; tipo = "re";
+  } else if (porCpf && porRe && porCpf.numeroLinha !== porRe.numeroLinha) {
+    throw new Error("CPF e R.E. apontam para cadastros distintos. Confira os dados e reconstrua a busca rapida.");
+  }
+  const conflito = divergente ? montarResultadoConflitoIdentificacao(true, {
+    tipo: tipo, cpf: formatarCPF(identificacao.cpf), re: identificacao.re,
+    cpfExistente: divergente.linha[5], reExistente: divergente.linha[6], nomeExistente: divergente.linha[7]
+  }) : montarResultadoConflitoIdentificacao(false);
+  return { conflito: conflito, existente: porCpf || porRe };
+}
+
+function montarLinhaBuscaRapidaCadastro_(dados) {
+  return [
+    dados.cpf ? "cpf:" + dados.cpf : "", dados.re ? "re:" + dados.re : "",
+    dados.idAtendimento, dados.linhaDados, dados.dataCadastro,
+    formatarCPF(dados.cpf), dados.re, normalizar(dados.nome)
+  ];
+}
+
+function instanteBuscaRapida_(valor) {
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor.getTime())) return valor.getTime();
+  const data = obterData(valor);
+  if (!data) throw new Error("Data de cadastro ausente ou invalida.");
+  const horario = String(valor).match(/[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (horario) data.setHours(Number(horario[1]), Number(horario[2]), Number(horario[3] || 0));
+  return data.getTime();
+}
+
+function combinarPessoaBuscaRapida_(anterior, nova) {
+  if (!anterior) return nova;
+  if ((anterior[0] && nova[0] && anterior[0] !== nova[0]) ||
+      (anterior[1] && nova[1] && anterior[1] !== nova[1])) {
+    throw new Error("Conflito CPF/R.E. entre atendimentos. Confira as linhas " + anterior[3] + " e " + nova[3] + " de dados_cadastro.");
+  }
+  const tempoAnterior = instanteBuscaRapida_(anterior[4]);
+  const tempoNovo = instanteBuscaRapida_(nova[4]);
+  const maisNova = tempoNovo > tempoAnterior || (tempoNovo === tempoAnterior && Number(nova[3]) >= Number(anterior[3]));
+  const linha = (maisNova ? nova : anterior).slice();
+  linha[0] = anterior[0] || nova[0];
+  linha[1] = anterior[1] || nova[1];
+  linha[5] = anterior[5] || nova[5];
+  linha[6] = anterior[6] || nova[6];
+  return linha;
+}
+
+function garantirGradeBuscaRapida_(sheet, linhas, colunas) {
+  const atuaisLinhas = sheet.getMaxRows();
+  const atuaisColunas = sheet.getMaxColumns();
+  if (atuaisLinhas < linhas) sheet.insertRowsAfter(atuaisLinhas, linhas - atuaisLinhas);
+  if (atuaisColunas < colunas) sheet.insertColumnsAfter(atuaisColunas, colunas - atuaisColunas);
+}
+
+function atualizarBuscaRapidaCadastroDepoisSalvar_(sheet, dados, existente) {
+  const nova = montarLinhaBuscaRapidaCadastro_(dados);
+  const linha = combinarPessoaBuscaRapida_(existente ? existente.linha : null, nova);
+  const numeroLinha = existente ? existente.numeroLinha : sheet.getLastRow() + 1;
+  garantirGradeBuscaRapida_(sheet, numeroLinha, CABECALHOS_BUSCA_RAPIDA.length);
+  sheet.getRange(numeroLinha, 1, 1, CABECALHOS_BUSCA_RAPIDA.length).setValues([linha]);
+}
+
+function limparCacheIndicesCabecalhosPadrao_() {
+  Object.keys(CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO).forEach(function(chave) {
+    delete CACHE_INDICES_CABECALHOS_PADRAO_EXECUCAO[chave];
+  });
+}
+
+function obterAssinaturaCabecalhosBuscaRapida_(sheet) {
+  return JSON.stringify(sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0]);
+}
+
+function carregarMapaReconstrucaoBuscaRapida_(sheet) {
+  const linhas = sheet.getLastRow() < 2 ? []
+    : sheet.getRange(2, 1, sheet.getLastRow() - 1, CABECALHOS_BUSCA_RAPIDA.length).getValues();
+  const mapa = { linhas: linhas, porCpf: Object.create(null), porRe: Object.create(null) };
+  linhas.forEach(function(linha, i) {
+    if (!linha[2] || (!linha[0] && !linha[1])) throw new Error("Aba temporaria inconsistente. Cancele a reconstrucao e inicie novamente.");
+    if (linha[0]) {
+      if (mapa.porCpf[linha[0]] !== undefined) throw new Error("CPF duplicado na aba temporaria.");
+      mapa.porCpf[linha[0]] = i;
+    }
+    if (linha[1]) {
+      if (mapa.porRe[linha[1]] !== undefined) throw new Error("R.E. duplicado na aba temporaria.");
+      mapa.porRe[linha[1]] = i;
+    }
+  });
+  return mapa;
+}
+
+function adicionarPessoaReconstrucaoBuscaRapida_(mapa, nova) {
+  const porCpf = nova[0] ? mapa.porCpf[nova[0]] : undefined;
+  const porRe = nova[1] ? mapa.porRe[nova[1]] : undefined;
+  if (porCpf !== undefined && porRe !== undefined && porCpf !== porRe) {
+    throw new Error("CPF e R.E. ligam pessoas distintas na linha " + nova[3] + ". Confira os identificadores antes de reconstruir.");
+  }
+  const posicao = porCpf !== undefined ? porCpf : porRe !== undefined ? porRe : mapa.linhas.length;
+  const linha = combinarPessoaBuscaRapida_(mapa.linhas[posicao], nova);
+  mapa.linhas[posicao] = linha;
+  if (linha[0]) mapa.porCpf[linha[0]] = posicao;
+  if (linha[1]) mapa.porRe[linha[1]] = posicao;
+}
+
+function publicarReconstrucaoBuscaRapida_(ss, estado, sheetTemp) {
+  // O estado de publicacao permite retomar se uma renomeacao ou gravacao falhar.
+  estado.fase = "publicando";
+  gravarEstadoBuscaRapida_(ss, estado);
+  const atual = ss.getSheetByName(ABA_BUSCA_RAPIDA);
+  if (atual && atual.getSheetId() !== sheetTemp.getSheetId()) {
+    estado.anteriorId = atual.getSheetId();
+    gravarEstadoBuscaRapida_(ss, estado);
+    atual.setName("saic_busca_anterior_" + atual.getSheetId());
+  }
+  sheetTemp.setName(ABA_BUSCA_RAPIDA);
+  const linhas = Math.max(2, sheetTemp.getLastRow(), sheetTemp.getFrozenRows() + 1);
+  if (sheetTemp.getMaxRows() > linhas) sheetTemp.deleteRows(linhas + 1, sheetTemp.getMaxRows() - linhas);
+  SpreadsheetApp.flush();
+  const pronta = {
+    versao: BUSCA_RAPIDA_VERSAO, fase: "pronta", planilhaId: ss.getId(),
+    dadosId: estado.dadosId, buscaId: sheetTemp.getSheetId(), ultimaLinhaDados: estado.ultimaLinhaDados,
+    pessoas: Math.max(0, sheetTemp.getLastRow() - 1), cpfNumericosRecuperados: estado.cpfNumericosRecuperados
+  };
+  gravarEstadoBuscaRapida_(ss, pronta);
+  if (estado.anteriorId) {
+    const anterior = ss.getSheetById(estado.anteriorId);
+    if (anterior && anterior.getName() === "saic_busca_anterior_" + estado.anteriorId) {
+      try { ss.deleteSheet(anterior); } catch (erro) { Logger.log("Busca pronta. A aba auxiliar anterior pode ser excluida: " + anterior.getName()); }
+    }
+  }
+  const mensagem = "Busca rapida CONCLUIDA. Pessoas: " + pronta.pessoas +
+    ". CPFs numericos recuperados com zeros: " + pronta.cpfNumericosRecuperados + ".";
+  Logger.log(mensagem);
+  return mensagem;
+}
+
+function reconstruirBuscaRapidaCadastros() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const inicio = Date.now();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetDados = ss.getSheetByName(ABA_DADOS);
+    if (!sheetDados) throw new Error("A aba dados_cadastro nao foi encontrada.");
+    let estado = lerEstadoBuscaRapida_(ss);
+    if (!estado || estado.fase === "pronta" || estado.fase === "pendente") {
+      garantirCabecalhoFinal(sheetDados, "formaApresentacao");
+      garantirCabecalhoFinal(sheetDados, "modalidadeAtendimento");
+      const nomeTemp = "saic_busca_rebuild_" + Utilities.getUuid().slice(0, 8);
+      estado = {
+        versao: BUSCA_RAPIDA_VERSAO, fase: "criando", planilhaId: ss.getId(), dadosId: sheetDados.getSheetId(),
+        ultimaLinhaDados: Math.max(1, sheetDados.getLastRow()), assinatura: obterAssinaturaCabecalhosBuscaRapida_(sheetDados),
+        proximaLinha: 2, nomeTemp: nomeTemp, cpfNumericosRecuperados: 0
+      };
+      gravarEstadoBuscaRapida_(ss, estado);
+    }
+    if (estado.planilhaId !== ss.getId() || estado.dadosId !== sheetDados.getSheetId() ||
+        estado.ultimaLinhaDados !== sheetDados.getLastRow() || estado.assinatura !== obterAssinaturaCabecalhosBuscaRapida_(sheetDados)) {
+      throw new Error("A estrutura ou o tamanho da base mudou durante a reconstrucao. Execute cancelarReconstrucaoBuscaRapidaCadastros() e inicie novamente.");
+    }
+    if (estado.fase === "criando") {
+      const temp = ss.getSheetByName(estado.nomeTemp) || ss.insertSheet(estado.nomeTemp);
+      if (temp.getMaxColumns() > CABECALHOS_BUSCA_RAPIDA.length) {
+        temp.deleteColumns(CABECALHOS_BUSCA_RAPIDA.length + 1, temp.getMaxColumns() - CABECALHOS_BUSCA_RAPIDA.length);
+      }
+      if (temp.getMaxRows() > 2) temp.deleteRows(3, temp.getMaxRows() - 2);
+      temp.getRange(1, 1, 1, CABECALHOS_BUSCA_RAPIDA.length).setValues([CABECALHOS_BUSCA_RAPIDA]);
+      temp.setFrozenRows(1);
+      estado.tempId = temp.getSheetId();
+      estado.fase = "lendo";
+      gravarEstadoBuscaRapida_(ss, estado);
+    }
+    const sheetTemp = ss.getSheetById(estado.tempId);
+    if (!sheetTemp) throw new Error("Aba temporaria ausente. Cancele a reconstrucao e inicie novamente.");
+    validarCabecalhosBuscaRapida_(sheetTemp);
+    if (estado.fase === "publicando") return publicarReconstrucaoBuscaRapida_(ss, estado, sheetTemp);
+    const mapa = carregarMapaReconstrucaoBuscaRapida_(sheetTemp);
+    const indices = obterIndicesCabecalhosPadrao(sheetDados, CABECALHOS_DADOS);
+    const colunas = Math.max(sheetDados.getLastColumn(), CABECALHOS_DADOS.length);
+    const fimExecucao = Math.min(estado.ultimaLinhaDados + 1, estado.proximaLinha + BUSCA_RAPIDA_REGISTROS_POR_EXECUCAO);
+    let proximaLinha = estado.proximaLinha;
+    let recuperados = estado.cpfNumericosRecuperados;
+    while (proximaLinha < fimExecucao && Date.now() - inicio < BUSCA_RAPIDA_TEMPO_LEITURA_MS) {
+      const inicioLote = Date.now();
+      const quantidade = Math.min(BUSCA_RAPIDA_LOTE_LEITURA, fimExecucao - proximaLinha);
+      const valores = sheetDados.getRange(proximaLinha, 1, quantidade, colunas).getValues();
+      valores.forEach(function(atual, i) {
+        const numeroLinha = proximaLinha + i;
+        if (atual.every(function(valor) { return valor === "" || valor === null; })) return;
+        try {
+          const linha = normalizarLinhaParaCabecalhoPadrao(atual, indices);
+          if (!String(linha[0] || "").trim()) throw new Error("ID de atendimento ausente.");
+          const identificacao = prepararIdentificacaoBuscaRapida_({ cpf: linha[6], re: linha[4] }, true);
+          if (typeof linha[6] === "number" && String(linha[6]).length < 11) recuperados++;
+          const data = new Date(instanteBuscaRapida_(linha[26]));
+          adicionarPessoaReconstrucaoBuscaRapida_(mapa, montarLinhaBuscaRapidaCadastro_({
+            cpf: identificacao.cpf, re: identificacao.re, idAtendimento: String(linha[0]),
+            linhaDados: numeroLinha, dataCadastro: data, nome: linha[5]
+          }));
+        } catch (erro) {
+          throw new Error("Reconstrucao interrompida na linha " + numeroLinha + " de dados_cadastro: " + erro.message);
+        }
+      });
+      Logger.log("Leitura " + proximaLinha + "-" + (proximaLinha + quantidade - 1) + " | " + (Date.now() - inicioLote) + " ms");
+      proximaLinha += quantidade;
+    }
+    // Posicoes estaveis tornam a repeticao do lote segura apos uma interrupcao.
+    garantirGradeBuscaRapida_(sheetTemp, Math.max(2, mapa.linhas.length + 1), CABECALHOS_BUSCA_RAPIDA.length);
+    for (let i = 0; i < mapa.linhas.length; i += BUSCA_RAPIDA_LOTE_LEITURA) {
+      const inicioLote = Date.now();
+      const lote = mapa.linhas.slice(i, i + BUSCA_RAPIDA_LOTE_LEITURA);
+      sheetTemp.getRange(i + 2, 1, lote.length, CABECALHOS_BUSCA_RAPIDA.length).setValues(lote);
+      Logger.log("Gravacao pessoas " + (i + 1) + "-" + (i + lote.length) + " | " + (Date.now() - inicioLote) + " ms");
+    }
+    SpreadsheetApp.flush();
+    estado.proximaLinha = proximaLinha;
+    estado.cpfNumericosRecuperados = recuperados;
+    gravarEstadoBuscaRapida_(ss, estado);
+    if (proximaLinha > estado.ultimaLinhaDados) return publicarReconstrucaoBuscaRapida_(ss, estado, sheetTemp);
+    const mensagem = "Reconstrucao PARCIAL: " + (proximaLinha - 2) + " de " + (estado.ultimaLinhaDados - 1) +
+      " registros. Execute reconstruirBuscaRapidaCadastros() novamente para continuar. Tempo: " + (Date.now() - inicio) + " ms.";
+    Logger.log(mensagem);
+    return mensagem;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function cancelarReconstrucaoBuscaRapidaCadastros() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const estado = lerEstadoBuscaRapida_(ss);
+    if (!estado || estado.fase === "pronta") return "Nenhuma reconstrucao em andamento.";
+    if (estado.fase === "publicando") throw new Error("Publicacao em andamento. Execute reconstruirBuscaRapidaCadastros() para concluir.");
+    const temp = estado.tempId ? ss.getSheetById(estado.tempId) : ss.getSheetByName(estado.nomeTemp || "");
+    if (temp && temp.getName() === estado.nomeTemp && temp.getName().indexOf("saic_busca_rebuild_") === 0) ss.deleteSheet(temp);
+    PropertiesService.getScriptProperties().deleteProperty(chaveEstadoBuscaRapida_(ss));
+    return "Reconstrucao cancelada. Execute reconstruirBuscaRapidaCadastros() para iniciar novamente.";
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function diagnosticarBuscaRapidaCadastros() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const estado = lerEstadoBuscaRapida_(ss);
+  const texto = estado ? JSON.stringify(estado) : "Busca rapida ainda nao preparada. Execute reconstruirBuscaRapidaCadastros().";
+  Logger.log(texto);
+  return texto;
+}
 function modoSemLoginTesteAtivo() {
   return DESATIVAR_LOGIN_NA_PLANILHA_TESTE === true;
 }
