@@ -2646,8 +2646,23 @@
 
     const temasPorTipoEvento = {
       grupo: ["PROSEN", "OUTROS"],
-      palestra: ["PROSEN", "OUTROS"]
+      palestra: [
+        "Valorização da Vida",
+        "Educação financeira",
+        "Sistema de Saúde Mental",
+        "Violência Domestica"
+      ].concat(usuarioPodeVerTemaPosVencao() ? ["Pós Venção"] : [])
     };
+
+    function usuarioPodeVerTemaPosVencao() {
+      const chaveNaps = String(usuarioLogado && usuarioLogado.naps || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "");
+
+      return chaveNaps === "napscaps" || chaveNaps === "capsnaps";
+    }
 
     window.addEventListener("load", function() {
       const hoje = new Date();
