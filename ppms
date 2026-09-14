@@ -1818,7 +1818,7 @@
 
       <nav class="side-nav">
         <button type="button" onclick="navegarModuloPrincipal('atendimento')"><span class="nav-dot"></span>Atendimento</button>
-        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')"><span class="nav-dot"></span>Grupos e Palestras</button>
+        <button type="button" onclick="navegarModuloPrincipal('eventos_coletivos')"><span class="nav-dot"></span>Grupos Reflexivos e Palestras</button>
         <button type="button" onclick="navegarModuloPrincipal('incidente_critico')"><span class="nav-dot"></span>Incidente Cr&iacute;tico</button>
         <button id="btnNavPPMS" type="button" class="active" onclick="navegarModuloPrincipal('ppms')"><span class="nav-dot"></span>PPMS</button>
       </nav>
