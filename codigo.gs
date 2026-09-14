@@ -83,7 +83,8 @@ const CABECALHOS_DADOS = [
   "postoGraduacao",
   "napsAtendimento",
   "formaApresentacao",
-  "modalidadeAtendimento"
+  "modalidadeAtendimento",
+  "relacaoViolenciaDomestica"
 ];
 
 const CABECALHOS_VINCULOS = [
@@ -321,6 +322,7 @@ const ALIASES_CABECALHOS_PADRAO = {
   postograduacao: ["posto graduacao", "posto graduação", "posto/graduação", "posto/ graduacao", "posto/ graduação", "posto"],
   formaapresentacao: ["forma apresentacao", "forma apresentação", "forma de apresentacao", "forma de apresentação", "forma_apresentacao", "forma_de_apresentacao", "apresentacao", "apresentação"],
   modalidadeatendimento: ["modalidade atendimento", "modalidade de atendimento", "modalidade_atendimento", "modalidade_do_atendimento", "online presencial", "online/presencial"],
+  relacaoviolenciadomestica: ["relacao violencia domestica", "relação violência doméstica", "relacao com violencia domestica", "relação com violência doméstica", "violencia domestica", "violência doméstica"],
   idvinculo: ["id vinculo", "id vínculo", "id do vinculo", "id do vínculo"],
   tipovinculo: ["tipo vinculo", "tipo vínculo", "tipo de vinculo", "tipo de vínculo"],
   parentesco: ["parentesco vinculo", "parentesco vínculo"],
@@ -344,6 +346,7 @@ function configurarEstruturaPlanilha() {
   const sheetDados = obterOuCriarAba(ss, ABA_DADOS, CABECALHOS_DADOS);
   garantirCabecalhoFinal(sheetDados, "formaApresentacao");
   garantirCabecalhoFinal(sheetDados, "modalidadeAtendimento");
+  garantirCabecalhoFinal(sheetDados, "relacaoViolenciaDomestica");
   const sheetVinculos = obterOuCriarAba(ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
   const sheetUsuarios = obterOuCriarAba(ss, ABA_USUARIOS, CABECALHOS_USUARIOS);
   garantirCabecalhoFinal(sheetUsuarios, "acesso_ppms");
@@ -386,6 +389,7 @@ function configurarEstruturaPlanilha() {
 
 function configurarEstruturaSalvamentoAtendimento() {
   const contexto = obterContextoBuscaRapida_();
+  garantirCabecalhoFinal(contexto.sheetDados, "relacaoViolenciaDomestica");
   contexto.sheetVinculos = obterOuCriarAba(contexto.ss, ABA_VINCULOS, CABECALHOS_VINCULOS);
   return contexto;
 }
@@ -1483,6 +1487,7 @@ function salvarAtendimento(dados, idToken) {
     const motivoAtendimento = normalizar(dados.motivo);
     const formaApresentacao = normalizar(dados.formaApresentacao);
     const modalidadeAtendimento = normalizar(dados.modalidadeAtendimento);
+    const relacaoViolenciaDomestica = normalizar(dados.relacaoViolenciaDomestica);
     const responsavelAtendimento = normalizar(usuario.nome || dados.responsavel);
     const napsAtendimento = normalizarSiglaCodigo(usuario.naps || dados.napsAtendimento || dados.naps);
 
@@ -1500,6 +1505,10 @@ function salvarAtendimento(dados, idToken) {
 
     if (!modalidadeAtendimento) {
       throw new Error("Modalidade do atendimento e obrigatoria.");
+    }
+
+    if (relacaoViolenciaDomestica !== "sim" && relacaoViolenciaDomestica !== "nao") {
+      throw new Error("Informe se existe relacao com violencia domestica.");
     }
 
     [
@@ -1557,7 +1566,8 @@ function salvarAtendimento(dados, idToken) {
       dados.postoGraduacao || "",
       napsAtendimento,
       formaApresentacao,
-      modalidadeAtendimento
+      modalidadeAtendimento,
+      relacaoViolenciaDomestica
     ]], CABECALHOS_DADOS);
 
     atendimentoGravado = idAtendimento;
@@ -4716,7 +4726,8 @@ function montarRegistro(linha) {
     postoGraduacao: linha[27] || "",
     napsAtendimento: napsAtendimento,
     formaApresentacao: linha[29] || "",
-    modalidadeAtendimento: linha[30] || ""
+    modalidadeAtendimento: linha[30] || "",
+    relacaoViolenciaDomestica: linha[31] || ""
   };
 }
 
@@ -4811,7 +4822,8 @@ function montarResumoAtendimentoImpressao(linha) {
     horaCadastro: formatarHoraBrasil(linha[26]),
     dataHoraCadastro: formatarDataHoraBrasil(linha[26]),
     formaApresentacao: linha[29] || "",
-    modalidadeAtendimento: linha[30] || ""
+    modalidadeAtendimento: linha[30] || "",
+    relacaoViolenciaDomestica: linha[31] || ""
   };
 }
 
@@ -4851,6 +4863,7 @@ function montarFichaAtendimentoImpressao(linha, vinculos) {
     napsAtendimento: linha[28] || "",
     formaApresentacao: linha[29] || "",
     modalidadeAtendimento: linha[30] || "",
+    relacaoViolenciaDomestica: linha[31] || "",
     endereco: montarEnderecoRelatorio(linha),
     vinculos: vinculos || []
   };
@@ -4967,6 +4980,7 @@ function montarRegistroBusca(l) {
     responsavel: l[25] || "",
     formaApresentacao: l[29] || "",
     modalidadeAtendimento: l[30] || "",
+    relacaoViolenciaDomestica: l[31] || "",
     vinculos: [],
     dataCadastro: formatarDataBrasil(l[26])
   };
@@ -6892,6 +6906,7 @@ function montarRegistroRelatorio(linha, vinculosPorAtendimento, usuariosPorEmail
     responsavelNaps: montarRotuloResponsavelNapsRelatorio(responsavelFormatado, napsRegistro),
     formaApresentacao: linha[29] || "",
     modalidadeAtendimento: linha[30] || "",
+    relacaoViolenciaDomestica: linha[31] || "",
     dataCadastro: formatarDataBrasil(linha[26]),
     dataCadastroIso: formatarDataParaInput(linha[26]),
     dataCadastroData: dataCadastroData,
