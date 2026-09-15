@@ -325,6 +325,25 @@
       text-align: left;
     }
 
+    .busca-cadastro-cabecalho {
+      margin: 12px 0 14px;
+    }
+
+    .busca-cadastro-cabecalho strong {
+      color: #1f2937;
+      display: block;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .busca-cadastro-cabecalho span {
+      color: #475569;
+      display: block;
+      font-size: 14px;
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
     label {
       color: #475569;
       display: block;
@@ -3154,9 +3173,14 @@ body {
 <!-- pesquisa de RE e CPF completo                       -->
 <!-- ==================================================== -->
 
+<div class="busca-cadastro-cabecalho">
+  <strong>Buscar cadastro</strong>
+  <span>Informe o CPF completo ou o R.E. completo.</span>
+</div>
+
 <div class="grid-2">
   <div>
-    <label>Buscar por R.E. completo ou CPF completo</label>
+    <label for="campoBusca">CPF ou R.E.</label>
     <input
   id="campoBusca"
   placeholder="Ex.: 123456-7 ou 000.000.000-00"
