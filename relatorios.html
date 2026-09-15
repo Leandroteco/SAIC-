@@ -1561,6 +1561,8 @@ h3,
 .metric:nth-child(11) strong { color: var(--chart-blue) !important; }
 .metric:nth-child(12)::before { background: var(--chart-green-dark) !important; }
 .metric:nth-child(12) strong { color: var(--chart-green-dark) !important; }
+.metric:nth-child(13)::before { background: var(--chart-amber) !important; }
+.metric:nth-child(13) strong { color: var(--chart-amber) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -2335,7 +2337,8 @@ function coletarFiltros() {
         montarMetrica("Total de pessoas", resumo.pessoasTotalGeral),
         montarMetrica("Faltas", resumo.totalFaltas),
         montarMetrica("Altas", resumo.totalAltas),
-        montarMetrica("Arquivamentos", resumo.totalArquivamentos)
+        montarMetrica("Arquivamentos", resumo.totalArquivamentos),
+        montarMetrica("Relação com violência doméstica", resumo.totalAtendimentosViolenciaDomestica)
       ].join("");
     }
 
