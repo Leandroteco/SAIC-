@@ -932,6 +932,7 @@
         { chave: "pessoas", titulo: "Pessoas", valor: resumo.pessoas || 0 },
         { chave: "pessoasEventos", titulo: "Pessoas em eventos", valor: resumo.pessoasEventos || 0 },
         { chave: "pessoasTotal", titulo: "Total de pessoas", valor: resumo.pessoasTotal || 0 },
+        { chave: "violenciaDomestica", titulo: "Relação com violência doméstica", valor: resumo.violenciaDomestica || 0, semComparativo: true },
         { chave: "faltas", titulo: "Faltas", valor: resumo.faltas || 0 },
         { chave: "altas", titulo: "Altas", valor: resumo.altas || 0 },
         { chave: "arquivamentos", titulo: "Arquivamentos", valor: resumo.arquivamentos || 0 }
@@ -940,11 +941,12 @@
       document.getElementById("resumo").innerHTML = cards.map(function(card) {
         const comp = mapaComparativo[card.chave] || {};
         const classe = comp.diferenca > 0 ? "positivo" : (comp.diferenca < 0 ? "negativo" : "");
+        const nota = card.semComparativo ? "Total da unidade no período." : textoComparativo(comp);
 
         return '<article class="card">' +
           '<p class="card-title">' + escaparHtml(card.titulo) + '</p>' +
           '<div class="card-value">' + formatarNumero(card.valor) + '</div>' +
-          '<div class="card-note ' + classe + '">' + escaparHtml(textoComparativo(comp)) + '</div>' +
+          '<div class="card-note ' + classe + '">' + escaparHtml(nota) + '</div>' +
         '</article>';
       }).join("");
     }
