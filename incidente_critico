@@ -1556,11 +1556,78 @@
         grid-template-columns: 1fr;
       }
     }
-  </style>
+  
+
+    /* SAIC: painel padrao para operacoes demoradas. */
+    .navegacao-overlay {
+      background: rgba(31, 40, 44, 0.54);
+      padding: 20px;
+      z-index: 12000;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 0;
+      border-radius: 20px;
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+      box-sizing: border-box;
+      color: #303638;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      justify-content: center;
+      min-height: 158px;
+      padding: 30px 34px;
+      text-align: center;
+      width: min(580px, calc(100vw - 40px));
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 4px solid #dce8ec;
+      border-radius: 50%;
+      border-top-color: #e30613;
+      box-sizing: border-box;
+      flex: 0 0 auto;
+      height: 38px;
+      width: 38px;
+    }
+
+    .navegacao-card strong {
+      color: #303638;
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 600px) {
+      .navegacao-overlay {
+        padding: 16px;
+      }
+
+      .navegacao-card {
+        border-radius: 18px;
+        min-height: 150px;
+        padding: 28px 22px;
+        width: min(580px, calc(100vw - 32px));
+      }
+
+      .navegacao-card strong {
+        font-size: 20px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .navegacao-spinner {
+        animation-duration: 1.4s;
+      }
+    }
+</style>
 </head>
 
 <body>
-  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando pagina">
+  <div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando pagina" role="status" aria-modal="true" aria-hidden="true">
     <div class="navegacao-card">
       <span class="navegacao-spinner"></span>
       <strong id="navegacaoMensagem">Carregando...</strong>
@@ -2712,9 +2779,11 @@
       if (!validarFormularioIncidente()) return;
 
       definirStatusSalvar(true, "Salvando incidente cr\u00edtico...");
+      mostrarCarregamentoNavegacao("Salvando incidente cr\u00edtico...");
 
       google.script.run
         .withSuccessHandler(function(retorno) {
+          ocultarCarregamentoNavegacao();
           definirStatusSalvar(false, "Salvo.", "success");
           ultimoIncidenteSalvoNumero = retorno && retorno.numeroRelatorio ? retorno.numeroRelatorio : valorCampo("numeroRelatorio");
           limparFormularioIncidente();
@@ -2725,6 +2794,7 @@
           mostrarStatus(retorno && retorno.mensagem ? retorno.mensagem : "Incidente Cr\u00edtico salvo com sucesso.", "success");
         })
         .withFailureHandler(function(erro) {
+          ocultarCarregamentoNavegacao();
           definirStatusSalvar(false, obterMensagemErro(erro), "error");
           mostrarStatus(obterMensagemErro(erro), "error");
         })
@@ -3466,8 +3536,22 @@
       const overlay = document.getElementById("navegacaoOverlay");
       const mensagem = document.getElementById("navegacaoMensagem");
 
-      if (mensagem) mensagem.innerText = texto || "Carregando...";
-      if (overlay) overlay.style.display = "flex";
+      if (mensagem) mensagem.innerText = texto || "Aguarde...";
+      if (overlay) {
+        overlay.style.display = "flex";
+        overlay.setAttribute("aria-hidden", "false");
+        document.body.setAttribute("aria-busy", "true");
+      }
+    }
+
+    function ocultarCarregamentoNavegacao() {
+      const overlay = document.getElementById("navegacaoOverlay");
+
+      if (overlay) {
+        overlay.style.display = "none";
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.removeAttribute("aria-busy");
+      }
     }
 
     function encerrarSessaoSAIC() {
