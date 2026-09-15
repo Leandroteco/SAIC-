@@ -2614,13 +2614,154 @@ body {
     width: 76px;
   }
 }
+
+
+    /* Login institucional do SiSMen. */
+    #telaLogin.login-box {
+      margin: 20px auto 0;
+      max-width: 560px;
+      min-height: 470px;
+      padding: 42px 34px 50px;
+      width: min(560px, calc(100% - 40px));
+    }
+
+    #telaLogin .login-logo {
+      height: 96px;
+      width: 96px;
+    }
+
+    #telaLogin h2 {
+      display: block;
+      font-size: 32px;
+      line-height: 1.15;
+      margin: 22px 0 7px;
+      text-align: center;
+    }
+
+    #telaLogin h2::before {
+      content: none;
+      display: none;
+    }
+
+    #telaLogin .login-subtitle {
+      color: #1f2933;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.35;
+      margin: 0 0 20px;
+    }
+
+    #telaLogin .login-access {
+      color: #64748b;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.35;
+      margin: 0 0 24px;
+    }
+
+    #telaLogin .g_id_signin {
+      margin-top: 0 !important;
+    }
+
+    @media (max-width: 640px) {
+      #telaLogin.login-box {
+        margin: 12px auto !important;
+        max-width: none !important;
+        min-height: 470px;
+        padding: 32px 18px 44px;
+        width: calc(100% - 24px);
+      }
+
+      #telaLogin .login-logo {
+        height: 88px;
+        width: 88px;
+      }
+
+      #telaLogin h2 {
+        font-size: 30px !important;
+        margin-top: 20px;
+      }
+
+      #telaLogin .login-subtitle,
+      #telaLogin .login-access {
+        font-size: 16px;
+      }
+    }
+
+    /* SAIC: painel padrao para operacoes demoradas. */
+    .navegacao-overlay {
+      background: rgba(31, 40, 44, 0.54);
+      padding: 20px;
+      z-index: 12000;
+    }
+
+    .navegacao-card {
+      align-items: center;
+      background: #ffffff;
+      border: 0;
+      border-radius: 20px;
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+      box-sizing: border-box;
+      color: #303638;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      justify-content: center;
+      min-height: 158px;
+      padding: 30px 34px;
+      text-align: center;
+      width: min(580px, calc(100vw - 40px));
+    }
+
+    .navegacao-spinner {
+      animation: girar 0.8s linear infinite;
+      border: 4px solid #dce8ec;
+      border-radius: 50%;
+      border-top-color: #e30613;
+      box-sizing: border-box;
+      flex: 0 0 auto;
+      height: 38px;
+      width: 38px;
+    }
+
+    .navegacao-card strong {
+      color: #303638;
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 600px) {
+      .navegacao-overlay {
+        padding: 16px;
+      }
+
+      .navegacao-card {
+        border-radius: 18px;
+        min-height: 150px;
+        padding: 28px 22px;
+        width: min(580px, calc(100vw - 32px));
+      }
+
+      .navegacao-card strong {
+        font-size: 20px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .navegacao-spinner {
+        animation-duration: 1.4s;
+      }
+    }
 </style>
 </head>
 <body>
 <!-- Tela de login: aparece quando o Apps Script ainda nao recebeu um token valido do Google. -->
 <div id="telaLogin" class="login-box" style="<?= tokenGoogleInicial ? 'display:none;' : 'display:block;' ?>">
   <img id="loginLogoSismen" class="login-logo" alt="SiSMen">
-  <h2>SAIC</h2>
+  <h2>SiSMen</h2>
+  <p class="login-subtitle">Sistema de Gest&atilde;o dos Atendimentos do SiSMen</p>
+  <p class="login-access">Acesso exclusivo para usu&aacute;rios autorizados.</p>
   <div id="g_id_onload"
      data-client_id="<?= googleClientId ?>"
      data-login_uri="<?= webAppUrl ?>"
@@ -2635,13 +2776,14 @@ body {
      data-theme="outline"
      data-text="signin_with"
      data-shape="rectangular"
+     data-width="330"
      data-logo_alignment="left"
      style="display:flex;justify-content:center;margin-top:18px;">
 </div>
   <div id="mensagemLogin" style="margin-top:16px;color:#b42318;font-weight:600;"><?= mensagemLoginInicial ?></div>
 </div>
 
-<div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página">
+<div id="navegacaoOverlay" class="navegacao-overlay" aria-live="polite" aria-label="Carregando página" role="status" aria-modal="true" aria-hidden="true">
   <div class="navegacao-card">
     <span class="navegacao-spinner"></span>
     <strong id="navegacaoMensagem">Carregando...</strong>
@@ -5044,6 +5186,7 @@ function salvar() {
   }
 
   definirEstadoSalvamento(true);
+  mostrarCarregamentoNavegacao(obterMensagemProcessandoSalvar());
   mensagem.style.color = "#475569";
   mensagem.innerHTML = '<span class="mensagem-processando"><span class="spinner-mensagem"></span><span>' + obterMensagemProcessandoSalvar() + '</span></span>';
 
@@ -5082,6 +5225,7 @@ function salvar() {
 
   google.script.run
     .withSuccessHandler(function(resposta) {
+      ocultarCarregamentoNavegacao();
       const mensagemSucesso = typeof resposta === "object" && resposta !== null
         ? resposta.mensagem
         : resposta;
@@ -5099,6 +5243,7 @@ function salvar() {
       carregarUltimosAtendimentos(true);
     })
     .withFailureHandler(function(erro) {
+      ocultarCarregamentoNavegacao();
       definirEstadoSalvamento(false);
       mensagem.style.color = "#b42318";
       mensagem.innerText = "Erro: " + erro.message;
@@ -5336,12 +5481,15 @@ function buscarCadastroTela() {
   }
 
   resultadoBusca.innerHTML = "Buscando...";
+  mostrarCarregamentoNavegacao("Consultando cadastro...");
 
   google.script.run
     .withSuccessHandler(function(resposta) {
+      ocultarCarregamentoNavegacao();
       tratarResultadoBusca(resposta);
     })
     .withFailureHandler(function(erro) {
+      ocultarCarregamentoNavegacao();
       resultadoBusca.innerHTML =
         "Erro na busca: " + erro.message;
     })
@@ -5797,8 +5945,22 @@ function mostrarCarregamentoNavegacao(texto) {
   const overlay = document.getElementById("navegacaoOverlay");
   const mensagem = document.getElementById("navegacaoMensagem");
 
-  if (mensagem) mensagem.innerText = texto || "Carregando...";
-  if (overlay) overlay.style.display = "flex";
+  if (mensagem) mensagem.innerText = texto || "Aguarde...";
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.setAttribute("aria-busy", "true");
+  }
+}
+
+function ocultarCarregamentoNavegacao() {
+  const overlay = document.getElementById("navegacaoOverlay");
+
+  if (overlay) {
+    overlay.style.display = "none";
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.removeAttribute("aria-busy");
+  }
 }
 
 function encerrarSessaoSAIC() {
