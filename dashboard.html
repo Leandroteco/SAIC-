@@ -1543,6 +1543,8 @@ h3,
 .metric:nth-child(12) strong { color: var(--chart-green-dark) !important; }
 .metric:nth-child(13)::before { background: var(--chart-amber) !important; }
 .metric:nth-child(13) strong { color: var(--chart-amber) !important; }
+.metric:nth-child(14)::before { background: var(--chart-slate) !important; }
+.metric:nth-child(14) strong { color: var(--chart-slate) !important; }
 
 .bar-fill,
 .ranking-fill {
@@ -2079,6 +2081,10 @@ h3,
           <span>Média diária</span>
           <strong id="metricMedia">0</strong>
         </div>
+        <div class="metric">
+          <span>Relação com violência doméstica</span>
+          <strong id="metricViolenciaDomestica">0</strong>
+        </div>
       </section>
 
       <section id="leituraExecutiva" class="executive-summary">
@@ -2385,6 +2391,7 @@ h3,
       document.getElementById("metricPpms").innerText = formatarNumero(resumo.totalPpms);
       document.getElementById("metricIncidentesCriticos").innerText = formatarNumero(resumo.totalIncidentesCriticos);
       document.getElementById("metricOnline").innerText = formatarNumero(resumo.totalAtendimentosOnline);
+      document.getElementById("metricViolenciaDomestica").innerText = formatarNumero(resumo.totalAtendimentosViolenciaDomestica);
       document.getElementById("metricPessoasGrupos").innerText = formatarNumero(resumo.pessoasGrupos);
       document.getElementById("metricPessoasPalestras").innerText = formatarNumero(resumo.pessoasPalestras);
       document.getElementById("metricPessoasTotal").innerText = formatarNumero(resumo.pessoasTotalGeral);
