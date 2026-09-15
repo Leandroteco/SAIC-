@@ -5256,6 +5256,7 @@ function montarIndicadoresRelatorioNaps(registros) {
     pessoasPalestras: resumo.pessoasPalestras,
     pessoasEventos: resumo.pessoasEventos,
     pessoasTotal: resumo.pessoasTotalGeral,
+    violenciaDomestica: resumo.totalAtendimentosViolenciaDomestica,
     faltas: resumo.totalFaltas,
     altas: resumo.totalAltas,
     arquivamentos: resumo.totalArquivamentos
@@ -6419,6 +6420,7 @@ function montarResumoDashboard(registros, filtros) {
     totalFaltas: resumoRelatorio.totalFaltas,
     totalAltas: resumoRelatorio.totalAltas,
     totalArquivamentos: resumoRelatorio.totalArquivamentos,
+    totalAtendimentosViolenciaDomestica: resumoRelatorio.totalAtendimentosViolenciaDomestica,
     atendimentosEmergenciais: atendimentosEmergenciais,
     atendimentosIndividuais: atendimentosIndividuais,
     atendimentosFamiliaresOuGrupo: resumoRelatorio.atendimentosFamiliaresOuGrupo,
@@ -7493,6 +7495,7 @@ function montarResumoRelatorio(registros) {
   let totalAtendimentos = 0;
   let totalAtendimentosIndividuais = 0;
   let totalAtendimentosOnline = 0;
+  let totalAtendimentosViolenciaDomestica = 0;
   let totalEventosColetivos = 0;
   let pessoasEventos = 0;
   let pessoasGrupos = 0;
@@ -7510,6 +7513,10 @@ function montarResumoRelatorio(registros) {
     }
 
     totalAtendimentos++;
+
+    if (normalizar(registro.relacaoViolenciaDomestica) === "sim") {
+      totalAtendimentosViolenciaDomestica++;
+    }
 
     const modalidadeRegistro = normalizar(
       registro.modalidadeAtendimento || registro.modalidadeEvento
@@ -7569,6 +7576,7 @@ function montarResumoRelatorio(registros) {
     totalAtendimentos: totalAtendimentos,
     totalAtendimentosIndividuais: totalAtendimentosIndividuais,
     totalAtendimentosOnline: totalAtendimentosOnline,
+    totalAtendimentosViolenciaDomestica: totalAtendimentosViolenciaDomestica,
     totalEventosColetivos: totalEventosColetivos,
     pessoasDistintas: Object.keys(pessoas).length,
     pessoasGrupos: pessoasGrupos,
