@@ -392,7 +392,48 @@
       display: grid;
       gap: 14px;
       grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    }
+
+    .metric-groups {
+      display: grid;
+      gap: 22px;
       margin-bottom: 18px;
+    }
+
+    .metric-group {
+      display: grid;
+      gap: 12px;
+    }
+
+    .metric-group-title {
+      align-items: center;
+      color: var(--title-dark);
+      display: flex;
+      font-size: 16px;
+      font-weight: 900;
+      gap: 9px;
+      margin: 0;
+    }
+
+    .metric-group-title::before {
+      background: var(--primary);
+      border-radius: 999px;
+      content: "";
+      height: 18px;
+      width: 5px;
+    }
+
+    .metrics-grid.metrics-total,
+    .metrics-grid.metrics-one {
+      grid-template-columns: minmax(145px, 230px);
+    }
+
+    .metrics-grid.metrics-six {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .metrics-grid.metrics-three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .metric {
@@ -2028,63 +2069,55 @@ h3,
 
       <p id="status" class="status"></p>
 
-      <section id="indicadores" class="metrics-grid">
-        <div class="metric">
-          <span>Atendimentos</span>
-          <strong id="metricTotal">0</strong>
-        </div>
-        <div class="metric">
-          <span>Pessoas</span>
-          <strong id="metricPessoas">0</strong>
-        </div>
-        <div class="metric">
-          <span>Grupos e Palestras</span>
-          <strong id="metricEventos">0</strong>
-        </div>
-        <div class="metric">
-          <span>Atendimentos PPMS</span>
-          <strong id="metricPpms">0</strong>
-        </div>
-        <div class="metric">
-          <span>Incidentes Críticos</span>
-          <strong id="metricIncidentesCriticos">0</strong>
-        </div>
-        <div class="metric">
-          <span>Atendimentos Online</span>
-          <strong id="metricOnline">0</strong>
-        </div>
-        <div class="metric">
-          <span>Pessoas em grupos</span>
-          <strong id="metricPessoasGrupos">0</strong>
-        </div>
-        <div class="metric">
-          <span>Pessoas em palestras</span>
-          <strong id="metricPessoasPalestras">0</strong>
-        </div>
-        <div class="metric">
-          <span>Total de pessoas</span>
-          <strong id="metricPessoasTotal">0</strong>
-        </div>
-        <div class="metric">
-          <span>Faltas</span>
-          <strong id="metricFaltas">0</strong>
-        </div>
-        <div class="metric">
-          <span>Altas</span>
-          <strong id="metricAltas">0</strong>
-        </div>
-        <div class="metric">
-          <span>Arquivamentos</span>
-          <strong id="metricArquivamentos">0</strong>
-        </div>
-        <div class="metric">
-          <span>Média diária</span>
-          <strong id="metricMedia">0</strong>
-        </div>
-        <div class="metric">
-          <span>Relação com violência doméstica</span>
-          <strong id="metricViolenciaDomestica">0</strong>
-        </div>
+      <section id="indicadores" class="metric-groups">
+        <section class="metric-group" aria-labelledby="dashboardAtendimentosTitulo">
+          <h2 id="dashboardAtendimentosTitulo" class="metric-group-title">Atendimentos</h2>
+          <div class="metrics-grid metrics-total">
+            <div class="metric">
+              <span>Total de atendimentos</span>
+              <strong id="metricTotal">0</strong>
+            </div>
+          </div>
+          <div class="metrics-grid metrics-six">
+            <div class="metric"><span>Atendimentos presenciais</span><strong id="metricPresenciais">0</strong></div>
+            <div class="metric"><span>Atendimentos online</span><strong id="metricOnline">0</strong></div>
+            <div class="metric"><span>Atendimentos PPMS</span><strong id="metricPpms">0</strong></div>
+            <div class="metric"><span>Incidentes críticos registrados</span><strong id="metricIncidentesCriticos">0</strong></div>
+            <div class="metric"><span>Grupos reflexivos</span><strong id="metricGrupos">0</strong></div>
+            <div class="metric"><span>Palestras</span><strong id="metricPalestras">0</strong></div>
+          </div>
+        </section>
+
+        <section class="metric-group" aria-labelledby="dashboardPessoasTitulo">
+          <h2 id="dashboardPessoasTitulo" class="metric-group-title">Pessoas</h2>
+          <div class="metrics-grid metrics-total">
+            <div class="metric">
+              <span>Total de pessoas alcançadas</span>
+              <strong id="metricPessoasTotal">0</strong>
+            </div>
+          </div>
+          <div class="metrics-grid metrics-three">
+            <div class="metric"><span>Pessoas atendidas individualmente</span><strong id="metricPessoas">0</strong></div>
+            <div class="metric"><span>Participantes de grupos reflexivos</span><strong id="metricPessoasGrupos">0</strong></div>
+            <div class="metric"><span>Participantes de palestras</span><strong id="metricPessoasPalestras">0</strong></div>
+          </div>
+        </section>
+
+        <section class="metric-group" aria-labelledby="dashboardIndicadorTitulo">
+          <h2 id="dashboardIndicadorTitulo" class="metric-group-title">Indicador</h2>
+          <div class="metrics-grid metrics-one">
+            <div class="metric"><span>Relação com violência doméstica</span><strong id="metricViolenciaDomestica">0</strong></div>
+          </div>
+        </section>
+
+        <section class="metric-group" aria-labelledby="dashboardMovimentacoesTitulo">
+          <h2 id="dashboardMovimentacoesTitulo" class="metric-group-title">Outras movimentações</h2>
+          <div class="metrics-grid metrics-three">
+            <div class="metric"><span>Faltas registradas</span><strong id="metricFaltas">0</strong></div>
+            <div class="metric"><span>Altas registradas</span><strong id="metricAltas">0</strong></div>
+            <div class="metric"><span>Arquivamentos</span><strong id="metricArquivamentos">0</strong></div>
+          </div>
+        </section>
       </section>
 
       <section id="leituraExecutiva" class="executive-summary">
@@ -2385,20 +2418,31 @@ h3,
     }
 
     function atualizarMetricas(resumo) {
-      document.getElementById("metricTotal").innerText = formatarNumero(resumo.totalAtendimentos);
+      const totalAtendimentos = Number(resumo.totalAtendimentos || 0)
+        + Number(resumo.totalPpms || 0)
+        + Number(resumo.totalIncidentesCriticos || 0);
+      const atendimentosPresenciais = resumo.totalAtendimentosPresenciais !== undefined
+        ? resumo.totalAtendimentosPresenciais
+        : Math.max(0, Number(resumo.totalAtendimentosIndividuais || 0) - Number(resumo.totalAtendimentosOnline || 0));
+      const pessoasViolenciaDomestica = resumo.pessoasViolenciaDomestica !== undefined
+        ? resumo.pessoasViolenciaDomestica
+        : resumo.totalAtendimentosViolenciaDomestica;
+
+      document.getElementById("metricTotal").innerText = formatarNumero(totalAtendimentos);
+      document.getElementById("metricPresenciais").innerText = formatarNumero(atendimentosPresenciais);
       document.getElementById("metricPessoas").innerText = formatarNumero(resumo.pessoasDistintas);
-      document.getElementById("metricEventos").innerText = formatarNumero(resumo.totalEventosColetivos);
       document.getElementById("metricPpms").innerText = formatarNumero(resumo.totalPpms);
       document.getElementById("metricIncidentesCriticos").innerText = formatarNumero(resumo.totalIncidentesCriticos);
       document.getElementById("metricOnline").innerText = formatarNumero(resumo.totalAtendimentosOnline);
-      document.getElementById("metricViolenciaDomestica").innerText = formatarNumero(resumo.totalAtendimentosViolenciaDomestica);
+      document.getElementById("metricGrupos").innerText = formatarNumero(resumo.totalGrupos);
+      document.getElementById("metricPalestras").innerText = formatarNumero(resumo.totalPalestras);
+      document.getElementById("metricViolenciaDomestica").innerText = formatarNumero(pessoasViolenciaDomestica);
       document.getElementById("metricPessoasGrupos").innerText = formatarNumero(resumo.pessoasGrupos);
       document.getElementById("metricPessoasPalestras").innerText = formatarNumero(resumo.pessoasPalestras);
       document.getElementById("metricPessoasTotal").innerText = formatarNumero(resumo.pessoasTotalGeral);
       document.getElementById("metricFaltas").innerText = formatarNumero(resumo.totalFaltas);
       document.getElementById("metricAltas").innerText = formatarNumero(resumo.totalAltas);
       document.getElementById("metricArquivamentos").innerText = formatarNumero(resumo.totalArquivamentos);
-      document.getElementById("metricMedia").innerText = String(resumo.mediaDiaria || 0).replace(".", ",");
     }
 
     function atualizarLeituraExecutiva(dados) {
