@@ -2397,12 +2397,12 @@ function coletarFiltros() {
         <section class="metric-group" aria-labelledby="metricasPessoasTitulo">
           <h3 id="metricasPessoasTitulo" class="metric-group-title">Pessoas</h3>
           <div class="metrics-grid metrics-total">
-            ${montarMetrica("Total de pessoas alcançadas", resumo.pessoasTotalGeral)}
+            ${montarMetrica("Total de pessoas alcançadas", Number(resumo.pessoasTotalGeral || 0) + Number(resumo.totalVinculos || 0))}
           </div>
           <div class="metrics-grid metrics-three">
             ${montarMetrica("Pessoas atendidas individualmente", resumo.pessoasDistintas)}
             ${montarMetrica("Participantes de grupos reflexivos", resumo.pessoasGrupos)}
-            ${montarMetrica("Participantes de palestras", resumo.pessoasPalestras)}
+            ${montarMetrica("Participantes de palestras", resumo.pessoasPalestras)} ${montarMetrica("Pessoas atendidas no PPMS", resumo.totalPpms)} ${montarMetrica("Pessoas alcançadas em incidentes críticos", resumo.totalIncidentesCriticos)} ${montarMetrica("Pessoas vinculadas", resumo.totalVinculos)}
           </div>
         </section>
 
