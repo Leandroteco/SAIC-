@@ -363,7 +363,48 @@
       display: grid;
       gap: 14px;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .metric-groups {
+      display: grid;
+      gap: 22px;
       margin-bottom: 18px;
+    }
+
+    .metric-group {
+      display: grid;
+      gap: 12px;
+    }
+
+    .metric-group-title {
+      align-items: center;
+      color: var(--title-dark);
+      display: flex;
+      font-size: 16px;
+      font-weight: 900;
+      gap: 9px;
+      margin: 0;
+    }
+
+    .metric-group-title::before {
+      background: var(--primary);
+      border-radius: 999px;
+      content: "";
+      height: 18px;
+      width: 5px;
+    }
+
+    .metrics-grid.metrics-total,
+    .metrics-grid.metrics-one {
+      grid-template-columns: minmax(150px, 230px);
+    }
+
+    .metrics-grid.metrics-six {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .metrics-grid.metrics-three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .metric {
@@ -2024,7 +2065,7 @@ h3,
     <div id="mensagem" class="loading">Carregando relatório...</div>
 
     <section id="painelResultado" class="content-panel" style="display:none;">
-      <div id="metricas" class="metrics-grid"></div>
+      <div id="metricas" class="metric-groups"></div>
 
       <nav id="abasRelatorio" class="tabs">
         <button class="tab-button active" data-tab="resumo" onclick="trocarAba('resumo')">Resumo</button>
@@ -2325,21 +2366,62 @@ function coletarFiltros() {
     }
 
     function montarMetricas(resumo) {
-      return [
-        montarMetrica("Atendimentos", resumo.totalAtendimentos),
-        montarMetrica("Pessoas", resumo.pessoasDistintas),
-        montarMetrica("Grupos e Palestras", resumo.totalEventosColetivos),
-        montarMetrica("Atendimentos PPMS", resumo.totalPpms),
-        montarMetrica("Incidentes Críticos", resumo.totalIncidentesCriticos),
-        montarMetrica("Atendimentos Online", resumo.totalAtendimentosOnline),
-        montarMetrica("Pessoas em grupos", resumo.pessoasGrupos),
-        montarMetrica("Pessoas em palestras", resumo.pessoasPalestras),
-        montarMetrica("Total de pessoas", resumo.pessoasTotalGeral),
-        montarMetrica("Faltas", resumo.totalFaltas),
-        montarMetrica("Altas", resumo.totalAltas),
-        montarMetrica("Arquivamentos", resumo.totalArquivamentos),
-        montarMetrica("Relação com violência doméstica", resumo.totalAtendimentosViolenciaDomestica)
-      ].join("");
+      resumo = resumo || {};
+
+      const totalAtendimentos = Number(resumo.totalAtendimentos || 0)
+        + Number(resumo.totalPpms || 0)
+        + Number(resumo.totalIncidentesCriticos || 0);
+      const atendimentosPresenciais = resumo.totalAtendimentosPresenciais !== undefined
+        ? resumo.totalAtendimentosPresenciais
+        : Math.max(0, Number(resumo.totalAtendimentosIndividuais || 0) - Number(resumo.totalAtendimentosOnline || 0));
+      const pessoasViolenciaDomestica = resumo.pessoasViolenciaDomestica !== undefined
+        ? resumo.pessoasViolenciaDomestica
+        : resumo.totalAtendimentosViolenciaDomestica;
+
+      return `
+        <section class="metric-group" aria-labelledby="metricasAtendimentosTitulo">
+          <h3 id="metricasAtendimentosTitulo" class="metric-group-title">Atendimentos</h3>
+          <div class="metrics-grid metrics-total">
+            ${montarMetrica("Total de atendimentos", totalAtendimentos)}
+          </div>
+          <div class="metrics-grid metrics-six">
+            ${montarMetrica("Atendimentos presenciais", atendimentosPresenciais)}
+            ${montarMetrica("Atendimentos online", resumo.totalAtendimentosOnline)}
+            ${montarMetrica("Atendimentos PPMS", resumo.totalPpms)}
+            ${montarMetrica("Incidentes críticos registrados", resumo.totalIncidentesCriticos)}
+            ${montarMetrica("Grupos reflexivos", resumo.totalGrupos)}
+            ${montarMetrica("Palestras", resumo.totalPalestras)}
+          </div>
+        </section>
+
+        <section class="metric-group" aria-labelledby="metricasPessoasTitulo">
+          <h3 id="metricasPessoasTitulo" class="metric-group-title">Pessoas</h3>
+          <div class="metrics-grid metrics-total">
+            ${montarMetrica("Total de pessoas alcançadas", resumo.pessoasTotalGeral)}
+          </div>
+          <div class="metrics-grid metrics-three">
+            ${montarMetrica("Pessoas atendidas individualmente", resumo.pessoasDistintas)}
+            ${montarMetrica("Participantes de grupos reflexivos", resumo.pessoasGrupos)}
+            ${montarMetrica("Participantes de palestras", resumo.pessoasPalestras)}
+          </div>
+        </section>
+
+        <section class="metric-group" aria-labelledby="metricasIndicadorTitulo">
+          <h3 id="metricasIndicadorTitulo" class="metric-group-title">Indicador</h3>
+          <div class="metrics-grid metrics-one">
+            ${montarMetrica("Relação com violência doméstica", pessoasViolenciaDomestica)}
+          </div>
+        </section>
+
+        <section class="metric-group" aria-labelledby="metricasMovimentacoesTitulo">
+          <h3 id="metricasMovimentacoesTitulo" class="metric-group-title">Outras movimentações</h3>
+          <div class="metrics-grid metrics-three">
+            ${montarMetrica("Faltas registradas", resumo.totalFaltas)}
+            ${montarMetrica("Altas registradas", resumo.totalAltas)}
+            ${montarMetrica("Arquivamentos", resumo.totalArquivamentos)}
+          </div>
+        </section>
+      `;
     }
 
     function montarMetrica(rotulo, valor) {
