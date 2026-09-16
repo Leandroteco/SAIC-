@@ -1536,6 +1536,8 @@ body {
   --chart-green: #6ca88d;
   --chart-green-dark: #4f9d69;
   --chart-amber: #a16207;
+  --chart-lilac: #8b5fbf;
+  --chart-orange: #c46522;
   --chart-slate: #64748b;
 }
 
@@ -1584,6 +1586,42 @@ h3,
 .metric:nth-child(12) strong { color: var(--chart-green-dark) !important; }
 .metric:nth-child(13)::before { background: var(--chart-amber) !important; }
 .metric:nth-child(13) strong { color: var(--chart-amber) !important; }
+
+.metric-group-atendimentos .metric-group-title::before,
+.metric-group-atendimentos .metric::before {
+  background: var(--chart-blue) !important;
+}
+
+.metric-group-atendimentos .metric strong {
+  color: var(--chart-blue) !important;
+}
+
+.metric-group-pessoas .metric-group-title::before,
+.metric-group-pessoas .metric::before {
+  background: var(--chart-green-dark) !important;
+}
+
+.metric-group-pessoas .metric strong {
+  color: var(--chart-green-dark) !important;
+}
+
+.metric-group-indicador .metric-group-title::before,
+.metric-group-indicador .metric::before {
+  background: var(--chart-lilac) !important;
+}
+
+.metric-group-indicador .metric strong {
+  color: var(--chart-lilac) !important;
+}
+
+.metric-group-movimentacoes .metric-group-title::before,
+.metric-group-movimentacoes .metric::before {
+  background: var(--chart-orange) !important;
+}
+
+.metric-group-movimentacoes .metric strong {
+  color: var(--chart-orange) !important;
+}
 .metric:nth-child(14)::before { background: var(--chart-slate) !important; }
 .metric:nth-child(14) strong { color: var(--chart-slate) !important; }
 
@@ -2070,7 +2108,7 @@ h3,
       <p id="status" class="status"></p>
 
       <section id="indicadores" class="metric-groups">
-        <section class="metric-group" aria-labelledby="dashboardAtendimentosTitulo">
+        <section class="metric-group metric-group-atendimentos" aria-labelledby="dashboardAtendimentosTitulo">
           <h2 id="dashboardAtendimentosTitulo" class="metric-group-title">Atendimentos</h2>
           <div class="metrics-grid metrics-total">
             <div class="metric">
@@ -2088,7 +2126,7 @@ h3,
           </div>
         </section>
 
-        <section class="metric-group" aria-labelledby="dashboardPessoasTitulo">
+        <section class="metric-group metric-group-pessoas" aria-labelledby="dashboardPessoasTitulo">
           <h2 id="dashboardPessoasTitulo" class="metric-group-title">Pessoas</h2>
           <div class="metrics-grid metrics-total">
             <div class="metric">
@@ -2103,14 +2141,14 @@ h3,
           </div>
         </section>
 
-        <section class="metric-group" aria-labelledby="dashboardIndicadorTitulo">
+        <section class="metric-group metric-group-indicador" aria-labelledby="dashboardIndicadorTitulo">
           <h2 id="dashboardIndicadorTitulo" class="metric-group-title">Indicador</h2>
           <div class="metrics-grid metrics-one">
             <div class="metric"><span>Relação com violência doméstica</span><strong id="metricViolenciaDomestica">0</strong></div>
           </div>
         </section>
 
-        <section class="metric-group" aria-labelledby="dashboardMovimentacoesTitulo">
+        <section class="metric-group metric-group-movimentacoes" aria-labelledby="dashboardMovimentacoesTitulo">
           <h2 id="dashboardMovimentacoesTitulo" class="metric-group-title">Outras movimentações</h2>
           <div class="metrics-grid metrics-three">
             <div class="metric"><span>Faltas registradas</span><strong id="metricFaltas">0</strong></div>
@@ -2421,6 +2459,9 @@ h3,
       const totalAtendimentos = Number(resumo.totalAtendimentos || 0)
         + Number(resumo.totalPpms || 0)
         + Number(resumo.totalIncidentesCriticos || 0);
+      const totalPessoasAlcancadas = Number(resumo.pessoasTotalGeral || 0)
+        + Number(resumo.totalPpms || 0)
+        + Number(resumo.totalIncidentesCriticos || 0);
       const atendimentosPresenciais = resumo.totalAtendimentosPresenciais !== undefined
         ? resumo.totalAtendimentosPresenciais
         : Math.max(0, Number(resumo.totalAtendimentosIndividuais || 0) - Number(resumo.totalAtendimentosOnline || 0));
@@ -2439,7 +2480,7 @@ h3,
       document.getElementById("metricViolenciaDomestica").innerText = formatarNumero(pessoasViolenciaDomestica);
       document.getElementById("metricPessoasGrupos").innerText = formatarNumero(resumo.pessoasGrupos);
       document.getElementById("metricPessoasPalestras").innerText = formatarNumero(resumo.pessoasPalestras);
-      document.getElementById("metricPessoasTotal").innerText = formatarNumero(resumo.pessoasTotalGeral);
+      document.getElementById("metricPessoasTotal").innerText = formatarNumero(totalPessoasAlcancadas);
       document.getElementById("metricFaltas").innerText = formatarNumero(resumo.totalFaltas);
       document.getElementById("metricAltas").innerText = formatarNumero(resumo.totalAltas);
       document.getElementById("metricArquivamentos").innerText = formatarNumero(resumo.totalArquivamentos);
@@ -2455,7 +2496,9 @@ h3,
       const pessoasGrupos = Number(resumo.pessoasGrupos || 0);
       const pessoasPalestras = Number(resumo.pessoasPalestras || 0);
       const pessoasEventos = Number(resumo.pessoasEventos || pessoasGrupos + pessoasPalestras);
-      const pessoasTotal = Number(resumo.pessoasTotalGeral || pessoas + pessoasEventos);
+      const pessoasTotal = Number(resumo.pessoasTotalGeral || pessoas + pessoasEventos)
+        + Number(resumo.totalPpms || 0)
+        + Number(resumo.totalIncidentesCriticos || 0);
       const faltas = Number(resumo.totalFaltas || 0);
       const altas = Number(resumo.totalAltas || 0);
       const arquivamentos = Number(resumo.totalArquivamentos || 0);
