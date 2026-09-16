@@ -6411,7 +6411,11 @@ function montarResumoDashboard(registros, filtros) {
   return {
     totalAtendimentos: resumoRelatorio.totalAtendimentos,
     totalAtendimentosIndividuais: resumoRelatorio.totalAtendimentosIndividuais,
+    totalAtendimentosPresenciais: resumoRelatorio.totalAtendimentosPresenciais,
+    totalAtendimentosOnline: resumoRelatorio.totalAtendimentosOnline,
     totalEventosColetivos: resumoRelatorio.totalEventosColetivos,
+    totalGrupos: resumoRelatorio.totalGrupos,
+    totalPalestras: resumoRelatorio.totalPalestras,
     pessoasDistintas: resumoRelatorio.pessoasDistintas,
     pessoasGrupos: resumoRelatorio.pessoasGrupos,
     pessoasPalestras: resumoRelatorio.pessoasPalestras,
@@ -6421,6 +6425,7 @@ function montarResumoDashboard(registros, filtros) {
     totalAltas: resumoRelatorio.totalAltas,
     totalArquivamentos: resumoRelatorio.totalArquivamentos,
     totalAtendimentosViolenciaDomestica: resumoRelatorio.totalAtendimentosViolenciaDomestica,
+    pessoasViolenciaDomestica: resumoRelatorio.pessoasViolenciaDomestica,
     atendimentosEmergenciais: atendimentosEmergenciais,
     atendimentosIndividuais: atendimentosIndividuais,
     atendimentosFamiliaresOuGrupo: resumoRelatorio.atendimentosFamiliaresOuGrupo,
@@ -7485,6 +7490,7 @@ function formatarTextoComSiglasRelatorio(valor) {
 
 function montarResumoRelatorio(registros) {
   const pessoas = {};
+  const pessoasViolenciaDomestica = {};
   const atendimentosPorPessoa = {};
   let totalVinculos = 0;
   let atendimentosComVinculos = 0;
@@ -7494,9 +7500,12 @@ function montarResumoRelatorio(registros) {
   let totalArquivamentos = 0;
   let totalAtendimentos = 0;
   let totalAtendimentosIndividuais = 0;
+  let totalAtendimentosPresenciais = 0;
   let totalAtendimentosOnline = 0;
   let totalAtendimentosViolenciaDomestica = 0;
   let totalEventosColetivos = 0;
+  let totalGrupos = 0;
+  let totalPalestras = 0;
   let pessoasEventos = 0;
   let pessoasGrupos = 0;
   let pessoasPalestras = 0;
@@ -7514,17 +7523,9 @@ function montarResumoRelatorio(registros) {
 
     totalAtendimentos++;
 
-    if (normalizar(registro.relacaoViolenciaDomestica) === "sim") {
-      totalAtendimentosViolenciaDomestica++;
-    }
-
     const modalidadeRegistro = normalizar(
       registro.modalidadeAtendimento || registro.modalidadeEvento
     );
-
-    if (modalidadeRegistro === "online") {
-      totalAtendimentosOnline++;
-    }
 
     if (registro.eventoColetivo) {
       const quantidadePessoasEvento = Number(registro.quantidadePessoasEvento || 0);
@@ -7534,8 +7535,10 @@ function montarResumoRelatorio(registros) {
       pessoasEventos += quantidadePessoasEvento;
 
       if (tipoEventoColetivo === "palestra") {
+        totalPalestras++;
         pessoasPalestras += quantidadePessoasEvento;
       } else {
+        totalGrupos++;
         pessoasGrupos += quantidadePessoasEvento;
       }
 
@@ -7544,11 +7547,23 @@ function montarResumoRelatorio(registros) {
 
     totalAtendimentosIndividuais++;
 
+    if (modalidadeRegistro === "online") {
+      totalAtendimentosOnline++;
+    } else {
+      totalAtendimentosPresenciais++;
+    }
+
+    const chave = obterChavePessoa(registro);
+
+    if (normalizar(registro.relacaoViolenciaDomestica) === "sim") {
+      totalAtendimentosViolenciaDomestica++;
+      pessoasViolenciaDomestica[chave] = true;
+    }
+
     if (ehRegistroAlta(registro)) {
       totalAltas++;
     }
 
-    const chave = obterChavePessoa(registro);
     pessoas[chave] = true;
     atendimentosPorPessoa[chave] = (atendimentosPorPessoa[chave] || 0) + 1;
 
@@ -7575,9 +7590,13 @@ function montarResumoRelatorio(registros) {
     totalRegistros: registros.length,
     totalAtendimentos: totalAtendimentos,
     totalAtendimentosIndividuais: totalAtendimentosIndividuais,
+    totalAtendimentosPresenciais: totalAtendimentosPresenciais,
     totalAtendimentosOnline: totalAtendimentosOnline,
     totalAtendimentosViolenciaDomestica: totalAtendimentosViolenciaDomestica,
+    pessoasViolenciaDomestica: Object.keys(pessoasViolenciaDomestica).length,
     totalEventosColetivos: totalEventosColetivos,
+    totalGrupos: totalGrupos,
+    totalPalestras: totalPalestras,
     pessoasDistintas: Object.keys(pessoas).length,
     pessoasGrupos: pessoasGrupos,
     pessoasPalestras: pessoasPalestras,
