@@ -7192,7 +7192,7 @@ function montarRegistroEventoColetivoRelatorio(linha, participantesPorEvento) {
   const napsRegistro = formatarNapsRelatorio(linha[3] || "nao informado");
   const responsavelFormatado = formatarResponsavelRelatorio(linha[4]);
   const tema = limparEspacosRelatorio(linha[6]);
-  const motivo = limparEspacosRelatorio(linha[7]) || tema || rotuloTipo;
+  const motivo = limparEspacosRelatorio(linha[7]);
   const quantidadeValidada = obterQuantidadePessoasEventoRelatorio(linha, participantesPorEvento);
   const modalidade = normalizar(linha[15]);
   const prefixoRegistro = tipoEvento === "palestra" ? "Palestra: " : "Grupo: ";
@@ -7632,7 +7632,7 @@ function montarDistribuicoesRelatorio(registros) {
     porFaixaEtaria: contarPorCampo(registros, "faixaEtaria"),
     porTempoServico: contarPorCampo(registros, "tempoServico"),
     porParentesco: contarPorVinculo(registros, "parentesco"),
-    porTipoMotivoPrincipal: montarTipoMotivoPrincipalRelatorio(registros)
+    porTipoMotivoPrincipal: montarTipoMotivoPrincipalRelatorio(registros.filter(function(registro) { return !registro.eventoColetivo; }))
   };
 }
 
@@ -8104,7 +8104,7 @@ function contarPorCampo(registros, campo) {
   const agrupamento = criarAgrupamentoContagemRelatorio();
 
   registros.forEach(function(registro) {
-    if (registro.eventoColetivo && campoEhPerfilIndividualRelatorio(campo)) return;
+    if (registro.eventoColetivo && (campo === "motivo" || campoEhPerfilIndividualRelatorio(campo))) return;
 
     adicionarContagemRelatorio(agrupamento, registro[campo], campo);
   });
