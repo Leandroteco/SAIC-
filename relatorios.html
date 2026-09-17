@@ -1832,6 +1832,262 @@ h3,
         animation-duration: 1.4s;
       }
     }
+
+    /* Indicadores hierarquicos e compactos por grupo. */
+    .metric-group[aria-labelledby="metricasAtendimentosTitulo"] {
+      --cor-cards-grupo: #3b82a0;
+    }
+
+    .metric-group[aria-labelledby="metricasPessoasTitulo"] {
+      --cor-cards-grupo: #4f9d69;
+    }
+
+    .metric-group[aria-labelledby="metricasIndicadorTitulo"] {
+      --cor-cards-grupo: #8b5cf6;
+    }
+
+    .metric-group[aria-labelledby="metricasMovimentacoesTitulo"] {
+      --cor-cards-grupo: #d97706;
+    }
+
+    .metric-groups-hierarchy {
+      gap: 24px;
+    }
+
+    .metric-flow {
+      align-items: stretch;
+      background: color-mix(in srgb, var(--cor-cards-grupo) 6%, var(--surface));
+      display: grid;
+      gap: 0;
+      grid-template-columns: 165px 36px minmax(0, 1fr);
+      padding: 14px;
+    }
+
+    .metric-total-node {
+      align-items: center;
+      background: var(--surface-soft);
+      border-left: 6px solid var(--cor-cards-grupo);
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      min-height: 118px;
+      padding: 14px;
+    }
+
+    .metric-total-node-title {
+      color: var(--title-dark);
+      font-size: 14px;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    .metric-total-node-label {
+      color: var(--muted);
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    .metric-total-node > strong {
+      color: var(--cor-cards-grupo) !important;
+      flex: 0 0 auto;
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .metric-flow-connector {
+      align-self: center;
+      border-top: 2px solid var(--cor-cards-grupo);
+      height: 2px;
+      position: relative;
+    }
+
+    .metric-flow-connector::after {
+      background: var(--cor-cards-grupo);
+      border-radius: 50%;
+      content: "";
+      height: 8px;
+      position: absolute;
+      right: -4px;
+      top: -5px;
+      width: 8px;
+    }
+
+    .metric-flow-list {
+      border-left: 2px solid var(--cor-cards-grupo);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding-left: 14px;
+    }
+
+    .metric-flow-list .metric,
+    .metric-movement-list .metric {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      min-height: 39px;
+      overflow: visible;
+      padding: 6px 12px;
+    }
+
+    .metric-flow-list .metric::before,
+    .metric-movement-list .metric::before {
+      display: none;
+    }
+
+    .metric-flow-list .metric:nth-child(odd) {
+      border-right: 1px solid var(--line);
+    }
+
+    .metric-flow-list .metric:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .metric-flow-list .metric span,
+    .metric-movement-list .metric span {
+      color: var(--title-dark) !important;
+      font-size: 11px;
+      line-height: 1.25;
+      margin: 0;
+    }
+
+    .metric-flow-list .metric strong,
+    .metric-movement-list .metric strong {
+      color: var(--cor-cards-grupo) !important;
+      flex: 0 0 auto;
+      font-size: 20px !important;
+      line-height: 1;
+    }
+
+    .metric-secondary-groups {
+      display: grid;
+      gap: 24px;
+    }
+
+    .metric-summary {
+      align-items: center;
+      background: color-mix(in srgb, var(--cor-cards-grupo) 6%, var(--surface));
+      border-left: 5px solid var(--cor-cards-grupo);
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      margin-left: 14px;
+      margin-right: 14px;
+      min-height: 72px;
+      padding: 12px 16px;
+    }
+
+    .metric-summary h3,
+    .metric-movements h3 {
+      color: var(--title-dark);
+      font-size: 14px;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    .metric-summary span {
+      color: var(--muted);
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    .metric-summary > strong {
+      color: var(--cor-cards-grupo);
+      flex: 0 0 auto;
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .metric-movements {
+      background: color-mix(in srgb, var(--cor-cards-grupo) 6%, var(--surface));
+      gap: 8px;
+      padding: 14px;
+    }
+
+    .metric-movements h3 {
+      border-left: 5px solid var(--cor-cards-grupo);
+      padding-left: 10px;
+    }
+
+    .metric-movement-list {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .metric-movement-list .metric {
+      border-bottom: 0;
+      border-top: 2px solid var(--cor-cards-grupo);
+      min-height: 44px;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .metric-flow {
+        grid-template-columns: 145px 26px minmax(0, 1fr);
+      }
+
+      .metric-flow-list {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-flow-list .metric:nth-child(odd) {
+        border-right: 0;
+      }
+
+      .metric-flow-list .metric:nth-last-child(2) {
+        border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .metric-flow {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-total-node {
+        min-height: 72px;
+      }
+
+      .metric-flow-connector {
+        border-left: 2px solid var(--cor-cards-grupo);
+        border-top: 0;
+        height: 20px;
+        justify-self: center;
+        width: 2px;
+      }
+
+      .metric-flow-connector::after {
+        bottom: -4px;
+        left: -5px;
+        right: auto;
+        top: auto;
+      }
+
+      .metric-flow-list {
+        border-left: 0;
+        border-top: 2px solid var(--cor-cards-grupo);
+        padding-left: 0;
+        padding-top: 4px;
+      }
+
+      .metric-movement-list {
+        grid-template-columns: 1fr;
+      }
+    }
 </style>
 </head>
 
@@ -2065,7 +2321,7 @@ h3,
     <div id="mensagem" class="loading">Carregando relatório...</div>
 
     <section id="painelResultado" class="content-panel" style="display:none;">
-      <div id="metricas" class="metric-groups"></div>
+      <div id="metricas" class="metric-groups metric-groups-hierarchy"></div>
 
       <nav id="abasRelatorio" class="tabs">
         <button class="tab-button active" data-tab="resumo" onclick="trocarAba('resumo')">Resumo</button>
@@ -2377,14 +2633,20 @@ function coletarFiltros() {
       const pessoasViolenciaDomestica = resumo.pessoasViolenciaDomestica !== undefined
         ? resumo.pessoasViolenciaDomestica
         : resumo.totalAtendimentosViolenciaDomestica;
+      const totalPessoasAlcancadas = Number(resumo.pessoasTotalGeral || 0)
+        + Number(resumo.totalVinculos || 0);
 
       return `
-        <section class="metric-group" aria-labelledby="metricasAtendimentosTitulo">
-          <h3 id="metricasAtendimentosTitulo" class="metric-group-title">Atendimentos</h3>
-          <div class="metrics-grid metrics-total">
-            ${montarMetrica("Total de atendimentos", totalAtendimentos)}
+        <section class="metric-group metric-flow" aria-labelledby="metricasAtendimentosTitulo">
+          <div class="metric-total-node">
+            <div>
+              <h3 id="metricasAtendimentosTitulo" class="metric-total-node-title">Atendimentos</h3>
+              <span class="metric-total-node-label">Total</span>
+            </div>
+            <strong>${formatarValorMetrica(totalAtendimentos)}</strong>
           </div>
-          <div class="metrics-grid metrics-six">
+          <div class="metric-flow-connector" aria-hidden="true"></div>
+          <div class="metric-flow-list">
             ${montarMetrica("Atendimentos presenciais", atendimentosPresenciais)}
             ${montarMetrica("Atendimentos online", resumo.totalAtendimentosOnline)}
             ${montarMetrica("Atendimentos PPMS", resumo.totalPpms)}
@@ -2394,41 +2656,57 @@ function coletarFiltros() {
           </div>
         </section>
 
-        <section class="metric-group" aria-labelledby="metricasPessoasTitulo">
-          <h3 id="metricasPessoasTitulo" class="metric-group-title">Pessoas</h3>
-          <div class="metrics-grid metrics-total">
-            ${montarMetrica("Total de pessoas alcançadas", Number(resumo.pessoasTotalGeral || 0) + Number(resumo.totalVinculos || 0))}
+        <section class="metric-group metric-flow" aria-labelledby="metricasPessoasTitulo">
+          <div class="metric-total-node">
+            <div>
+              <h3 id="metricasPessoasTitulo" class="metric-total-node-title">Pessoas alcançadas</h3>
+              <span class="metric-total-node-label">Total</span>
+            </div>
+            <strong>${formatarValorMetrica(totalPessoasAlcancadas)}</strong>
           </div>
-          <div class="metrics-grid metrics-three">
+          <div class="metric-flow-connector" aria-hidden="true"></div>
+          <div class="metric-flow-list">
             ${montarMetrica("Pessoas atendidas individualmente", resumo.pessoasDistintas)}
             ${montarMetrica("Participantes de grupos reflexivos", resumo.pessoasGrupos)}
-            ${montarMetrica("Participantes de palestras", resumo.pessoasPalestras)} ${montarMetrica("Pessoas atendidas no PPMS", resumo.totalPpms)} ${montarMetrica("Pessoas alcançadas em incidentes críticos", resumo.totalIncidentesCriticos)} ${montarMetrica("Pessoas vinculadas", resumo.totalVinculos)}
+            ${montarMetrica("Participantes de palestras", resumo.pessoasPalestras)}
+            ${montarMetrica("Pessoas atendidas no PPMS", resumo.totalPpms)}
+            ${montarMetrica("Pessoas alcançadas em incidentes críticos", resumo.totalIncidentesCriticos)}
+            ${montarMetrica("Pessoas vinculadas", resumo.totalVinculos)}
           </div>
         </section>
 
-        <section class="metric-group" aria-labelledby="metricasIndicadorTitulo">
-          <h3 id="metricasIndicadorTitulo" class="metric-group-title">Indicador</h3>
-          <div class="metrics-grid metrics-one">
-            ${montarMetrica("Relação com violência doméstica", pessoasViolenciaDomestica)}
-          </div>
-        </section>
+        <div class="metric-secondary-groups">
+          <section class="metric-group metric-summary" aria-labelledby="metricasIndicadorTitulo">
+            <div>
+              <h3 id="metricasIndicadorTitulo">Indicador</h3>
+              <span>Relação com violência doméstica</span>
+            </div>
+            <strong>${formatarValorMetrica(pessoasViolenciaDomestica)}</strong>
+          </section>
 
-        <section class="metric-group" aria-labelledby="metricasMovimentacoesTitulo">
-          <h3 id="metricasMovimentacoesTitulo" class="metric-group-title">Outras movimentações</h3>
-          <div class="metrics-grid metrics-three">
-            ${montarMetrica("Faltas registradas", resumo.totalFaltas)}
-            ${montarMetrica("Altas registradas", resumo.totalAltas)}
-            ${montarMetrica("Arquivamentos", resumo.totalArquivamentos)}
-          </div>
-        </section>
+          <section class="metric-group metric-movements" aria-labelledby="metricasMovimentacoesTitulo">
+            <h3 id="metricasMovimentacoesTitulo">Outras movimentações</h3>
+            <div class="metric-movement-list">
+              ${montarMetrica("Faltas registradas", resumo.totalFaltas)}
+              ${montarMetrica("Altas registradas", resumo.totalAltas)}
+              ${montarMetrica("Arquivamentos", resumo.totalArquivamentos)}
+            </div>
+          </section>
+        </div>
       `;
+    }
+
+    function formatarValorMetrica(valor) {
+      return typeof valor === "number"
+        ? valor.toLocaleString("pt-BR")
+        : escaparHtml(valor || "-");
     }
 
     function montarMetrica(rotulo, valor) {
       return `
         <article class="metric">
           <span>${escaparHtml(rotulo)}</span>
-          <strong>${typeof valor === "number" ? valor.toLocaleString("pt-BR") : escaparHtml(valor || "-")}</strong>
+          <strong>${formatarValorMetrica(valor)}</strong>
         </article>
       `;
     }
