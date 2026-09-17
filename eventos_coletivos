@@ -1793,6 +1793,83 @@
 
   
 
+    .recado-overlay {
+      align-items: center;
+      background: rgba(15, 23, 42, 0.34);
+      display: none;
+      inset: 0;
+      justify-content: center;
+      padding: 22px;
+      position: fixed;
+      z-index: 100;
+    }
+
+    .recado-postit {
+      background: #fff3a3;
+      border: 1px solid rgba(161, 98, 7, 0.16);
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
+      color: #3f3a1b;
+      max-width: 460px;
+      min-height: 220px;
+      padding: 28px 26px 24px;
+      position: relative;
+      transform: rotate(-1deg);
+      width: min(460px, 92vw);
+    }
+
+    .recado-postit::before {
+      background: rgba(255, 255, 255, 0.38);
+      border-radius: 0 0 5px 5px;
+      content: "";
+      height: 28px;
+      left: 50%;
+      position: absolute;
+      top: -10px;
+      transform: translateX(-50%) rotate(2deg);
+      width: 116px;
+    }
+
+    .recado-postit.azul { background: #dbeafe; color: #1e3a5f; }
+    .recado-postit.verde { background: #dcfce7; color: #14532d; }
+    .recado-postit.rosa { background: #ffe4e6; color: #7f1d1d; }
+
+    .recado-fechar {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.42);
+      border-radius: 50%;
+      color: inherit;
+      display: flex;
+      font-size: 24px;
+      font-weight: 700;
+      height: 34px;
+      justify-content: center;
+      line-height: 1;
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      width: 34px;
+    }
+
+    .recado-fechar:hover { background: rgba(255, 255, 255, 0.7); }
+
+    .recado-postit h2 {
+      border: 0;
+      color: inherit;
+      font-size: 24px;
+      margin: 4px 34px 16px 0;
+      padding: 0;
+    }
+
+    .recado-postit p {
+      font-size: 17px;
+      line-height: 1.5;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+
     /* SAIC: painel padrao para operacoes demoradas. */
     .navegacao-overlay {
       background: rgba(31, 40, 44, 0.54);
@@ -2686,6 +2763,14 @@
     </div>
   </div>
 
+  <div id="recadoOverlay" class="recado-overlay">
+    <article id="recadoPostit" class="recado-postit" role="dialog" aria-modal="true" aria-labelledby="recadoTitulo">
+      <button type="button" class="recado-fechar" onclick="fecharRecado()" aria-label="Fechar recado">&times;</button>
+      <h2 id="recadoTitulo">Recado</h2>
+      <p id="recadoMensagem"></p>
+    </article>
+  </div>
+
   <script>
     const webAppUrl = "<?= webAppUrl ?>";
     let tokenGoogle = "<?= tokenGoogleInicial ?>";
@@ -2701,6 +2786,80 @@
     let idParticipanteCancelamentoAtual = "";
     let navegacaoAlteracoesPendentes = false;
     let acaoConfirmadaNavegacao = null;
+    let recadoAtivoCarregado = false;
+
+    function obterChaveSessaoRecado() {
+      const identificador = usuarioLogado && (usuarioLogado.email || usuarioLogado.nome)
+        ? usuarioLogado.email || usuarioLogado.nome
+        : "usuario";
+
+      return "saic:recado-verificado:" + String(identificador).toLowerCase().trim();
+    }
+
+    function recadoJaVerificadoNestaSessao() {
+      try {
+        return window.sessionStorage.getItem(obterChaveSessaoRecado()) === "sim";
+      } catch (erro) {
+        return false;
+      }
+    }
+
+    function registrarRecadoVerificadoNestaSessao() {
+      try {
+        window.sessionStorage.setItem(obterChaveSessaoRecado(), "sim");
+      } catch (erro) {}
+    }
+
+    function limparControleRecadoSessao() {
+      try {
+        window.sessionStorage.removeItem(obterChaveSessaoRecado());
+      } catch (erro) {}
+    }
+
+    function carregarRecadoAtivo() {
+      if (!tokenGoogle || !usuarioLogado || recadoAtivoCarregado || recadoJaVerificadoNestaSessao()) return;
+
+      recadoAtivoCarregado = true;
+
+      google.script.run
+        .withSuccessHandler(function(recado) {
+          if (recado && recado.encontrado) {
+            mostrarRecado(recado);
+            return;
+          }
+
+          registrarRecadoVerificadoNestaSessao();
+        })
+        .withFailureHandler(function() {
+          recadoAtivoCarregado = false;
+        })
+        .obterRecadoAtivo(tokenGoogle);
+    }
+
+    function mostrarRecado(recado) {
+      const overlay = document.getElementById("recadoOverlay");
+      const postit = document.getElementById("recadoPostit");
+      const titulo = document.getElementById("recadoTitulo");
+      const mensagem = document.getElementById("recadoMensagem");
+
+      if (!overlay || !postit || !titulo || !mensagem) {
+        registrarRecadoVerificadoNestaSessao();
+        return;
+      }
+
+      postit.className = "recado-postit " + (recado.cor || "amarelo");
+      titulo.innerText = recado.titulo || "Recado";
+      mensagem.innerText = recado.mensagem || "";
+      overlay.style.display = "flex";
+    }
+
+    function fecharRecado() {
+      const overlay = document.getElementById("recadoOverlay");
+
+      if (overlay) overlay.style.display = "none";
+      registrarRecadoVerificadoNestaSessao();
+    }
+
 
     const rotulosEvento = {
       grupo: "Grupos Reflexivos",
@@ -2743,6 +2902,7 @@
         return;
       }
 
+      carregarRecadoAtivo();
       document.getElementById("napsAtendimento").value = usuarioLogado.naps || "";
       selecionarEvento(rotulosEvento[tipoEventoInicial] ? tipoEventoInicial : "grupo", true);
       configurarMenuPrincipalPorPerfil();
@@ -3123,6 +3283,7 @@
     }
 
     function confirmarEncerrarSessaoSAIC() {
+      limparControleRecadoSessao();
       tokenGoogle = "";
       usuarioLogado = null;
       fecharModalEncerrarSessao();
