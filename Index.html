@@ -3843,10 +3843,6 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
       configurarTelaInicial();
     }
-    if (!recadoAtivoCarregado) {
-      recadoAtivoCarregado = true;
-      carregarRecadoAtivo();
-    }
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeEmail();
     atualizarCamposOutros();
@@ -3905,6 +3901,7 @@ function mostrarTelaAtendimento() {
   }
 
   marcarNavegacaoAtiva("atendimento");
+  carregarRecadoAtivo();
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -6022,6 +6019,7 @@ function fecharModalEncerrarSessao() {
 }
 
 function confirmarEncerrarSessaoSAIC() {
+  limparControleRecadoSessao();
   tokenGoogle = "";
   usuarioLogado = null;
   fecharModalEncerrarSessao();
@@ -6102,15 +6100,52 @@ function abrirPaginaAdministrativa(pagina) {
   abrirPaginaComToken(pagina);
 }
 
-// Carrega recado ativo configurado na planilha.
+function obterChaveSessaoRecado() {
+  const identificador = usuarioLogado && (usuarioLogado.email || usuarioLogado.nome)
+    ? usuarioLogado.email || usuarioLogado.nome
+    : "usuario";
+
+  return "saic:recado-verificado:" + String(identificador).toLowerCase().trim();
+}
+
+function recadoJaVerificadoNestaSessao() {
+  try {
+    return window.sessionStorage.getItem(obterChaveSessaoRecado()) === "sim";
+  } catch (erro) {
+    return false;
+  }
+}
+
+function registrarRecadoVerificadoNestaSessao() {
+  try {
+    window.sessionStorage.setItem(obterChaveSessaoRecado(), "sim");
+  } catch (erro) {}
+}
+
+function limparControleRecadoSessao() {
+  try {
+    window.sessionStorage.removeItem(obterChaveSessaoRecado());
+  } catch (erro) {}
+}
+
+// Carrega o recado somente na primeira pagina operacional da sessao.
 function carregarRecadoAtivo() {
+  if (recadoAtivoCarregado || recadoJaVerificadoNestaSessao()) return;
+
+  recadoAtivoCarregado = true;
+
   google.script.run
     .withSuccessHandler(function(recado) {
       if (recado && recado.encontrado) {
         mostrarRecado(recado);
+        return;
       }
+
+      registrarRecadoVerificadoNestaSessao();
     })
-    .withFailureHandler(function() {})
+    .withFailureHandler(function() {
+      recadoAtivoCarregado = false;
+    })
     .obterRecadoAtivo(tokenGoogle);
 }
 
@@ -6130,7 +6165,10 @@ function mostrarRecado(recado) {
 }
 
 function fecharRecado() {
-  document.getElementById("recadoOverlay").style.display = "none";
+  const overlay = document.getElementById("recadoOverlay");
+
+  if (overlay) overlay.style.display = "none";
+  registrarRecadoVerificadoNestaSessao();
 }
 
 // Ajuda de uso: abre/fecha orientacoes sem consultar a planilha.
