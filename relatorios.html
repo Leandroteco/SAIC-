@@ -1859,7 +1859,7 @@ h3,
       background: color-mix(in srgb, var(--cor-cards-grupo) 6%, var(--surface));
       display: grid;
       gap: 0;
-      grid-template-columns: 165px 36px minmax(0, 1fr);
+      grid-template-columns: 220px 36px minmax(0, 1fr);
       padding: 14px;
     }
 
@@ -1867,11 +1867,16 @@ h3,
       align-items: center;
       background: var(--surface-soft);
       border-left: 6px solid var(--cor-cards-grupo);
-      display: flex;
+      display: grid;
       gap: 10px;
-      justify-content: space-between;
+      grid-template-columns: minmax(0, 1fr) auto;
       min-height: 118px;
+      min-width: 0;
       padding: 14px;
+    }
+
+    .metric-total-node > div {
+      min-width: 0;
     }
 
     .metric-total-node-title {
@@ -1896,6 +1901,7 @@ h3,
       font-size: 34px;
       font-weight: 900;
       line-height: 1;
+      white-space: nowrap;
     }
 
     .metric-flow-connector {
@@ -2037,7 +2043,7 @@ h3,
 
     @media (max-width: 900px) {
       .metric-flow {
-        grid-template-columns: 145px 26px minmax(0, 1fr);
+        grid-template-columns: 190px 26px minmax(0, 1fr);
       }
 
       .metric-flow-list {
