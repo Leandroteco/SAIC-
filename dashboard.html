@@ -2107,57 +2107,6 @@ h3,
 
       <p id="status" class="status"></p>
 
-      <section id="indicadores" class="metric-groups">
-        <section class="metric-group metric-group-atendimentos" aria-labelledby="dashboardAtendimentosTitulo">
-          <h2 id="dashboardAtendimentosTitulo" class="metric-group-title">Atendimentos</h2>
-          <div class="metrics-grid metrics-total">
-            <div class="metric">
-              <span>Total de atendimentos</span>
-              <strong id="metricTotal">0</strong>
-            </div>
-          </div>
-          <div class="metrics-grid metrics-six">
-            <div class="metric"><span>Atendimentos presenciais</span><strong id="metricPresenciais">0</strong></div>
-            <div class="metric"><span>Atendimentos online</span><strong id="metricOnline">0</strong></div>
-            <div class="metric"><span>Atendimentos PPMS</span><strong id="metricPpms">0</strong></div>
-            <div class="metric"><span>Incidentes críticos registrados</span><strong id="metricIncidentesCriticos">0</strong></div>
-            <div class="metric"><span>Grupos reflexivos</span><strong id="metricGrupos">0</strong></div>
-            <div class="metric"><span>Palestras</span><strong id="metricPalestras">0</strong></div>
-          </div>
-        </section>
-
-        <section class="metric-group metric-group-pessoas" aria-labelledby="dashboardPessoasTitulo">
-          <h2 id="dashboardPessoasTitulo" class="metric-group-title">Pessoas</h2>
-          <div class="metrics-grid metrics-total">
-            <div class="metric">
-              <span>Total de pessoas alcançadas</span>
-              <strong id="metricPessoasTotal">0</strong>
-            </div>
-          </div>
-          <div class="metrics-grid metrics-three">
-            <div class="metric"><span>Pessoas atendidas individualmente</span><strong id="metricPessoas">0</strong></div>
-            <div class="metric"><span>Participantes de grupos reflexivos</span><strong id="metricPessoasGrupos">0</strong></div>
-            <div class="metric"><span>Participantes de palestras</span><strong id="metricPessoasPalestras">0</strong></div>
-          </div>
-        </section>
-
-        <section class="metric-group metric-group-indicador" aria-labelledby="dashboardIndicadorTitulo">
-          <h2 id="dashboardIndicadorTitulo" class="metric-group-title">Indicador</h2>
-          <div class="metrics-grid metrics-one">
-            <div class="metric"><span>Relação com violência doméstica</span><strong id="metricViolenciaDomestica">0</strong></div>
-          </div>
-        </section>
-
-        <section class="metric-group metric-group-movimentacoes" aria-labelledby="dashboardMovimentacoesTitulo">
-          <h2 id="dashboardMovimentacoesTitulo" class="metric-group-title">Outras movimentações</h2>
-          <div class="metrics-grid metrics-three">
-            <div class="metric"><span>Faltas registradas</span><strong id="metricFaltas">0</strong></div>
-            <div class="metric"><span>Altas registradas</span><strong id="metricAltas">0</strong></div>
-            <div class="metric"><span>Arquivamentos</span><strong id="metricArquivamentos">0</strong></div>
-          </div>
-        </section>
-      </section>
-
       <section id="leituraExecutiva" class="executive-summary">
         <article class="executive-card">
           <span>Leitura Gerencial</span>
@@ -2438,7 +2387,6 @@ h3,
       dados = dados || {};
       dadosDashboardAtual = dados || {};
       atualizarPeriodo(dados.periodo);
-      atualizarMetricas(dados.resumo || {});
       atualizarLeituraExecutiva(dados || {});
       renderizarGraficos(dados.graficos || {});
       renderizarRanking("rankingMotivos", (dados.rankings && dados.rankings.motivos) || []);
@@ -2453,37 +2401,6 @@ h3,
       document.getElementById("periodoAtual").innerText = periodo && periodo.rotulo
         ? periodo.rotulo
         : "Período selecionado";
-    }
-
-    function atualizarMetricas(resumo) {
-      const totalAtendimentos = Number(resumo.totalAtendimentos || 0)
-        + Number(resumo.totalPpms || 0)
-        + Number(resumo.totalIncidentesCriticos || 0);
-      const totalPessoasAlcancadas = Number(resumo.pessoasTotalGeral || 0)
-        + Number(resumo.totalPpms || 0)
-        + Number(resumo.totalIncidentesCriticos || 0);
-      const atendimentosPresenciais = resumo.totalAtendimentosPresenciais !== undefined
-        ? resumo.totalAtendimentosPresenciais
-        : Math.max(0, Number(resumo.totalAtendimentosIndividuais || 0) - Number(resumo.totalAtendimentosOnline || 0));
-      const pessoasViolenciaDomestica = resumo.pessoasViolenciaDomestica !== undefined
-        ? resumo.pessoasViolenciaDomestica
-        : resumo.totalAtendimentosViolenciaDomestica;
-
-      document.getElementById("metricTotal").innerText = formatarNumero(totalAtendimentos);
-      document.getElementById("metricPresenciais").innerText = formatarNumero(atendimentosPresenciais);
-      document.getElementById("metricPessoas").innerText = formatarNumero(resumo.pessoasDistintas);
-      document.getElementById("metricPpms").innerText = formatarNumero(resumo.totalPpms);
-      document.getElementById("metricIncidentesCriticos").innerText = formatarNumero(resumo.totalIncidentesCriticos);
-      document.getElementById("metricOnline").innerText = formatarNumero(resumo.totalAtendimentosOnline);
-      document.getElementById("metricGrupos").innerText = formatarNumero(resumo.totalGrupos);
-      document.getElementById("metricPalestras").innerText = formatarNumero(resumo.totalPalestras);
-      document.getElementById("metricViolenciaDomestica").innerText = formatarNumero(pessoasViolenciaDomestica);
-      document.getElementById("metricPessoasGrupos").innerText = formatarNumero(resumo.pessoasGrupos);
-      document.getElementById("metricPessoasPalestras").innerText = formatarNumero(resumo.pessoasPalestras);
-      document.getElementById("metricPessoasTotal").innerText = formatarNumero(totalPessoasAlcancadas);
-      document.getElementById("metricFaltas").innerText = formatarNumero(resumo.totalFaltas);
-      document.getElementById("metricAltas").innerText = formatarNumero(resumo.totalAltas);
-      document.getElementById("metricArquivamentos").innerText = formatarNumero(resumo.totalArquivamentos);
     }
 
     function atualizarLeituraExecutiva(dados) {
