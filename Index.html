@@ -1525,10 +1525,10 @@ header.preview-institutional-header span {
 }
 
 header.preview-institutional-header .menu {
-  background: #3f4141;
-  border-color: #3f4141;
-  box-shadow: 0 14px 28px rgba(41, 48, 51, 0.18);
-  color: #ffffff;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #293033;
 }
 
 .container {
@@ -3843,6 +3843,10 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
       configurarTelaInicial();
     }
+    if (!recadoAtivoCarregado) {
+      recadoAtivoCarregado = true;
+      carregarRecadoAtivo();
+    }
     aplicarEstiloTipoAtendimento();
     atualizarObrigatoriedadeEmail();
     atualizarCamposOutros();
@@ -3901,11 +3905,6 @@ function mostrarTelaAtendimento() {
   }
 
   marcarNavegacaoAtiva("atendimento");
-
-  if (!recadoAtivoCarregado) {
-    recadoAtivoCarregado = true;
-    carregarRecadoAtivo();
-  }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
