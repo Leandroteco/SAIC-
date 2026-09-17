@@ -1343,7 +1343,7 @@
 
     .banner-content {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       gap: 18px;
     }
 
@@ -1351,7 +1351,8 @@
       align-items: center;
       display: flex;
       gap: 13px;
-      justify-content: flex-end;
+      justify-content: flex-start;
+      order: -1;
     }
 
     .banner-institutional-logo {
@@ -1690,7 +1691,7 @@
       }
 
       .banner-content {
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
         gap: 10px;
       }
 
